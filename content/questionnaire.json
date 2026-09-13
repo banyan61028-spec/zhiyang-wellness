@@ -1,0 +1,299 @@
+{
+  "id": "zy-constitution-candidate-v0.1",
+  "scoreVersion": "zy-descriptive-score-v0.1",
+  "classification": null,
+  "agentEligible": false,
+  "validationStatus": "pending",
+  "order": [
+    "Q01",
+    "Q05",
+    "Q09",
+    "Q12",
+    "Q16",
+    "Q19",
+    "Q23",
+    "Q26",
+    "Q30",
+    "Q02",
+    "Q06",
+    "Q10",
+    "Q13",
+    "Q17",
+    "Q20",
+    "Q24",
+    "Q27",
+    "Q31",
+    "Q03",
+    "Q07",
+    "Q11",
+    "Q14",
+    "Q18",
+    "Q21",
+    "Q25",
+    "Q28",
+    "Q32",
+    "Q04",
+    "Q08",
+    "Q15",
+    "Q22",
+    "Q29"
+  ],
+  "questions": [
+    {
+      "id": "Q01",
+      "dimension": "balanced",
+      "text": "你有足够的精力完成自己平常的日常事务吗？",
+      "reviewNote": "S02；体能与生活负担会影响回答",
+      "itemVersion": "0.1.0-draft",
+      "contentReview": "pending"
+    },
+    {
+      "id": "Q02",
+      "dimension": "balanced",
+      "text": "一夜睡眠之后，你通常觉得休息过来了吗？",
+      "reviewNote": "S15；睡眠机会、轮班会影响回答",
+      "itemVersion": "0.1.0-draft",
+      "contentReview": "pending"
+    },
+    {
+      "id": "Q03",
+      "dimension": "balanced",
+      "text": "到了平常吃饭的时间，你会自然感到有胃口吗？",
+      "reviewNote": "S15；区分胃口与进食多少",
+      "itemVersion": "0.1.0-draft",
+      "contentReview": "pending"
+    },
+    {
+      "id": "Q04",
+      "dimension": "balanced",
+      "text": "在日常气温变化中，你通常能保持舒适吗？",
+      "reviewNote": "S02；与穿衣和环境条件有关",
+      "itemVersion": "0.1.0-draft",
+      "contentReview": "pending"
+    },
+    {
+      "id": "Q05",
+      "dimension": "qi_deficiency",
+      "text": "做完平常能应付的轻量家务后，你会觉得明显疲倦吗？",
+      "reviewNote": "S02；残障、慢性病和工作负担需考虑",
+      "itemVersion": "0.1.0-draft",
+      "contentReview": "pending"
+    },
+    {
+      "id": "Q06",
+      "dimension": "qi_deficiency",
+      "text": "你想正常说话时，会觉得声音发不出来力气吗？",
+      "reviewNote": "S02；避免把性格安静当成症状",
+      "itemVersion": "0.1.0-draft",
+      "contentReview": "pending"
+    },
+    {
+      "id": "Q07",
+      "dimension": "qi_deficiency",
+      "text": "按自己平常的速度走路时，你会觉得气不够用吗？",
+      "reviewNote": "S02；不能把新发气促归为体质",
+      "itemVersion": "0.1.0-draft",
+      "contentReview": "pending"
+    },
+    {
+      "id": "Q08",
+      "dimension": "qi_deficiency",
+      "text": "在不热、也没有明显活动时，你仍容易出汗吗？",
+      "reviewNote": "S02；药物、环境和特殊生理状态可能影响",
+      "itemVersion": "0.1.0-draft",
+      "contentReview": "pending"
+    },
+    {
+      "id": "Q09",
+      "dimension": "yang_deficiency",
+      "text": "在室内温度舒适时，你的手脚仍会觉得冷吗？",
+      "reviewNote": "S15；区分环境冷与自身感受",
+      "itemVersion": "0.1.0-draft",
+      "contentReview": "pending"
+    },
+    {
+      "id": "Q10",
+      "dimension": "yang_deficiency",
+      "text": "在别人觉得合适的温度下，你仍想增加衣物保暖吗？",
+      "reviewNote": "S15；与比较对象和穿衣习惯有关",
+      "itemVersion": "0.1.0-draft",
+      "contentReview": "pending"
+    },
+    {
+      "id": "Q11",
+      "dimension": "yang_deficiency",
+      "text": "你的腹部会有明显的发凉感吗？",
+      "reviewNote": "S15；单一感受不代表病因，审核是否保留",
+      "itemVersion": "0.1.0-draft",
+      "contentReview": "pending"
+    },
+    {
+      "id": "Q12",
+      "dimension": "yin_deficiency",
+      "text": "按平常习惯饮水后，你的口腔仍会感觉干吗？",
+      "reviewNote": "S02；不由此判断缺水或疾病",
+      "itemVersion": "0.1.0-draft",
+      "contentReview": "pending"
+    },
+    {
+      "id": "Q13",
+      "dimension": "yin_deficiency",
+      "text": "你会有眼睛干涩的感觉吗？",
+      "reviewNote": "S02；屏幕使用、隐形眼镜等可能影响",
+      "itemVersion": "0.1.0-draft",
+      "contentReview": "pending"
+    },
+    {
+      "id": "Q14",
+      "dimension": "yin_deficiency",
+      "text": "没有发热时，你的手心或脚心仍会觉得发热吗？",
+      "reviewNote": "S15；审核用户能否区分体感与体温",
+      "itemVersion": "0.1.0-draft",
+      "contentReview": "pending"
+    },
+    {
+      "id": "Q15",
+      "dimension": "yin_deficiency",
+      "text": "你排便时会遇到大便干硬的情况吗？",
+      "reviewNote": "S02；不能据此把便秘归因于阴虚",
+      "itemVersion": "0.1.0-draft",
+      "contentReview": "pending"
+    },
+    {
+      "id": "Q16",
+      "dimension": "phlegm_dampness",
+      "text": "日常活动时，你会觉得身体沉甸甸、不够轻松吗？",
+      "reviewNote": "S03；不以体重作为答案编码",
+      "itemVersion": "0.1.0-draft",
+      "contentReview": "pending"
+    },
+    {
+      "id": "Q17",
+      "dimension": "phlegm_dampness",
+      "text": "在没有刚吃东西时，你的口中仍会有黏腻感吗？",
+      "reviewNote": "S03；审核“黏腻”是否易懂",
+      "itemVersion": "0.1.0-draft",
+      "contentReview": "pending"
+    },
+    {
+      "id": "Q18",
+      "dimension": "phlegm_dampness",
+      "text": "没有正患感冒时，你的喉间仍经常有痰吗？",
+      "reviewNote": "S02；需核实与相关概念的对应，不推断病因",
+      "itemVersion": "0.1.0-draft",
+      "contentReview": "pending"
+    },
+    {
+      "id": "Q19",
+      "dimension": "damp_heat",
+      "text": "你清洁面部后，皮肤会较快出现明显油腻感吗？",
+      "reviewNote": "S03；护肤习惯和皮肤类型可能影响",
+      "itemVersion": "0.1.0-draft",
+      "contentReview": "pending"
+    },
+    {
+      "id": "Q20",
+      "dimension": "damp_heat",
+      "text": "你会反复长出红肿的痘痘吗？",
+      "reviewNote": "S03；不能以痤疮替代体质判定",
+      "itemVersion": "0.1.0-draft",
+      "contentReview": "pending"
+    },
+    {
+      "id": "Q21",
+      "dimension": "damp_heat",
+      "text": "没有刚吃苦味食物时，你口中仍会有苦味吗？",
+      "reviewNote": "S03；药物、口腔情况可能影响",
+      "itemVersion": "0.1.0-draft",
+      "contentReview": "pending"
+    },
+    {
+      "id": "Q22",
+      "dimension": "damp_heat",
+      "text": "你排便后，会觉得大便黏滞、不易排净吗？",
+      "reviewNote": "S03；需拆分“黏滞”和“排净感”的可能混淆",
+      "itemVersion": "0.1.0-draft",
+      "contentReview": "pending"
+    },
+    {
+      "id": "Q23",
+      "dimension": "blood_stasis",
+      "text": "你会发现皮肤上有青紫印，却不记得碰撞过吗？",
+      "reviewNote": "S02；不能把不明瘀斑解释为仅需食养",
+      "itemVersion": "0.1.0-draft",
+      "contentReview": "pending"
+    },
+    {
+      "id": "Q24",
+      "dimension": "blood_stasis",
+      "text": "你的身体会在同一个位置反复出现疼痛吗？",
+      "reviewNote": "S15；定位、严重程度和诊疗需求另行处理",
+      "itemVersion": "0.1.0-draft",
+      "contentReview": "pending"
+    },
+    {
+      "id": "Q25",
+      "dimension": "blood_stasis",
+      "text": "你会留意到皮肤上出现比周围明显更深的斑片吗？",
+      "reviewNote": "S15；特异性弱、肤色差异明显，优先评估删改",
+      "itemVersion": "0.1.0-draft",
+      "contentReview": "pending"
+    },
+    {
+      "id": "Q26",
+      "dimension": "qi_stagnation",
+      "text": "你会有一段时间心情低落、提不起兴致吗？",
+      "reviewNote": "S02；不作为抑郁筛查或诊断",
+      "itemVersion": "0.1.0-draft",
+      "contentReview": "pending"
+    },
+    {
+      "id": "Q27",
+      "dimension": "qi_stagnation",
+      "text": "面对日常事务时，你会感到紧张、难以放松吗？",
+      "reviewNote": "S02；区分生活压力与体质构念",
+      "itemVersion": "0.1.0-draft",
+      "contentReview": "pending"
+    },
+    {
+      "id": "Q28",
+      "dimension": "qi_stagnation",
+      "text": "你会不由自主地叹气吗？",
+      "reviewNote": "S03；需要测试题意与区分能力",
+      "itemVersion": "0.1.0-draft",
+      "contentReview": "pending"
+    },
+    {
+      "id": "Q29",
+      "dimension": "qi_stagnation",
+      "text": "不在吃东西时，你的喉咙会有像卡着东西的感觉吗？",
+      "reviewNote": "S03；不排除真实吞咽或其他问题",
+      "itemVersion": "0.1.0-draft",
+      "contentReview": "pending"
+    },
+    {
+      "id": "Q30",
+      "dimension": "special",
+      "text": "接触灰尘或花粉时，你会接连打喷嚏吗？",
+      "reviewNote": "S02；没有接触经历可选不适用",
+      "itemVersion": "0.1.0-draft",
+      "contentReview": "pending"
+    },
+    {
+      "id": "Q31",
+      "dimension": "special",
+      "text": "接触日常用品后，你的皮肤会出现发痒的反应吗？",
+      "reviewNote": "S02；不让用户自行确定过敏原",
+      "itemVersion": "0.1.0-draft",
+      "contentReview": "pending"
+    },
+    {
+      "id": "Q32",
+      "dimension": "special",
+      "text": "你会反复出现一片片隆起、发痒，之后又消退的皮肤变化吗？",
+      "reviewNote": "S02；避免要求用户识别“风团”术语，需核实覆盖",
+      "itemVersion": "0.1.0-draft",
+      "contentReview": "pending"
+    }
+  ]
+}

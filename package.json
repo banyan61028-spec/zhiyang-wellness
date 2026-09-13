@@ -1,0 +1,12 @@
+{
+  "name": "zhiyang-wellness",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "node scripts/dev.mjs",
+    "test": "node --test tests/*.test.js"
+  },
+  "devDependencies": { "esbuild": "0.25.12", "fake-indexeddb": "6.2.4" }
+}

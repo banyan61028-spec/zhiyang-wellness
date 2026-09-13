@@ -1,0 +1,1151 @@
+// src/client/data.js
+var sources = { constitution: { title: "\u4E2D\u533B\u4F53\u8D28\u5206\u7C7B\u4E0E\u5224\u5B9A\uFF08GB/T 46939\u20142025\uFF09\u53D1\u5E03\u8BF4\u660E", url: "https://www.samr.gov.cn/xw/sj/art/2026/art_bbc0d96fbbb741a2a66d2f4f7a44fd82.html" }, nutrition: { title: "\u56FD\u5BB6\u536B\u5065\u59D4\uFF1A\u4E2D\u56FD\u516C\u6C11\u5065\u5EB7\u7D20\u517B\uFF082024 \u5E74\u7248\uFF09", url: "https://www.nhc.gov.cn/xcs/c100123/202405/73a4927142f34152abed875634a3c13b.shtml" }, food: { title: "\u56FD\u5BB6\u536B\u5065\u59D4\uFF1A\u6210\u4EBA\u80A5\u80D6\u98DF\u517B\u6307\u5357\u95EE\u7B54", url: "https://www.nhc.gov.cn/cms-search/downFiles/6d7f12d8c8da45f0859c1c6be6f99726.pdf" }, throat: { title: "NHS\uFF1ASore throat", url: "https://www.nhs.uk/symptoms/sore-throat/" }, bowel: { title: "NHS\uFF1AConstipation", url: "https://www.nhs.uk/conditions/constipation/" } };
+var constitutions = [["\u5E73\u548C\u8D28", "\u5E73\u8861\u4E0E\u534F\u8C03"], ["\u6C14\u865A\u8D28", "\u7559\u610F\u7CBE\u529B\u4E0E\u6D3B\u52A8\u611F\u53D7"], ["\u9633\u865A\u8D28", "\u7559\u610F\u5BF9\u5BD2\u51B7\u7684\u611F\u53D7"], ["\u9634\u865A\u8D28", "\u7559\u610F\u5E72\u71E5\u4E0E\u71E5\u70ED\u611F\u53D7"], ["\u75F0\u6E7F\u8D28", "\u7559\u610F\u8EAB\u4F53\u56F0\u91CD\u7684\u611F\u53D7"], ["\u6E7F\u70ED\u8D28", "\u7559\u610F\u6E7F\u4E0E\u70ED\u7684\u611F\u53D7"], ["\u8840\u7600\u8D28", "\u4E86\u89E3\u76F8\u5173\u8EAB\u4F53\u8868\u73B0"], ["\u6C14\u90C1\u8D28", "\u7559\u610F\u60C5\u7EEA\u4E0E\u8EAB\u4F53\u611F\u53D7"], ["\u7279\u7980\u8D28", "\u7559\u610F\u7279\u6B8A\u654F\u611F\u60C5\u51B5"]];
+var recipes = [
+  { id: "breakfast", title: "\u5C71\u836F\u5C0F\u7C73\u7CA5\u642D\u914D", category: "\u4E09\u9910\u642D\u914D", time: "\u65E9\u9910", duration: "\u7EA6 25 \u5206\u949F", tag: "\u6E29\u70ED\u65E9\u9910", desc: "\u4E00\u7897\u7CA5\u4E4B\u5916\uFF0C\u4E5F\u7ED9\u65E9\u9910\u52A0\u4E00\u70B9\u4E30\u5BCC\u3002", ingredients: ["\u5C71\u836F\u3001\u5C0F\u7C73\u4E0E\u996E\u7528\u6C34", "\u9E21\u86CB\u6216\u4F60\u9002\u5408\u7684\u8C46\u5236\u54C1", "\u4E00\u4EFD\u65B0\u9C9C\u6C34\u679C"], steps: ["\u5C71\u836F\u548C\u5C0F\u7C73\u6D17\u51C0\uFF0C\u6309\u65E5\u5E38\u716E\u7CA5\u65B9\u5F0F\u716E\u719F\u3002", "\u642D\u914D\u9E21\u86CB\u6216\u9002\u5408\u81EA\u5DF1\u7684\u5176\u4ED6\u86CB\u767D\u8D28\u98DF\u7269\u3002", "\u518D\u52A0\u4E00\u4EFD\u6C34\u679C\uFF0C\u8BA9\u65E9\u9910\u98DF\u7269\u79CD\u7C7B\u66F4\u4E30\u5BCC\u3002"], note: "\u8FD9\u662F\u642D\u914D\u793A\u4F8B\uFF0C\u4EFD\u91CF\u5C1A\u672A\u6309\u4E2A\u4EBA\u9700\u8981\u8BA1\u7B97\uFF1B\u5BF9\u539F\u6599\u8FC7\u654F\u65F6\u9700\u8981\u66FF\u6362\u3002", source: "nutrition" },
+  { id: "lunch", title: "\u6E05\u84B8\u9C7C\u4E0E\u65F6\u852C\u996D", category: "\u4E09\u9910\u642D\u914D", time: "\u5348\u9910", duration: "\u7EA6 30 \u5206\u949F", tag: "\u8364\u7D20\u642D\u914D", image: "assets/lunch.jpg", desc: "\u4E3B\u98DF\u3001\u9C7C\u8089\u3001\u852C\u83DC\uFF0C\u90FD\u7ED9\u81EA\u5DF1\u7559\u4E00\u4EFD\u3002", ingredients: ["\u7C73\u996D\u6216\u6742\u7CAE\u996D", "\u5145\u5206\u84B8\u719F\u7684\u9C7C\u8089", "\u7EFF\u53F6\u83DC\u4E0E\u5357\u74DC"], steps: ["\u51C6\u5907\u4E00\u4EFD\u4E3B\u98DF\uFF0C\u9C7C\u8089\u5145\u5206\u84B8\u719F\u3002", "\u642D\u914D\u65F6\u852C\uFF0C\u70F9\u8C03\u65F6\u51CF\u5C11\u989D\u5916\u6CB9\u76D0\u3002", "\u6839\u636E\u5B9E\u9645\u9965\u9971\u611F\u4E0E\u4E2A\u4EBA\u9700\u6C42\u8C03\u6574\u4EFD\u91CF\u3002"], note: "\u7167\u7247\u4E3A\u642D\u914D\u793A\u610F\uFF0C\u4E0D\u4EE3\u8868\u7CBE\u786E\u4EFD\u91CF\u6216\u8425\u517B\u8BA1\u7B97\u3002\u5BF9\u9C7C\u8FC7\u654F\u53EF\u67E5\u770B\u8C46\u8150\u66FF\u6362\u793A\u4F8B\u3002", source: "nutrition" },
+  { id: "dinner", title: "\u83CC\u83C7\u8C46\u8150\u6742\u7CAE\u996D", category: "\u4E09\u9910\u642D\u914D", time: "\u665A\u9910", duration: "\u7EA6 20 \u5206\u949F", tag: "\u6E05\u723D\u5BB6\u5E38", desc: "\u7528\u5BB6\u5E38\u98DF\u6750\uFF0C\u628A\u665A\u996D\u5403\u5F97\u7B80\u5355\u4E9B\u3002", ingredients: ["\u8C46\u8150\u3001\u83CC\u83C7\u4E0E\u7EFF\u53F6\u83DC", "\u4E00\u4EFD\u6742\u7CAE\u996D", "\u5C11\u91CF\u70F9\u8C03\u7528\u6CB9\u53CA\u8C03\u5473"], steps: ["\u8C46\u8150\u4E0E\u83CC\u83C7\u716E\u719F\u6216\u7096\u719F\u3002", "\u642D\u914D\u4E00\u4EFD\u7EFF\u53F6\u852C\u83DC\u548C\u4E3B\u98DF\u3002", "\u6309\u81EA\u5DF1\u7684\u5B9E\u9645\u9700\u6C42\u8C03\u6574\uFF0C\u4E0D\u56E0\u51CF\u91CD\u800C\u76F4\u63A5\u7701\u7565\u6B63\u9910\u3002"], note: "\u8FD9\u662F\u5BB6\u5E38\u83DC\u793A\u4F8B\uFF0C\u4E0D\u9002\u7528\u4E8E\u9700\u8981\u7279\u6B8A\u81B3\u98DF\u6CBB\u7597\u7684\u60C5\u51B5\u3002", source: "nutrition" },
+  { id: "tea", title: "\u9648\u76AE\u7EA2\u67A3\u6E29\u996E", category: "\u98DF\u517B\u8336\u996E", time: "\u8336\u996E", duration: "\u98CE\u5473\u53C2\u8003", tag: "\u4F20\u7EDF\u98DF\u517B", image: "assets/tea.jpg", desc: "\u6DE1\u6DE1\u67D1\u6A58\u9999\uFF0C\u7ED9\u65E5\u5E38\u6DFB\u4E00\u676F\u6E29\u996E\u3002", ingredients: ["\u98DF\u54C1\u7528\u9014\u7684\u9648\u76AE", "\u53BB\u6838\u7EA2\u67A3", "\u996E\u7528\u6C34"], steps: ["\u9009\u7528\u7B26\u5408\u98DF\u54C1\u7528\u9014\u7684\u539F\u6599\uFF0C\u6309\u539F\u6599\u5305\u88C5\u7684\u98DF\u7528\u8BF4\u660E\u51C6\u5907\u3002", "\u6E05\u6D17\u540E\u5145\u5206\u51B2\u6CE1\u6216\u716E\u5236\uFF0C\u653E\u81F3\u9002\u53E3\u6E29\u5EA6\u518D\u996E\u7528\u3002", "\u539F\u6599\u914D\u6BD4\u4E0E\u7528\u91CF\u7559\u5F85\u4E13\u4E1A\u5185\u5BB9\u5BA1\u6838\uFF1B\u672C Demo \u4E0D\u751F\u6210\u4E2A\u6027\u5316\u8349\u836F\u914D\u65B9\u3002"], note: "\u8FD9\u662F\u98CE\u5473\u4E0E\u9875\u9762\u793A\u4F8B\uFF0C\u4E0D\u5BA3\u79F0\u795B\u6E7F\u3001\u6D88\u80BF\u6216\u51CF\u8102\u7597\u6548\u3002\u670D\u836F\u3001\u5B55\u54FA\u671F\u3001\u8FC7\u654F\u6216\u6709\u7279\u6B8A\u5065\u5EB7\u72B6\u51B5\u65F6\uFF0C\u5148\u8BE2\u95EE\u4E13\u4E1A\u4EBA\u5458\u3002", source: "food" },
+  { id: "oats", title: "\u71D5\u9EA6\u9178\u5976\u52A0\u9910", category: "\u4E09\u9910\u642D\u914D", time: "\u52A0\u9910", duration: "\u7EA6 5 \u5206\u949F", tag: "\u52A0\u9910\u53C2\u8003", desc: "\u7ED9\u5E0C\u671B\u589E\u52A0\u996E\u98DF\u6444\u5165\u7684\u4EBA\uFF0C\u591A\u4E00\u4E2A\u642D\u914D\u9009\u62E9\u3002", ingredients: ["\u9002\u5408\u81EA\u5DF1\u98DF\u7528\u7684\u539F\u5473\u9178\u5976", "\u5373\u98DF\u71D5\u9EA6", "\u6C34\u679C\u6216\u9002\u91CF\u575A\u679C\uFF08\u65E0\u8FC7\u654F\u65F6\uFF09"], steps: ["\u6839\u636E\u539F\u6599\u8BF4\u660E\u51C6\u5907\u71D5\u9EA6\u3002", "\u4E0E\u9178\u5976\u3001\u6C34\u679C\u642D\u914D\uFF0C\u4F5C\u4E3A\u6B63\u9910\u4E4B\u5916\u7684\u9009\u62E9\u3002", "\u5982\u679C\u8FD1\u671F\u4F53\u91CD\u65E0\u610F\u4E0B\u964D\u6216\u957F\u671F\u5403\u4E0D\u4E0B\uFF0C\u5148\u54A8\u8BE2\u4E13\u4E1A\u4EBA\u5458\u3002"], note: "\u589E\u91CD\u4E0D\u80FD\u53EA\u9760\u67D0\u79CD\u98DF\u7269\u3002\u8FD9\u662F\u642D\u914D\u793A\u4F8B\uFF0C\u672A\u8BA1\u7B97\u4E2A\u4EBA\u80FD\u91CF\u76EE\u6807\u3002", source: "nutrition" }
+];
+var lifestyle = { id: "sleep", title: "\u7ED9\u4ECA\u665A\u7559\u4E00\u70B9\u5B89\u9759", category: "\u8D77\u5C45\u5EFA\u8BAE", tag: "\u89C4\u5F8B\u4F5C\u606F", desc: "\u628A\u4F11\u606F\u5B89\u6392\u8FDB\u751F\u6D3B\uFF0C\u4E5F\u5141\u8BB8\u8BA1\u5212\u6709\u5F39\u6027\u3002", points: ["\u9009\u4E00\u4E2A\u9002\u5408\u81EA\u5DF1\u7684\u7761\u524D\u51C6\u5907\u65F6\u95F4\u3002", "\u628A\u660E\u5929\u9700\u8981\u5904\u7406\u7684\u4E8B\u60C5\u8BB0\u4E0B\u6765\uFF0C\u51CF\u5C11\u4E34\u7761\u524D\u53CD\u590D\u60E6\u8BB0\u3002", "\u5EFA\u7ACB\u5BB9\u6613\u91CD\u590D\u7684\u7761\u524D\u4E60\u60EF\uFF1B\u6301\u7EED\u7761\u7720\u56F0\u6270\u5E94\u5BFB\u6C42\u4E13\u4E1A\u5E2E\u52A9\u3002"] };
+var topics = [
+  { id: "damp", title: "\u603B\u89C9\u5F97\u6E7F\u6C14\u91CD", subtitle: "\u4ECE\u996E\u98DF\u4E0E\u65E5\u5E38\u4E60\u60EF\u804A\u8D77", group: "\u65E5\u5E38\u72B6\u6001", icon: "leaf", accent: "green", tips: ["\u5148\u8BB0\u5F55\u4F60\u8BF4\u7684\u201C\u6E7F\u6C14\u91CD\u201D\u5177\u4F53\u6307\u4EC0\u4E48\u611F\u53D7\u3002", "\u4ECE\u89C4\u5F8B\u4E09\u9910\u3001\u51CF\u5C11\u8FC7\u591A\u6CB9\u76D0\u7CD6\u3001\u9002\u5EA6\u6D3B\u52A8\u7B49\u65E5\u5E38\u4E60\u60EF\u5165\u624B\u3002", "\u60F3\u4E86\u89E3\u4F53\u8D28\uFF0C\u53EF\u4EE5\u5148\u6D4F\u89C8\u4E5D\u79CD\u7C7B\u578B\uFF0C\u518D\u4F7F\u7528\u7ECF\u8FC7\u9A8C\u8BC1\u7684\u6B63\u5F0F\u91CF\u8868\u3002"], boundary: "\u201C\u6E7F\u6C14\u91CD\u201D\u662F\u4F60\u7684\u63CF\u8FF0\uFF0C\u4E0D\u80FD\u636E\u6B64\u76F4\u63A5\u5224\u5B9A\u4F53\u8D28\u6216\u75C5\u56E0\u3002\u6709\u660E\u663E\u6D6E\u80BF\u3001\u6301\u7EED\u4E0D\u9002\u65F6\u8BF7\u5C31\u533B\u3002", related: "tea", source: "nutrition" },
+  { id: "throat", title: "\u55D3\u5B50\u4E0D\u8212\u670D", subtitle: "\u996E\u6C34\u3001\u996E\u98DF\u4E0E\u4F11\u606F\u53C2\u8003", group: "\u547C\u5438\u4E0E\u54BD\u5589", icon: "wind", accent: "orange", tips: ["\u9009\u62E9\u81EA\u5DF1\u53EF\u4EE5\u8212\u9002\u541E\u54BD\u7684\u98DF\u7269\uFF0C\u9002\u5F53\u996E\u6C34\u3002", "\u4F11\u606F\uFF0C\u907F\u5F00\u70DF\u96FE\u7B49\u523A\u6FC0\u3002", "\u8BB0\u5F55\u6301\u7EED\u65F6\u95F4\u4E0E\u53D8\u5316\uFF1B\u75C7\u72B6\u6301\u7EED\u6216\u52A0\u91CD\u65F6\u54A8\u8BE2\u533B\u751F\u3002"], boundary: "\u82E5\u547C\u5438\u56F0\u96BE\u3001\u65E0\u6CD5\u541E\u54BD\uFF0C\u6216\u60C5\u51B5\u8FC5\u901F\u6076\u5316\uFF0C\u8BF7\u7ACB\u5373\u5BFB\u6C42\u533B\u7597\u5E2E\u52A9\u3002", related: null, source: "throat" },
+  { id: "bowel", title: "\u6392\u4FBF\u4E0D\u592A\u987A\u7545", subtitle: "\u7559\u610F\u7EA4\u7EF4\u3001\u6C34\u5206\u4E0E\u89C4\u5F8B", group: "\u813E\u80C3\u4E0E\u6D88\u5316", icon: "sun", accent: "green", tips: ["\u5728\u8010\u53D7\u7684\u524D\u63D0\u4E0B\uFF0C\u9010\u6B65\u589E\u52A0\u852C\u83DC\u3001\u6C34\u679C\u3001\u5168\u8C37\u7269\u7B49\u98DF\u7269\u3002", "\u4FDD\u6301\u9002\u5408\u81EA\u5DF1\u7684\u996E\u6C34\u4E0E\u6D3B\u52A8\u4E60\u60EF\uFF1B\u6709\u533B\u5631\u9650\u5236\u65F6\u9075\u5FAA\u533B\u5631\u3002", "\u8BB0\u5F55\u6392\u4FBF\u4E60\u60EF\uFF0C\u7ED9\u81EA\u5DF1\u89C4\u5F8B\u7684\u5982\u5395\u65F6\u95F4\u3002"], boundary: "\u51FA\u73B0\u4FBF\u8840\u3001\u6301\u7EED\u8179\u75DB\u3001\u4F53\u91CD\u65E0\u610F\u4E0B\u964D\uFF0C\u6216\u53CD\u590D\u3001\u6301\u7EED\u4FBF\u79D8\u65F6\uFF0C\u8BF7\u54A8\u8BE2\u533B\u751F\u3002", related: "dinner", source: "bowel" },
+  { id: "sleep", title: "\u4F5C\u606F\u6709\u70B9\u4E71", subtitle: "\u4ECE\u4E00\u4E2A\u5C0F\u4E60\u60EF\u5F00\u59CB", group: "\u4F5C\u606F\u4E0E\u60C5\u7EEA", icon: "moon", accent: "purple", tips: lifestyle.points, boundary: "\u6301\u7EED\u5F71\u54CD\u767D\u5929\u751F\u6D3B\u7684\u7761\u7720\u95EE\u9898\uFF0C\u4E0D\u5B9C\u53EA\u4F9D\u9760\u517B\u751F\u5EFA\u8BAE\u5904\u7406\u3002", related: null, source: "nutrition" },
+  { id: "weight", title: "\u6700\u8FD1\u4F53\u91CD\u589E\u52A0", subtitle: "\u628A\u4E09\u9910\u91CD\u65B0\u5B89\u6392\u597D", group: "\u65E5\u5E38\u72B6\u6001", icon: "scale", accent: "orange", tips: ["\u5148\u4E86\u89E3\u4F53\u91CD\u53D8\u5316\u7684\u65F6\u95F4\u3001\u5E45\u5EA6\u4E0E\u751F\u6D3B\u53D8\u5316\u3002", "\u5173\u6CE8\u6574\u4F53\u996E\u98DF\u642D\u914D\uFF0C\u4E0D\u628A\u67D0\u676F\u8336\u6216\u5355\u4E00\u98DF\u7269\u5F53\u4F5C\u51CF\u91CD\u65B9\u6848\u3002", "\u907F\u514D\u4EC5\u51ED\u4F53\u91CD\u7126\u8651\u5C31\u91C7\u7528\u6781\u7AEF\u9650\u5236\u996E\u98DF\u3002"], boundary: "\u672C Demo \u4E0D\u5224\u5B9A\u662F\u5426\u80A5\u80D6\uFF0C\u4E5F\u4E0D\u8BA1\u7B97\u4E2A\u6027\u5316\u51CF\u91CD\u76EE\u6807\u3002\u5FEB\u901F\u3001\u65E0\u6CD5\u89E3\u91CA\u7684\u53D8\u5316\u8BF7\u54A8\u8BE2\u4E13\u4E1A\u4EBA\u5458\u3002", related: "lunch", source: "food" },
+  { id: "stress", title: "\u6700\u8FD1\u6709\u70B9\u7D27\u7EF7", subtitle: "\u7ED9\u5FD9\u788C\u7559\u4E00\u4E2A\u6682\u505C\u952E", group: "\u4F5C\u606F\u4E0E\u60C5\u7EEA", icon: "heart", accent: "purple", tips: ["\u7ED9\u81EA\u5DF1\u7559\u4E00\u5C0F\u6BB5\u4E0D\u7528\u5B8C\u6210\u4EFB\u52A1\u7684\u65F6\u95F4\u3002", "\u8BB0\u5F55\u8BA9\u81EA\u5DF1\u7D27\u7EF7\u7684\u4E8B\uFF0C\u5C1D\u8BD5\u51CF\u5C11\u4E00\u4E2A\u53EF\u8C03\u6574\u7684\u8D1F\u62C5\u3002", "\u4E0E\u4FE1\u4EFB\u7684\u4EBA\u4EA4\u6D41\uFF1B\u6301\u7EED\u56F0\u6270\u65F6\u5BFB\u6C42\u4E13\u4E1A\u652F\u6301\u3002"], boundary: "\u8FD9\u91CC\u63D0\u4F9B\u65E5\u5E38\u751F\u6D3B\u53C2\u8003\uFF0C\u4E0D\u8BC4\u4F30\u6216\u6CBB\u7597\u5FC3\u7406\u75BE\u75C5\u3002", related: null, source: "nutrition" }
+];
+var articles = [
+  { id: "season", title: "\u767D\u9732\u4E4B\u540E\uFF0C\u628A\u4E09\u9910\u5403\u5F97\u8212\u670D\u4E00\u70B9", label: "\u65F6\u4EE4\u98DF\u517B", image: "assets/tea.jpg", read: "3 \u5206\u949F", intro: "\u5B63\u8282\u53EF\u4EE5\u6210\u4E3A\u8C03\u6574\u751F\u6D3B\u8282\u594F\u7684\u63D0\u9192\u3002\u5177\u4F53\u5403\u4EC0\u4E48\uFF0C\u4ECD\u8981\u7ED3\u5408\u98DF\u7269\u591A\u6837\u6027\u3001\u81EA\u5DF1\u7684\u504F\u597D\u4E0E\u5B9E\u9645\u9700\u8981\u3002", paragraphs: [["\u4ECE\u5BB6\u5E38\u98DF\u7269\u5F00\u59CB", "\u7ED9\u9910\u684C\u4FDD\u7559\u4E3B\u98DF\u3001\u852C\u83DC\u548C\u9002\u5408\u81EA\u5DF1\u7684\u86CB\u767D\u8D28\u98DF\u7269\u3002\u9009\u62E9\u5F53\u5B63\u98DF\u6750\uFF0C\u53EF\u4EE5\u8BA9\u65E5\u5E38\u642D\u914D\u6709\u66F4\u591A\u53D8\u5316\u3002"], ["\u996E\u54C1\u662F\u751F\u6D3B\u9009\u62E9", "\u8336\u996E\u53EF\u4EE5\u662F\u98CE\u5473\u4F53\u9A8C\uFF0C\u4E0D\u9700\u8981\u627F\u62C5\u51CF\u80A5\u3001\u6D88\u80BF\u6216\u6CBB\u7597\u75BE\u75C5\u7684\u4EFB\u52A1\u3002\u7559\u610F\u539F\u6599\u3001\u9002\u7528\u6761\u4EF6\u548C\u662F\u5426\u989D\u5916\u52A0\u7CD6\u3002"], ["\u7ED9\u8BA1\u5212\u7559\u4E00\u70B9\u4F59\u5730", "\u5FD9\u788C\u65F6\u7528\u66F4\u5BB9\u6613\u51C6\u5907\u7684\u642D\u914D\uFF0C\u4E70\u4E0D\u5230\u7684\u98DF\u6750\u53EF\u4EE5\u66FF\u6362\u3002\u9002\u5408\u957F\u671F\u751F\u6D3B\u7684\u5B89\u6392\uFF0C\u901A\u5E38\u9700\u8981\u4E00\u70B9\u5F39\u6027\u3002"]], source: "nutrition" },
+  { id: "balance", title: "\u60F3\u7BA1\u7406\u4F53\u91CD\uFF0C\u5148\u628A\u4E00\u987F\u996D\u642D\u914D\u597D", label: "\u996E\u98DF\u77E5\u8BC6", image: "assets/lunch.jpg", read: "4 \u5206\u949F", intro: "\u201C\u53EA\u5403\u67D0\u79CD\u98DF\u7269\u201D\u548C\u201C\u4E00\u987F\u996D\u600E\u4E48\u642D\u914D\u201D\u662F\u4E0D\u540C\u7684\u95EE\u9898\u3002\u5148\u770B\u6574\u4F53\u996E\u98DF\uFF0C\u518D\u8003\u8651\u5177\u4F53\u66FF\u6362\u3002", paragraphs: [["\u770B\u770B\u8FD9\u4E00\u9910\u90FD\u6709\u4EC0\u4E48", "\u7559\u610F\u4E3B\u98DF\u3001\u852C\u83DC\u4E0E\u86CB\u767D\u8D28\u98DF\u7269\u662F\u5426\u90FD\u6709\uFF0C\u4E5F\u7559\u610F\u996E\u6599\u3001\u96F6\u98DF\u548C\u8C03\u5473\u5E26\u6765\u7684\u989D\u5916\u6444\u5165\u3002"], ["\u5148\u627E\u5230\u5BB9\u6613\u6539\u53D8\u7684\u4E00\u5904", "\u53EF\u4EE5\u4ECE\u51CF\u5C11\u542B\u7CD6\u996E\u6599\u3001\u8C03\u6574\u70F9\u8C03\u65B9\u5F0F\u7B49\u5177\u4F53\u4E60\u60EF\u5F00\u59CB\u3002\u4E2A\u4F53\u7684\u80FD\u91CF\u76EE\u6807\u9700\u8981\u5145\u5206\u4FE1\u606F\u548C\u53EF\u9760\u8BA1\u7B97\u3002"], ["\u98DF\u517B\u4E0D\u66FF\u4EE3\u4E13\u4E1A\u8BC4\u4F30", "\u6709\u7279\u6B8A\u5065\u5EB7\u72B6\u51B5\u3001\u8FD1\u671F\u4F53\u91CD\u660E\u663E\u53D8\u5316\uFF0C\u6216\u9700\u8981\u6CBB\u7597\u6027\u81B3\u98DF\u65F6\uFF0C\u5148\u54A8\u8BE2\u4E13\u4E1A\u4EBA\u5458\u3002"]], source: "food" }
+];
+for (const item of [...recipes, ...topics, ...articles]) {
+  item.reviewStatus = "pending";
+  item.contentVersion = "0.1-draft";
+}
+
+// src/shared/safety.js
+var ruleVersion = "zy-health-v0.2";
+var urgentText = "\u4F60\u63CF\u8FF0\u7684\u60C5\u51B5\u9700\u8981\u7ACB\u5373\u83B7\u5F97\u4E13\u4E1A\u5E2E\u52A9\u3002\u8BF7\u7ACB\u5373\u8054\u7CFB\u5F53\u5730\u6025\u6551\u670D\u52A1\uFF08\u4E2D\u56FD\u5927\u9646\u62E8\u6253 120\uFF09\uFF0C\u6216\u8BF7\u8EAB\u8FB9\u7684\u4EBA\u534F\u52A9\u8054\u7CFB\u3002\u8BF7\u4E0D\u8981\u7B49\u5F85\u672C\u52A9\u624B\u56DE\u590D\u6216\u7EE7\u7EED\u5BFB\u627E\u98DF\u517B\u65B9\u6848\u3002";
+var urgentPattern = /呼吸困难|无法吞咽|喘不过气|不能呼吸|胸痛|呕血|昏迷|叫不醒|突然.{0,6}(最严重|剧烈).{0,3}头痛|头痛.{0,8}(说话不清|一侧无力)|想自杀|准备自杀|不想活|吃了.{0,5}(一瓶|大量).{0,5}药/g;
+function isExplicitUrgent(message) {
+  return String(message).split(/[，。！？；\n]/).some((clause) => {
+    return [...clause.matchAll(urgentPattern)].some((match) => {
+      const prefix = clause.slice(0, match.index);
+      if (/^(请问)?(什么是|科普|解释|如果|假如)/.test(clause)) return false;
+      if (/以前|曾经|去年/.test(prefix) && !/现在|目前|此刻/.test(prefix)) return false;
+      return !/(没有|并无|否认|不是|不伴有|无)(任何)?$/.test(prefix);
+    });
+  });
+}
+var isSensitive = (text) => /怀孕|孕妇|孕期|备孕|哺乳|婴儿|宝宝|儿童|未成年|高龄|老人|[七八九]十岁|[789]\d岁|基础病|糖尿病|高血压|肾病|肝病|心脏病|服药|吃药|用药|过敏|抗凝|手术|正在治疗|药名不清/.test(text);
+function urgentResponse(requestId) {
+  return { requestId, mode: "urgent_help", text: urgentText, contentRefs: [], sources: [], followUpQuestions: [], ruleVersion, demo: true };
+}
+function validateReply(reply, requestId) {
+  if (!reply || reply.requestId !== requestId || !["answer", "clarify", "professional_help", "urgent_help", "unavailable"].includes(reply.mode) || typeof reply.text !== "string" || reply.text.length > 6e3 || !Array.isArray(reply.contentRefs) || !Array.isArray(reply.followUpQuestions) || reply.followUpQuestions.some((q) => typeof q !== "string" || q.length > 200) || !Array.isArray(reply.sources) || reply.ruleVersion !== ruleVersion) throw new Error("\u56DE\u590D\u683C\u5F0F\u6821\u9A8C\u672A\u901A\u8FC7");
+  if (reply.mode !== "answer" && (Object.hasOwn(reply, "planDraft") || reply.contentRefs.length)) throw new Error("\u6B64\u7C7B\u56DE\u590D\u7981\u6B62\u9644\u5E26\u65B9\u6848");
+  if (reply.mode === "urgent_help" && (reply.followUpQuestions.length || reply.sources.length || reply.text !== urgentText)) throw new Error("\u7D27\u6025\u6C42\u52A9\u56DE\u590D\u672A\u901A\u8FC7\u6821\u9A8C");
+  return reply;
+}
+
+// src/shared/records.js
+var defaultProfile = { name: "\u4F53\u9A8C\u7528\u6237", goal: "\u5747\u8861\u996E\u98DF", habit: "\u81EA\u5DF1\u505A\u996D\u4E0E\u5916\u98DF\u90FD\u6709", preference: "\u6682\u65E0\u504F\u597D", updated: "" };
+var emptyState = () => ({ profile: { ...defaultProfile }, saved: [], plans: [], assessments: [], draft: null });
+function cleanProfile(input = {}) {
+  return Object.fromEntries(Object.entries(defaultProfile).map(([key, fallback]) => [key, typeof input[key] === "string" ? input[key].slice(0, key === "name" ? 20 : 80) : fallback]));
+}
+var validFavorite = (key) => /^(recipe:(breakfast|lunch|dinner|tea|oats)|article:(season|balance))$/.test(key);
+function validatePlan(plan) {
+  if (!plan || typeof plan.id !== "string" || !plan.id || plan.id.length > 100 || !Number.isInteger(plan.revision) || plan.revision < 1 || typeof plan.title !== "string" || plan.title.length > 150 || typeof plan.goal !== "string" || typeof plan.note !== "string" || !Array.isArray(plan.meals) || !plan.meals.length || plan.meals.length > 12 || plan.meals.some((m) => !m || typeof m.label !== "string" || typeof m.value !== "string" || m.value.length > 500) || plan.provenance !== "demo") throw new Error("\u65B9\u6848\u6570\u636E\u4E0D\u5B8C\u6574");
+  return plan;
+}
+function nextPlanRecord(draft, current) {
+  validatePlan(draft);
+  if (current ? current.revision !== draft.baseRevision : draft.baseRevision != null) throw new Error("\u65B9\u6848\u5DF2\u53D8\u66F4\u6216\u88AB\u5220\u9664\uFF0C\u8BF7\u91CD\u65B0\u6253\u5F00\u540E\u8C03\u6574");
+  const now = (/* @__PURE__ */ new Date()).toISOString();
+  return { ...structuredClone(draft), baseRevision: void 0, revision: (current?.revision || 0) + 1, createdAt: current?.createdAt || now, updatedAt: now };
+}
+function migrateLegacy(raw) {
+  let old;
+  try {
+    old = JSON.parse(raw);
+  } catch {
+    return emptyState();
+  }
+  const state2 = emptyState();
+  if (!old || typeof old !== "object") return state2;
+  state2.profile = cleanProfile(old.profile);
+  state2.saved = Array.isArray(old.saved) ? [...new Set(old.saved.filter(validFavorite))] : [];
+  for (const p of Array.isArray(old.plans) ? old.plans : []) {
+    try {
+      state2.plans.push(validatePlan({ ...p, id: crypto.randomUUID(), revision: 1, provenance: "demo", legacy: true, note: typeof p.note === "string" ? p.note : "\u65E7\u7248\u6F14\u793A\u65B9\u6848" }));
+    } catch {
+    }
+  }
+  return state2;
+}
+
+// src/client/agent-client.js
+async function getAgentReply(request, { signal } = {}) {
+  if (request.safetyContext?.urgent || [request.message, ...request.history.filter((h) => h.role === "user").map((h) => h.content)].some(isExplicitUrgent)) return urgentResponse(request.requestId);
+  const response = await fetch("/api/agent", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(request), signal, cache: "no-store" });
+  if (!response.ok) throw new Error(response.status === 429 ? "\u8BF7\u6C42\u8F83\u591A\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5" : "\u54A8\u8BE2\u670D\u52A1\u6682\u4E0D\u53EF\u7528\uFF0C\u8BF7\u91CD\u8BD5");
+  const reply = validateReply(await response.json(), request.requestId);
+  if (reply.planDraft) validatePlan(reply.planDraft);
+  for (const ref of reply.contentRefs) if (!{ recipe: recipes, topic: topics, article: articles }[ref.type]?.some((r) => r.id === ref.id)) throw new Error("\u5185\u5BB9\u5F15\u7528\u672A\u901A\u8FC7\u6821\u9A8C");
+  return reply;
+}
+
+// content/questionnaire.json
+var questionnaire_default = {
+  id: "zy-constitution-candidate-v0.1",
+  scoreVersion: "zy-descriptive-score-v0.1",
+  classification: null,
+  agentEligible: false,
+  validationStatus: "pending",
+  order: [
+    "Q01",
+    "Q05",
+    "Q09",
+    "Q12",
+    "Q16",
+    "Q19",
+    "Q23",
+    "Q26",
+    "Q30",
+    "Q02",
+    "Q06",
+    "Q10",
+    "Q13",
+    "Q17",
+    "Q20",
+    "Q24",
+    "Q27",
+    "Q31",
+    "Q03",
+    "Q07",
+    "Q11",
+    "Q14",
+    "Q18",
+    "Q21",
+    "Q25",
+    "Q28",
+    "Q32",
+    "Q04",
+    "Q08",
+    "Q15",
+    "Q22",
+    "Q29"
+  ],
+  questions: [
+    {
+      id: "Q01",
+      dimension: "balanced",
+      text: "\u4F60\u6709\u8DB3\u591F\u7684\u7CBE\u529B\u5B8C\u6210\u81EA\u5DF1\u5E73\u5E38\u7684\u65E5\u5E38\u4E8B\u52A1\u5417\uFF1F",
+      reviewNote: "S02\uFF1B\u4F53\u80FD\u4E0E\u751F\u6D3B\u8D1F\u62C5\u4F1A\u5F71\u54CD\u56DE\u7B54",
+      itemVersion: "0.1.0-draft",
+      contentReview: "pending"
+    },
+    {
+      id: "Q02",
+      dimension: "balanced",
+      text: "\u4E00\u591C\u7761\u7720\u4E4B\u540E\uFF0C\u4F60\u901A\u5E38\u89C9\u5F97\u4F11\u606F\u8FC7\u6765\u4E86\u5417\uFF1F",
+      reviewNote: "S15\uFF1B\u7761\u7720\u673A\u4F1A\u3001\u8F6E\u73ED\u4F1A\u5F71\u54CD\u56DE\u7B54",
+      itemVersion: "0.1.0-draft",
+      contentReview: "pending"
+    },
+    {
+      id: "Q03",
+      dimension: "balanced",
+      text: "\u5230\u4E86\u5E73\u5E38\u5403\u996D\u7684\u65F6\u95F4\uFF0C\u4F60\u4F1A\u81EA\u7136\u611F\u5230\u6709\u80C3\u53E3\u5417\uFF1F",
+      reviewNote: "S15\uFF1B\u533A\u5206\u80C3\u53E3\u4E0E\u8FDB\u98DF\u591A\u5C11",
+      itemVersion: "0.1.0-draft",
+      contentReview: "pending"
+    },
+    {
+      id: "Q04",
+      dimension: "balanced",
+      text: "\u5728\u65E5\u5E38\u6C14\u6E29\u53D8\u5316\u4E2D\uFF0C\u4F60\u901A\u5E38\u80FD\u4FDD\u6301\u8212\u9002\u5417\uFF1F",
+      reviewNote: "S02\uFF1B\u4E0E\u7A7F\u8863\u548C\u73AF\u5883\u6761\u4EF6\u6709\u5173",
+      itemVersion: "0.1.0-draft",
+      contentReview: "pending"
+    },
+    {
+      id: "Q05",
+      dimension: "qi_deficiency",
+      text: "\u505A\u5B8C\u5E73\u5E38\u80FD\u5E94\u4ED8\u7684\u8F7B\u91CF\u5BB6\u52A1\u540E\uFF0C\u4F60\u4F1A\u89C9\u5F97\u660E\u663E\u75B2\u5026\u5417\uFF1F",
+      reviewNote: "S02\uFF1B\u6B8B\u969C\u3001\u6162\u6027\u75C5\u548C\u5DE5\u4F5C\u8D1F\u62C5\u9700\u8003\u8651",
+      itemVersion: "0.1.0-draft",
+      contentReview: "pending"
+    },
+    {
+      id: "Q06",
+      dimension: "qi_deficiency",
+      text: "\u4F60\u60F3\u6B63\u5E38\u8BF4\u8BDD\u65F6\uFF0C\u4F1A\u89C9\u5F97\u58F0\u97F3\u53D1\u4E0D\u51FA\u6765\u529B\u6C14\u5417\uFF1F",
+      reviewNote: "S02\uFF1B\u907F\u514D\u628A\u6027\u683C\u5B89\u9759\u5F53\u6210\u75C7\u72B6",
+      itemVersion: "0.1.0-draft",
+      contentReview: "pending"
+    },
+    {
+      id: "Q07",
+      dimension: "qi_deficiency",
+      text: "\u6309\u81EA\u5DF1\u5E73\u5E38\u7684\u901F\u5EA6\u8D70\u8DEF\u65F6\uFF0C\u4F60\u4F1A\u89C9\u5F97\u6C14\u4E0D\u591F\u7528\u5417\uFF1F",
+      reviewNote: "S02\uFF1B\u4E0D\u80FD\u628A\u65B0\u53D1\u6C14\u4FC3\u5F52\u4E3A\u4F53\u8D28",
+      itemVersion: "0.1.0-draft",
+      contentReview: "pending"
+    },
+    {
+      id: "Q08",
+      dimension: "qi_deficiency",
+      text: "\u5728\u4E0D\u70ED\u3001\u4E5F\u6CA1\u6709\u660E\u663E\u6D3B\u52A8\u65F6\uFF0C\u4F60\u4ECD\u5BB9\u6613\u51FA\u6C57\u5417\uFF1F",
+      reviewNote: "S02\uFF1B\u836F\u7269\u3001\u73AF\u5883\u548C\u7279\u6B8A\u751F\u7406\u72B6\u6001\u53EF\u80FD\u5F71\u54CD",
+      itemVersion: "0.1.0-draft",
+      contentReview: "pending"
+    },
+    {
+      id: "Q09",
+      dimension: "yang_deficiency",
+      text: "\u5728\u5BA4\u5185\u6E29\u5EA6\u8212\u9002\u65F6\uFF0C\u4F60\u7684\u624B\u811A\u4ECD\u4F1A\u89C9\u5F97\u51B7\u5417\uFF1F",
+      reviewNote: "S15\uFF1B\u533A\u5206\u73AF\u5883\u51B7\u4E0E\u81EA\u8EAB\u611F\u53D7",
+      itemVersion: "0.1.0-draft",
+      contentReview: "pending"
+    },
+    {
+      id: "Q10",
+      dimension: "yang_deficiency",
+      text: "\u5728\u522B\u4EBA\u89C9\u5F97\u5408\u9002\u7684\u6E29\u5EA6\u4E0B\uFF0C\u4F60\u4ECD\u60F3\u589E\u52A0\u8863\u7269\u4FDD\u6696\u5417\uFF1F",
+      reviewNote: "S15\uFF1B\u4E0E\u6BD4\u8F83\u5BF9\u8C61\u548C\u7A7F\u8863\u4E60\u60EF\u6709\u5173",
+      itemVersion: "0.1.0-draft",
+      contentReview: "pending"
+    },
+    {
+      id: "Q11",
+      dimension: "yang_deficiency",
+      text: "\u4F60\u7684\u8179\u90E8\u4F1A\u6709\u660E\u663E\u7684\u53D1\u51C9\u611F\u5417\uFF1F",
+      reviewNote: "S15\uFF1B\u5355\u4E00\u611F\u53D7\u4E0D\u4EE3\u8868\u75C5\u56E0\uFF0C\u5BA1\u6838\u662F\u5426\u4FDD\u7559",
+      itemVersion: "0.1.0-draft",
+      contentReview: "pending"
+    },
+    {
+      id: "Q12",
+      dimension: "yin_deficiency",
+      text: "\u6309\u5E73\u5E38\u4E60\u60EF\u996E\u6C34\u540E\uFF0C\u4F60\u7684\u53E3\u8154\u4ECD\u4F1A\u611F\u89C9\u5E72\u5417\uFF1F",
+      reviewNote: "S02\uFF1B\u4E0D\u7531\u6B64\u5224\u65AD\u7F3A\u6C34\u6216\u75BE\u75C5",
+      itemVersion: "0.1.0-draft",
+      contentReview: "pending"
+    },
+    {
+      id: "Q13",
+      dimension: "yin_deficiency",
+      text: "\u4F60\u4F1A\u6709\u773C\u775B\u5E72\u6DA9\u7684\u611F\u89C9\u5417\uFF1F",
+      reviewNote: "S02\uFF1B\u5C4F\u5E55\u4F7F\u7528\u3001\u9690\u5F62\u773C\u955C\u7B49\u53EF\u80FD\u5F71\u54CD",
+      itemVersion: "0.1.0-draft",
+      contentReview: "pending"
+    },
+    {
+      id: "Q14",
+      dimension: "yin_deficiency",
+      text: "\u6CA1\u6709\u53D1\u70ED\u65F6\uFF0C\u4F60\u7684\u624B\u5FC3\u6216\u811A\u5FC3\u4ECD\u4F1A\u89C9\u5F97\u53D1\u70ED\u5417\uFF1F",
+      reviewNote: "S15\uFF1B\u5BA1\u6838\u7528\u6237\u80FD\u5426\u533A\u5206\u4F53\u611F\u4E0E\u4F53\u6E29",
+      itemVersion: "0.1.0-draft",
+      contentReview: "pending"
+    },
+    {
+      id: "Q15",
+      dimension: "yin_deficiency",
+      text: "\u4F60\u6392\u4FBF\u65F6\u4F1A\u9047\u5230\u5927\u4FBF\u5E72\u786C\u7684\u60C5\u51B5\u5417\uFF1F",
+      reviewNote: "S02\uFF1B\u4E0D\u80FD\u636E\u6B64\u628A\u4FBF\u79D8\u5F52\u56E0\u4E8E\u9634\u865A",
+      itemVersion: "0.1.0-draft",
+      contentReview: "pending"
+    },
+    {
+      id: "Q16",
+      dimension: "phlegm_dampness",
+      text: "\u65E5\u5E38\u6D3B\u52A8\u65F6\uFF0C\u4F60\u4F1A\u89C9\u5F97\u8EAB\u4F53\u6C89\u7538\u7538\u3001\u4E0D\u591F\u8F7B\u677E\u5417\uFF1F",
+      reviewNote: "S03\uFF1B\u4E0D\u4EE5\u4F53\u91CD\u4F5C\u4E3A\u7B54\u6848\u7F16\u7801",
+      itemVersion: "0.1.0-draft",
+      contentReview: "pending"
+    },
+    {
+      id: "Q17",
+      dimension: "phlegm_dampness",
+      text: "\u5728\u6CA1\u6709\u521A\u5403\u4E1C\u897F\u65F6\uFF0C\u4F60\u7684\u53E3\u4E2D\u4ECD\u4F1A\u6709\u9ECF\u817B\u611F\u5417\uFF1F",
+      reviewNote: "S03\uFF1B\u5BA1\u6838\u201C\u9ECF\u817B\u201D\u662F\u5426\u6613\u61C2",
+      itemVersion: "0.1.0-draft",
+      contentReview: "pending"
+    },
+    {
+      id: "Q18",
+      dimension: "phlegm_dampness",
+      text: "\u6CA1\u6709\u6B63\u60A3\u611F\u5192\u65F6\uFF0C\u4F60\u7684\u5589\u95F4\u4ECD\u7ECF\u5E38\u6709\u75F0\u5417\uFF1F",
+      reviewNote: "S02\uFF1B\u9700\u6838\u5B9E\u4E0E\u76F8\u5173\u6982\u5FF5\u7684\u5BF9\u5E94\uFF0C\u4E0D\u63A8\u65AD\u75C5\u56E0",
+      itemVersion: "0.1.0-draft",
+      contentReview: "pending"
+    },
+    {
+      id: "Q19",
+      dimension: "damp_heat",
+      text: "\u4F60\u6E05\u6D01\u9762\u90E8\u540E\uFF0C\u76AE\u80A4\u4F1A\u8F83\u5FEB\u51FA\u73B0\u660E\u663E\u6CB9\u817B\u611F\u5417\uFF1F",
+      reviewNote: "S03\uFF1B\u62A4\u80A4\u4E60\u60EF\u548C\u76AE\u80A4\u7C7B\u578B\u53EF\u80FD\u5F71\u54CD",
+      itemVersion: "0.1.0-draft",
+      contentReview: "pending"
+    },
+    {
+      id: "Q20",
+      dimension: "damp_heat",
+      text: "\u4F60\u4F1A\u53CD\u590D\u957F\u51FA\u7EA2\u80BF\u7684\u75D8\u75D8\u5417\uFF1F",
+      reviewNote: "S03\uFF1B\u4E0D\u80FD\u4EE5\u75E4\u75AE\u66FF\u4EE3\u4F53\u8D28\u5224\u5B9A",
+      itemVersion: "0.1.0-draft",
+      contentReview: "pending"
+    },
+    {
+      id: "Q21",
+      dimension: "damp_heat",
+      text: "\u6CA1\u6709\u521A\u5403\u82E6\u5473\u98DF\u7269\u65F6\uFF0C\u4F60\u53E3\u4E2D\u4ECD\u4F1A\u6709\u82E6\u5473\u5417\uFF1F",
+      reviewNote: "S03\uFF1B\u836F\u7269\u3001\u53E3\u8154\u60C5\u51B5\u53EF\u80FD\u5F71\u54CD",
+      itemVersion: "0.1.0-draft",
+      contentReview: "pending"
+    },
+    {
+      id: "Q22",
+      dimension: "damp_heat",
+      text: "\u4F60\u6392\u4FBF\u540E\uFF0C\u4F1A\u89C9\u5F97\u5927\u4FBF\u9ECF\u6EDE\u3001\u4E0D\u6613\u6392\u51C0\u5417\uFF1F",
+      reviewNote: "S03\uFF1B\u9700\u62C6\u5206\u201C\u9ECF\u6EDE\u201D\u548C\u201C\u6392\u51C0\u611F\u201D\u7684\u53EF\u80FD\u6DF7\u6DC6",
+      itemVersion: "0.1.0-draft",
+      contentReview: "pending"
+    },
+    {
+      id: "Q23",
+      dimension: "blood_stasis",
+      text: "\u4F60\u4F1A\u53D1\u73B0\u76AE\u80A4\u4E0A\u6709\u9752\u7D2B\u5370\uFF0C\u5374\u4E0D\u8BB0\u5F97\u78B0\u649E\u8FC7\u5417\uFF1F",
+      reviewNote: "S02\uFF1B\u4E0D\u80FD\u628A\u4E0D\u660E\u7600\u6591\u89E3\u91CA\u4E3A\u4EC5\u9700\u98DF\u517B",
+      itemVersion: "0.1.0-draft",
+      contentReview: "pending"
+    },
+    {
+      id: "Q24",
+      dimension: "blood_stasis",
+      text: "\u4F60\u7684\u8EAB\u4F53\u4F1A\u5728\u540C\u4E00\u4E2A\u4F4D\u7F6E\u53CD\u590D\u51FA\u73B0\u75BC\u75DB\u5417\uFF1F",
+      reviewNote: "S15\uFF1B\u5B9A\u4F4D\u3001\u4E25\u91CD\u7A0B\u5EA6\u548C\u8BCA\u7597\u9700\u6C42\u53E6\u884C\u5904\u7406",
+      itemVersion: "0.1.0-draft",
+      contentReview: "pending"
+    },
+    {
+      id: "Q25",
+      dimension: "blood_stasis",
+      text: "\u4F60\u4F1A\u7559\u610F\u5230\u76AE\u80A4\u4E0A\u51FA\u73B0\u6BD4\u5468\u56F4\u660E\u663E\u66F4\u6DF1\u7684\u6591\u7247\u5417\uFF1F",
+      reviewNote: "S15\uFF1B\u7279\u5F02\u6027\u5F31\u3001\u80A4\u8272\u5DEE\u5F02\u660E\u663E\uFF0C\u4F18\u5148\u8BC4\u4F30\u5220\u6539",
+      itemVersion: "0.1.0-draft",
+      contentReview: "pending"
+    },
+    {
+      id: "Q26",
+      dimension: "qi_stagnation",
+      text: "\u4F60\u4F1A\u6709\u4E00\u6BB5\u65F6\u95F4\u5FC3\u60C5\u4F4E\u843D\u3001\u63D0\u4E0D\u8D77\u5174\u81F4\u5417\uFF1F",
+      reviewNote: "S02\uFF1B\u4E0D\u4F5C\u4E3A\u6291\u90C1\u7B5B\u67E5\u6216\u8BCA\u65AD",
+      itemVersion: "0.1.0-draft",
+      contentReview: "pending"
+    },
+    {
+      id: "Q27",
+      dimension: "qi_stagnation",
+      text: "\u9762\u5BF9\u65E5\u5E38\u4E8B\u52A1\u65F6\uFF0C\u4F60\u4F1A\u611F\u5230\u7D27\u5F20\u3001\u96BE\u4EE5\u653E\u677E\u5417\uFF1F",
+      reviewNote: "S02\uFF1B\u533A\u5206\u751F\u6D3B\u538B\u529B\u4E0E\u4F53\u8D28\u6784\u5FF5",
+      itemVersion: "0.1.0-draft",
+      contentReview: "pending"
+    },
+    {
+      id: "Q28",
+      dimension: "qi_stagnation",
+      text: "\u4F60\u4F1A\u4E0D\u7531\u81EA\u4E3B\u5730\u53F9\u6C14\u5417\uFF1F",
+      reviewNote: "S03\uFF1B\u9700\u8981\u6D4B\u8BD5\u9898\u610F\u4E0E\u533A\u5206\u80FD\u529B",
+      itemVersion: "0.1.0-draft",
+      contentReview: "pending"
+    },
+    {
+      id: "Q29",
+      dimension: "qi_stagnation",
+      text: "\u4E0D\u5728\u5403\u4E1C\u897F\u65F6\uFF0C\u4F60\u7684\u5589\u5499\u4F1A\u6709\u50CF\u5361\u7740\u4E1C\u897F\u7684\u611F\u89C9\u5417\uFF1F",
+      reviewNote: "S03\uFF1B\u4E0D\u6392\u9664\u771F\u5B9E\u541E\u54BD\u6216\u5176\u4ED6\u95EE\u9898",
+      itemVersion: "0.1.0-draft",
+      contentReview: "pending"
+    },
+    {
+      id: "Q30",
+      dimension: "special",
+      text: "\u63A5\u89E6\u7070\u5C18\u6216\u82B1\u7C89\u65F6\uFF0C\u4F60\u4F1A\u63A5\u8FDE\u6253\u55B7\u568F\u5417\uFF1F",
+      reviewNote: "S02\uFF1B\u6CA1\u6709\u63A5\u89E6\u7ECF\u5386\u53EF\u9009\u4E0D\u9002\u7528",
+      itemVersion: "0.1.0-draft",
+      contentReview: "pending"
+    },
+    {
+      id: "Q31",
+      dimension: "special",
+      text: "\u63A5\u89E6\u65E5\u5E38\u7528\u54C1\u540E\uFF0C\u4F60\u7684\u76AE\u80A4\u4F1A\u51FA\u73B0\u53D1\u75D2\u7684\u53CD\u5E94\u5417\uFF1F",
+      reviewNote: "S02\uFF1B\u4E0D\u8BA9\u7528\u6237\u81EA\u884C\u786E\u5B9A\u8FC7\u654F\u539F",
+      itemVersion: "0.1.0-draft",
+      contentReview: "pending"
+    },
+    {
+      id: "Q32",
+      dimension: "special",
+      text: "\u4F60\u4F1A\u53CD\u590D\u51FA\u73B0\u4E00\u7247\u7247\u9686\u8D77\u3001\u53D1\u75D2\uFF0C\u4E4B\u540E\u53C8\u6D88\u9000\u7684\u76AE\u80A4\u53D8\u5316\u5417\uFF1F",
+      reviewNote: "S02\uFF1B\u907F\u514D\u8981\u6C42\u7528\u6237\u8BC6\u522B\u201C\u98CE\u56E2\u201D\u672F\u8BED\uFF0C\u9700\u6838\u5B9E\u8986\u76D6",
+      itemVersion: "0.1.0-draft",
+      contentReview: "pending"
+    }
+  ]
+};
+
+// src/shared/assessment.js
+var options = [
+  [0, "\u4ECE\u672A\u6216\u51E0\u4E4E\u6CA1\u6709"],
+  [1, "\u5076\u5C14\uFF0C\u53EA\u6709\u5C11\u6570\u65F6\u5019"],
+  [2, "\u6709\u65F6\uFF0C\u95F4\u6B47\u51FA\u73B0"],
+  [3, "\u7ECF\u5E38\uFF0C\u591A\u6570\u65F6\u5019"],
+  [4, "\u51E0\u4E4E\u603B\u662F"],
+  ["UNSURE", "\u8BB0\u4E0D\u6E05\uFF0F\u65E0\u6CD5\u5224\u65AD"],
+  ["NOT_APPLICABLE", "\u8FD9\u9053\u9898\u4E0D\u9002\u7528"],
+  ["DECLINED", "\u4E0D\u613F\u56DE\u7B54"]
+];
+function scoreAssessment(answers, version = questionnaire_default.id, scoreVersion = questionnaire_default.scoreVersion) {
+  if (version !== questionnaire_default.id || scoreVersion !== questionnaire_default.scoreVersion || !Array.isArray(answers)) throw new Error("\u95EE\u5377\u7248\u672C\u4E0D\u53D7\u652F\u6301");
+  const values = /* @__PURE__ */ new Map();
+  for (const answer of answers) {
+    if (!answer || !questionnaire_default.questions.some((q) => q.id === answer.id) || values.has(answer.id) || !options.some(([v]) => v === answer.value)) throw new Error("\u5B58\u5728\u65E0\u6548\u6216\u91CD\u590D\u7B54\u6848");
+    values.set(answer.id, answer.value);
+  }
+  const missing = questionnaire_default.order.filter((id) => !values.has(id));
+  if (missing.length) return { status: "incomplete", missing, classification: null, agentEligible: false };
+  const dimensions = {};
+  for (const dimension of new Set(questionnaire_default.questions.map((q) => q.dimension))) {
+    const items = questionnaire_default.questions.filter((q) => q.dimension === dimension);
+    const excluded = items.filter((q) => typeof values.get(q.id) !== "number").map((q) => ({ id: q.id, reason: values.get(q.id) }));
+    dimensions[dimension] = excluded.length ? { status: "unscorable", excluded } : { status: "scorable", mean: items.reduce((sum, q) => sum + values.get(q.id), 0) / items.length };
+  }
+  return { status: "pilot_reference", questionnaireVersion: version, scoreVersion, dimensions, classification: null, agentEligible: false, reviewStatus: "pending" };
+}
+function assessmentRecord(answers) {
+  const result = scoreAssessment(answers);
+  if (result.status !== "pilot_reference") throw new Error("\u8BF7\u5148\u5B8C\u6210\u5168\u90E8\u9898\u76EE");
+  return { id: crypto.randomUUID(), answers: structuredClone(answers), result, createdAt: (/* @__PURE__ */ new Date()).toISOString(), useConditions: "\u6210\u4EBA\u53EF\u7406\u89E3\u6027\u8BD5\u6D4B\uFF1B\u672A\u7ECF\u6D4B\u91CF\u9A8C\u8BC1", questionnaireVersion: questionnaire_default.id };
+}
+
+// src/client/storage.js
+var DB_NAME = "zhiyang-local-v2";
+var stores = ["profile", "favorites", "plans", "assessments", "drafts", "meta"];
+async function openStorage(factory = globalThis.indexedDB, legacy = globalThis.localStorage) {
+  if (!factory) throw new Error("\u6B64\u6D4F\u89C8\u5668\u65E0\u6CD5\u4F7F\u7528\u672C\u673A\u5B58\u50A8");
+  const db = await new Promise((resolve, reject) => {
+    const req = factory.open(DB_NAME, 1);
+    req.onupgradeneeded = () => stores.forEach((name) => req.result.createObjectStore(name));
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+    req.onblocked = () => reject(new Error("\u8BF7\u5173\u95ED\u5176\u4ED6\u65E7\u7248\u9875\u9762\u540E\u91CD\u8BD5"));
+  });
+  db.onversionchange = () => db.close();
+  const transact = (names, work, mode = "readwrite") => new Promise((resolve, reject) => {
+    let result, failure;
+    const tx = db.transaction(names, mode);
+    const set = (value) => {
+      result = value;
+    };
+    const abort = (error) => {
+      failure = error;
+      tx.abort();
+    };
+    tx.oncomplete = () => resolve(result);
+    tx.onabort = tx.onerror = () => reject(failure || tx.error || new Error("\u4FDD\u5B58\u672A\u5B8C\u6210"));
+    try {
+      work(tx, set, abort);
+    } catch (error) {
+      abort(error);
+    }
+  });
+  try {
+    await transact(stores, (tx, _set, abort) => {
+      const meta = tx.objectStore("meta");
+      const req = meta.get("legacy-v1");
+      req.onsuccess = () => {
+        if (req.result) return;
+        let raw = null;
+        try {
+          raw = legacy?.getItem("zhiyang-demo-v1");
+        } catch {
+          abort(new Error("\u65E7\u7248\u8BB0\u5F55\u6682\u65F6\u65E0\u6CD5\u8BFB\u53D6\uFF0C\u8BF7\u68C0\u67E5\u6D4F\u89C8\u5668\u5B58\u50A8\u8BBE\u7F6E\u540E\u91CD\u8BD5"));
+          return;
+        }
+        const imported = migrateLegacy(raw);
+        tx.objectStore("profile").put(imported.profile, "current");
+        imported.saved.forEach((key) => tx.objectStore("favorites").put(key, key));
+        imported.plans.forEach((plan) => tx.objectStore("plans").put(plan, plan.id));
+        meta.put(true, "legacy-v1");
+      };
+    });
+  } catch (error) {
+    db.close();
+    throw error;
+  }
+  return {
+    close: () => db.close(),
+    load: () => transact(stores, (tx, set) => {
+      const state2 = emptyState();
+      set(state2);
+      for (const [store, field, key] of [["profile", "profile", "current"], ["favorites", "saved"], ["plans", "plans"], ["assessments", "assessments"], ["drafts", "draft", "current"]]) {
+        const req = key ? tx.objectStore(store).get(key) : tx.objectStore(store).getAll();
+        req.onsuccess = () => {
+          if (req.result !== void 0) state2[field] = field === "profile" ? cleanProfile(req.result) : req.result;
+        };
+      }
+    }, "readonly"),
+    profile: (input) => transact(["profile"], (tx) => tx.objectStore("profile").put(cleanProfile(input), "current")),
+    favorite: (key) => {
+      if (!validFavorite(key)) return Promise.reject(new Error("\u6536\u85CF\u5185\u5BB9\u4E0D\u5B58\u5728"));
+      return transact(["favorites"], (tx) => {
+        const s = tx.objectStore("favorites"), req = s.get(key);
+        req.onsuccess = () => req.result ? s.delete(key) : s.put(key, key);
+      });
+    },
+    plan: (draft) => transact(["plans"], (tx, set, abort) => {
+      const s = tx.objectStore("plans"), req = s.get(draft.id);
+      req.onsuccess = () => {
+        try {
+          const record = nextPlanRecord(draft, req.result);
+          s.put(record, record.id);
+          set(record);
+        } catch (error) {
+          abort(error);
+        }
+      };
+    }),
+    removePlan: (id) => transact(["plans"], (tx) => tx.objectStore("plans").delete(id)),
+    assessment: (record) => {
+      const checked = { ...record, result: scoreAssessment(record.answers, record.questionnaireVersion, record.result.scoreVersion) };
+      if (checked.result.status !== "pilot_reference") return Promise.reject(new Error("\u7B54\u9898\u5C1A\u672A\u5B8C\u6210"));
+      return transact(["assessments", "drafts"], (tx) => {
+        tx.objectStore("assessments").put(checked, checked.id);
+        tx.objectStore("drafts").delete("current");
+      });
+    },
+    removeAssessment: (id) => transact(["assessments"], (tx) => tx.objectStore("assessments").delete(id)),
+    draft: (draft) => {
+      if (draft && draft.questionnaireVersion !== questionnaire_default.id) return Promise.reject(new Error("\u8349\u7A3F\u7248\u672C\u4E0D\u5339\u914D"));
+      return transact(["drafts"], (tx) => draft ? tx.objectStore("drafts").put(draft, "current") : tx.objectStore("drafts").delete("current"));
+    },
+    clear: async () => {
+      legacy?.removeItem("zhiyang-demo-v1");
+      await transact(stores, (tx) => {
+        stores.forEach((name) => tx.objectStore(name).clear());
+        tx.objectStore("meta").put(true, "legacy-v1");
+      });
+    }
+  };
+}
+
+// src/client/assessment-ui.js
+var escape = (value) => String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+function createAssessmentUI({ show, storage: storage2, changed, notify }) {
+  let answers = [], step = 0, result = null, running = false, epoch = 0, writing = Promise.resolve();
+  const questions = questionnaire_default.order.map((id) => questionnaire_default.questions.find((q) => q.id === id));
+  const body = (html) => show(`<div class="detail-body assessment-body">${html}</div>`, "\u65E5\u5E38\u611F\u53D7\u8BD5\u6D4B");
+  const draft = () => ({ questionnaireVersion: questionnaire_default.id, answers: structuredClone(answers), step, updatedAt: (/* @__PURE__ */ new Date()).toISOString() });
+  const saveDraft = () => {
+    const snapshot = draft(), current = epoch;
+    writing = writing.catch(() => {
+    }).then(() => current === epoch ? storage2().draft(snapshot) : void 0);
+    return writing;
+  };
+  function intro(saved) {
+    running = false;
+    body(`<span class="tag">32 \u9053\u5019\u9009\u9898 \xB7 \u8BD5\u6D4B\u9636\u6BB5</span><h2>\u56DE\u987E\u4E00\u5E74\u7684\u65E5\u5E38\u611F\u53D7</h2><p class="detail-lead">\u4E0D\u662F\u53EA\u770B\u4ECA\u5929\uFF0C\u4E5F\u4E0D\u7528\u731C\u6D4B\u75C5\u56E0\u3002\u6309\u81EA\u5DF1\u7684\u771F\u5B9E\u611F\u53D7\u9009\u62E9\uFF0C\u8BB0\u4E0D\u6E05\u3001\u4E0D\u9002\u7528\u6216\u4E0D\u613F\u56DE\u7B54\u90FD\u53EF\u4EE5\u3002</p><div class="gentle-note">\u672C\u8F6E\u7528\u4E8E\u6210\u4EBA\u7406\u89E3\u9898\u76EE\u7684\u8BD5\u6D4B\u3002\u65B0\u95EE\u5377\u5C1A\u672A\u5B8C\u6210\u4E13\u4E1A\u5BA1\u6838\u4E0E\u6D4B\u91CF\u9A8C\u8BC1\uFF0C\u65E0\u6CD5\u636E\u6B64\u6B63\u5F0F\u5224\u5B9A\u4E2A\u4EBA\u4F53\u8D28\u3002</div><p>\u7B54\u9898\u8349\u7A3F\u53EA\u4FDD\u5B58\u5728\u5F53\u524D\u6D4F\u89C8\u5668\u3002\u5B8C\u6210\u540E\uFF0C\u53EF\u4EE5\u81EA\u884C\u51B3\u5B9A\u662F\u5426\u4FDD\u5B58\u611F\u53D7\u8BB0\u5F55\u3002\u65E0\u9700\u6D4B\u8BC4\uFF0C\u4E5F\u53EF\u4EE5\u54A8\u8BE2\u52A9\u624B\u3002</p><p class="small muted">\u5982\u679C\u6B64\u523B\u6709\u660E\u663E\u7D27\u6025\u4E0D\u9002\uFF0C\u8BF7\u7ACB\u5373\u8054\u7CFB\u5F53\u5730\u6025\u6551\u670D\u52A1\uFF08\u4E2D\u56FD\u5927\u9646 120\uFF09\uFF0C\u4E0D\u8981\u7EE7\u7EED\u6D4B\u8BC4\u3002</p><div class="button-row">${saved ? `<button class="primary-button" data-assessment="resume">\u7EE7\u7EED\u672C\u673A\u8349\u7A3F\uFF08${saved.answers.length}/32\uFF09</button>` : ""}<button class="${saved ? "outline" : "primary"}-button" data-assessment="start">${saved ? "\u91CD\u65B0\u5F00\u59CB\u8BD5\u6D4B" : "\u4E86\u89E3\u5E76\u5F00\u59CB\u8BD5\u6D4B"}</button></div>`);
+  }
+  function draw() {
+    const q = questions[step], selected = answers.find((a) => a.id === q.id)?.value;
+    body(`<span class="tag">\u56DE\u60F3\u8FC7\u53BB\u4E00\u5E74 \xB7 \u8BD5\u6D4B\u53C2\u8003</span><h2>\u8BA4\u8BC6\u81EA\u5DF1\u7684\u8EAB\u4F53\u611F\u53D7</h2><div class="quiz-progress"><span>\u7B2C ${step + 1} \u9898 / 32 \u9898</span><span>\u5DF2\u7B54 ${answers.length} \u9898</span></div><progress class="assessment-progress" max="32" value="${answers.length}" aria-label="\u7B54\u9898\u5B8C\u6210\u8FDB\u5EA6"></progress><h3 class="quiz-question" tabindex="-1">${escape(q.text)}</h3><div class="quiz-options">${options.map(([value, label]) => `<button data-assessment-answer="${value}" class="${value === selected ? "selected" : ""}" aria-pressed="${value === selected}"><span>${label}</span>${value === selected ? "\u2713" : ""}</button>`).join("")}</div><div class="button-row"><button class="text-button" data-assessment="back" ${step === 0 ? "disabled" : ""}>\u2190 \u4E0A\u4E00\u9898</button><button class="outline-button" data-assessment="next">${step === 31 ? "\u67E5\u770B\u7B54\u9898\u5E76\u63D0\u4EA4" : "\u4E0B\u4E00\u9898 \u2192"}</button><button class="text-button" data-assessment="pause">\u4FDD\u5B58\u8349\u7A3F\u5E76\u9000\u51FA</button></div><p class="small muted" id="draft-status" role="status">\u9009\u62E9\u7B54\u6848\u540E\u81EA\u52A8\u4FDD\u5B58\u672C\u673A\u8349\u7A3F\u3002</p>`);
+    document.querySelector(".quiz-question")?.focus({ preventScroll: true });
+  }
+  function review() {
+    const missing = questions.filter((q) => !answers.some((a) => a.id === q.id));
+    body(`<span class="tag">\u63D0\u4EA4\u524D\u6838\u5BF9</span><h2>${missing.length ? `\u8FD8\u6709 ${missing.length} \u9053\u672A\u7B54\u9898` : "\u5DF2\u5B8C\u6210\u5168\u90E8 32 \u9053\u9898"}</h2><p>\u53EF\u4EE5\u8FD4\u56DE\u4FEE\u6539\u4EFB\u4F55\u4E00\u9898\uFF0C\u4E5F\u53EF\u4EE5\u9009\u62E9\u201C\u8BB0\u4E0D\u6E05\u201D\u201C\u4E0D\u9002\u7528\u201D\u6216\u201C\u4E0D\u613F\u56DE\u7B54\u201D\u3002</p><div class="question-jump">${questions.map((q, i) => `<button class="${answers.some((a) => a.id === q.id) ? "answered" : ""}" data-assessment-jump="${i}" aria-label="${i + 1} \u9898${answers.some((a) => a.id === q.id) ? "\u5DF2\u7B54" : "\u672A\u7B54"}">${i + 1}</button>`).join("")}</div><button class="primary-button full-button" data-assessment="submit" ${missing.length ? "disabled" : ""}>\u63D0\u4EA4\u5E76\u67E5\u770B\u611F\u53D7\u8BB0\u5F55</button>`);
+  }
+  function resultView(record, saved = false) {
+    running = false;
+    result = record;
+    const frequent = record.answers.filter((a) => typeof a.value === "number" && a.value >= 3);
+    body(`<span class="tag">\u8BD5\u6D4B\u53C2\u8003 \xB7 \u65E0\u4F53\u8D28\u5224\u5B9A</span><h2>\u4F60\u7684\u65E5\u5E38\u611F\u53D7\u8BB0\u5F55</h2><p class="detail-lead">\u4EE5\u4E0B\u6574\u7406\u4F60\u9009\u62E9\u201C\u7ECF\u5E38\u201D\u6216\u201C\u51E0\u4E4E\u603B\u662F\u201D\u7684\u611F\u53D7\u3002\u5B83\u4E0D\u662F\u8BCA\u65AD\uFF0C\u4E5F\u4E0D\u80FD\u636E\u6B64\u81EA\u52A8\u63A8\u8350\u8336\u65B9\u3002</p>${frequent.length ? `<ul class="step-list">${frequent.map((a) => `<li>${escape(questions.find((q) => q.id === a.id).text)} <span class="muted">\u2014 ${options.find(([v]) => v === a.value)[1]}</span></li>`).join("")}</ul>` : '<div class="gentle-note">\u4F60\u6CA1\u6709\u9009\u62E9\u201C\u7ECF\u5E38\u201D\u6216\u201C\u51E0\u4E4E\u603B\u662F\u201D\u7684\u9879\u76EE\u3002\u8FD9\u4E0D\u4EE3\u8868\u5DF2\u5224\u5B9A\u4E3A\u5E73\u548C\u8D28\uFF0C\u4E5F\u4E0D\u7B49\u4E8E\u5065\u5EB7\u8BC4\u4F30\u901A\u8FC7\u3002</div>'}<details class="source-details"><summary>\u67E5\u770B\u5168\u90E8 32 \u9053\u56DE\u7B54</summary>${questions.map((q) => `<p><strong>${escape(q.text)}</strong><br>${options.find(([v]) => v === record.answers.find((a) => a.id === q.id)?.value)?.[1] || "\u672A\u7B54"}</p>`).join("")}</details><p class="small muted">\u5019\u9009\u9898 v0.1 \xB7 \u5BA1\u6838\u5F85\u5B8C\u6210 \xB7 \u6B64\u7ED3\u679C\u4E0D\u81EA\u52A8\u53D1\u9001\u7ED9\u54A8\u8BE2\u52A9\u624B</p><div class="button-row">${saved ? '<span class="tag">\u5DF2\u4FDD\u5B58\u4E8E\u672C\u673A</span>' : '<button class="primary-button" data-assessment="save">\u4FDD\u5B58\u8FD9\u4EFD\u611F\u53D7\u8BB0\u5F55</button>'}<button class="outline-button" data-action="constitutions">\u4E5D\u79CD\u4F53\u8D28\u79D1\u666E</button><button class="text-button" data-close="detail">\u5173\u95ED</button></div>`);
+  }
+  return {
+    async open() {
+      const state2 = await storage2().load();
+      intro(state2.draft?.questionnaireVersion === questionnaire_default.id ? state2.draft : null);
+    },
+    view: (record) => resultView(record, true),
+    async reset() {
+      epoch++;
+      running = false;
+      answers = [];
+      result = null;
+      await writing.catch(() => {
+      });
+    },
+    async action(button) {
+      const data = button.dataset;
+      if (!("assessment" in data || "assessmentAnswer" in data || "assessmentJump" in data)) return false;
+      try {
+        if ("assessmentAnswer" in data && running) {
+          const value = /^\d$/.test(data.assessmentAnswer) ? Number(data.assessmentAnswer) : data.assessmentAnswer;
+          if (!options.some(([v]) => v === value)) return true;
+          const id = questions[step].id;
+          answers = [...answers.filter((a) => a.id !== id), { id, value }];
+          draw();
+          await saveDraft();
+          const status = document.getElementById("draft-status");
+          if (status) status.textContent = "\u8349\u7A3F\u5DF2\u4FDD\u5B58\u5728\u672C\u673A";
+        } else if ("assessmentJump" in data) {
+          step = Number(data.assessmentJump);
+          running = true;
+          draw();
+        } else switch (data.assessment) {
+          case "start":
+            epoch++;
+            answers = [];
+            step = 0;
+            result = null;
+            running = true;
+            await saveDraft();
+            draw();
+            break;
+          case "resume": {
+            const state2 = await storage2().load();
+            const d = state2.draft;
+            if (!d || d.questionnaireVersion !== questionnaire_default.id) throw new Error("\u6CA1\u6709\u53EF\u7EE7\u7EED\u7684\u8349\u7A3F");
+            answers = d.answers;
+            step = Math.min(31, Math.max(0, d.step));
+            running = true;
+            draw();
+            break;
+          }
+          case "back":
+            step = Math.max(0, step - 1);
+            draw();
+            break;
+          case "next":
+            if (step === 31) review();
+            else {
+              step++;
+              draw();
+            }
+            break;
+          case "pause":
+            await saveDraft();
+            await changed();
+            document.getElementById("detail-dialog").close();
+            notify("\u8349\u7A3F\u5DF2\u4FDD\u5B58\uFF0C\u53EF\u4ECE\u201C\u6211\u7684\u201D\u7EE7\u7EED");
+            break;
+          case "submit":
+            result = assessmentRecord(answers);
+            resultView(result);
+            break;
+          case "save":
+            if (result) {
+              button.disabled = true;
+              await writing;
+              await storage2().assessment(result);
+              await changed();
+              resultView(result, true);
+              notify("\u611F\u53D7\u8BB0\u5F55\u5DF2\u4FDD\u5B58\u4E8E\u672C\u673A");
+            }
+            break;
+        }
+      } catch (error) {
+        button.disabled = false;
+        notify(error.message || "\u4FDD\u5B58\u672A\u5B8C\u6210\uFF0C\u7B54\u6848\u4ECD\u4FDD\u7559\u5728\u5F53\u524D\u9875\u9762");
+        const status = document.getElementById("draft-status");
+        if (status) status.textContent = "\u672C\u6B21\u4FDD\u5B58\u5931\u8D25\uFF0C\u7B54\u6848\u4ECD\u4FDD\u7559\u5728\u9875\u9762\u3002\u8BF7\u91CD\u8BD5\u4FDD\u5B58\u8349\u7A3F\u3002";
+      }
+      return true;
+    }
+  };
+}
+
+// src/client/app.js
+var icons = { home: '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21v-8h6v8"/>', leaf: '<path d="M20 3c-9-1-16 3-16 10a7 7 0 0 0 7 7C18 20 21 12 20 3Z"/><path d="m4 21 11-12"/>', heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/>', user: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>', spark: '<path d="m12 3 2.6 6.4L21 12l-6.4 2.6L12 21l-2.6-6.4L3 12l6.4-2.6Z"/>', arrow: '<path d="M5 12h14m-5-5 5 5-5 5"/>', close: '<path d="m6 6 12 12M18 6 6 18"/>', bookmark: '<path d="M6 3h12v18l-6-4-6 4z"/>', sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/>', moon: '<path d="M21 13A9 9 0 0 1 11 3 9 9 0 1 0 21 13Z"/>', wind: '<path d="M3 8h12a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h5"/>', scale: '<path d="M4 5h16v16H4z"/><path d="M8 9a5 5 0 0 1 8 0M12 8v3"/>', bowl: '<path d="M3 12h18c0 6-5 8-9 8s-9-2-9-8Z"/><path d="M7 5v3m5-5v5m5-3v3"/>', check: '<path d="m5 12 4 4L19 6"/>', clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', back: '<path d="m14 5-7 7 7 7"/>', book: '<path d="M3 3h6a4 4 0 0 1 3 2 4 4 0 0 1 3-2h6v17h-6a4 4 0 0 0-3 2 4 4 0 0 0-3-2H3zM12 5v17"/>', cup: '<path d="M4 7h13v8a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM17 8h2a3 3 0 0 1 0 6h-2M7 3v1m4-1v1m4-1v1"/>' };
+var icon = (name) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name] || icons.leaf}</svg>`;
+var esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+var state = emptyState();
+var page = "home";
+var foodTab = "\u5168\u90E8";
+var careTab = "\u5168\u90E8";
+var day = "\u4ECA\u65E5";
+var homeMode = "\u4E09\u9910";
+var toastTimer;
+var chatBusy = false;
+var history = [];
+var chatVersion = 0;
+var storage = null;
+var storageError = "";
+var dataEpoch = 0;
+var clearing = false;
+var writeQueue = Promise.resolve();
+var requestController = null;
+var activePlan = null;
+var contentRef = null;
+var urgentSession = false;
+async function refreshState() {
+  const epoch = dataEpoch;
+  const next = await storage.load();
+  if (epoch === dataEpoch) {
+    state = next;
+    render();
+  }
+}
+async function writeStore(action) {
+  if (!storage || clearing) throw new Error("\u672C\u673A\u5B58\u50A8\u6682\u4E0D\u53EF\u7528\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5");
+  const epoch = dataEpoch;
+  const task = writeQueue.catch(() => {
+  }).then(() => {
+    if (epoch !== dataEpoch) throw new Error("\u64CD\u4F5C\u5DF2\u53D6\u6D88");
+    return action(storage);
+  });
+  writeQueue = task;
+  const value = await task;
+  if (epoch === dataEpoch) await refreshState();
+  return value;
+}
+async function bootStorage() {
+  try {
+    storage = await openStorage();
+    storageError = "";
+    await refreshState();
+  } catch {
+    storageError = "\u672C\u6D4F\u89C8\u5668\u6682\u65F6\u65E0\u6CD5\u8BFB\u53D6\u6216\u4FDD\u5B58\u672C\u673A\u8BB0\u5F55\u3002\u4F60\u4ECD\u53EF\u6D4F\u89C8\u5185\u5BB9\uFF1B\u8BF7\u91CD\u8BD5\u5B58\u50A8\u6216\u68C0\u67E5\u6D4F\u89C8\u5668\u8BBE\u7F6E\u3002";
+    render();
+  }
+}
+var pendingPlans = /* @__PURE__ */ new Map();
+var main = document.getElementById("main");
+var detail = document.getElementById("detail-dialog");
+var chat = document.getElementById("chat-dialog");
+var assessment = createAssessmentUI({ show: openDetail, storage: () => {
+  if (!storage || clearing) throw new Error("\u672C\u673A\u5B58\u50A8\u4E0D\u53EF\u7528\uFF0C\u6682\u65F6\u65E0\u6CD5\u4FDD\u5B58");
+  return storage;
+}, changed: refreshState, notify: toast });
+function toast(s) {
+  clearTimeout(toastTimer);
+  const el = document.getElementById("toast");
+  el.textContent = s;
+  el.classList.add("show");
+  toastTimer = setTimeout(() => el.classList.remove("show"), 2500);
+}
+function paintIcons(root = document) {
+  root.querySelectorAll("[data-icon]").forEach((el) => el.innerHTML = icon(el.dataset.icon));
+}
+function heading(title, sub, english = "YOUR WELLNESS SPACE") {
+  const now = /* @__PURE__ */ new Date();
+  return `<div class="page-heading"><div><p class="eyebrow">${english}</p><h1>${title}</h1><p>${sub}</p></div><div class="date-stamp"><strong>${String(now.getMonth() + 1).padStart(2, "0")}<span>/${String(now.getDate()).padStart(2, "0")}</span></strong><span>\u4ECA\u5929 \xB7 \u597D\u597D\u751F\u6D3B</span></div></div>`;
+}
+function sectionHead(title, label, button = "") {
+  return `<div class="section-heading"><div><span class="eyebrow">${label}</span><h2>${title}</h2></div>${button}</div>`;
+}
+function recipeCard(r, compact = false) {
+  return `<button class="recipe-tile ${compact ? "compact" : ""}" data-recipe="${r.id}">${r.image ? `<img src="${r.image}" alt="${r.title}\u98DF\u7269\u793A\u610F" loading="lazy">` : `<div class="recipe-type-art ${r.id === "breakfast" ? "amber" : ""}">${icon(r.id === "tea" ? "cup" : "bowl")}<span>${r.time}</span></div>`}<div class="recipe-tile-body"><span class="tag">${r.tag}</span><h3>${r.title}</h3><p>${r.desc}</p><div class="recipe-meta"><span>${r.duration}</span><span>\u67E5\u770B\u642D\u914D ${icon("arrow")}</span></div></div></button>`;
+}
+function topicCard(t) {
+  return `<button class="topic-card" data-topic="${t.id}"><span class="topic-symbol ${t.accent}">${icon(t.icon)}</span><span><strong>${t.title}</strong><small>${t.subtitle}</small></span>${icon("arrow")}</button>`;
+}
+function articleCard(a) {
+  return `<button class="article-card" data-article="${a.id}"><img src="${a.image}" alt="${a.label}\u914D\u56FE" loading="lazy"><div><span class="article-label">${a.label}</span><h3>${a.title}</h3><span class="small muted">${a.read}\u9605\u8BFB \xB7 \u5185\u5BB9\u793A\u4F8B</span></div></button>`;
+}
+function profileMini() {
+  return `<section class="profile-card"><div class="section-mini"><span>\u6211\u7684\u5065\u5EB7\u6863\u6848</span>${icon("user")}</div><span class="subtle-label">\u4ECE\u8BA4\u8BC6\u81EA\u5DF1\u5F00\u59CB</span><h2>${state.assessments.length ? "\u5DF2\u8BB0\u5F55 " + state.assessments.length + " \u6B21\u611F\u53D7" : "\u6BCF\u4E2A\u4EBA\uFF0C\u90FD\u6709\u81EA\u5DF1\u7684\u8282\u594F\u3002"}</h2><p>\u5F53\u524D\u76EE\u6807\uFF1A${esc(state.profile.goal)}<br>\u6863\u6848\u4E0E\u8BB0\u5F55\uFF0C\u4EC5\u4FDD\u5B58\u5728\u672C\u673A\u3002</p><div class="profile-tags"><span>${esc(state.profile.preference)}</span><span>\u4F53\u8D28\u6D4B\u8BC4 \xB7 \u8BD5\u6D4B\u4E2D</span></div><button class="outline-button" data-page="profile">\u67E5\u770B\u6211\u7684\u6863\u6848 ${icon("arrow")}</button></section>`;
+}
+function home() {
+  return `${heading("\u4ECA\u5929\uFF0C\u4E5F\u597D\u597D\u7167\u987E\u81EA\u5DF1\u3002", "\u4ECE\u4E00\u987F\u597D\u996D\uFF0C\u4E00\u676F\u6E29\u996E\u5F00\u59CB\u3002", "GOOD DAY, GOOD HEALTH")}<div class="hero-grid"><section class="ai-hero"><span class="ai-label">${icon("spark")} \u77E5\u517B AI \xB7 \u4F60\u7684\u98DF\u517B\u52A9\u624B</span><h2>\u6700\u8FD1\u8EAB\u4F53\u600E\u4E48\u6837\uFF1F<br>\u548C\u77E5\u517B\u804A\u4E00\u804A</h2><p>\u996E\u98DF\u3001\u4F53\u91CD\u3001\u4F5C\u606F\uFF0C\u628A\u4F60\u7684\u60F3\u6CD5\u544A\u8BC9\u6211\u3002</p><button class="hero-input" data-chat="">\u6211\u6700\u8FD1\u80D6\u4E86\uFF0C\u4E09\u9910\u5E94\u8BE5\u600E\u4E48\u5403\uFF1F<span>${icon("arrow")}</span></button><div class="hero-prompts"><button data-chat="\u6211\u60F3\u5065\u5EB7\u51CF\u91CD">\u5065\u5EB7\u51CF\u91CD</button><button data-chat="\u6211\u60F3\u5065\u5EB7\u589E\u91CD">\u5065\u5EB7\u589E\u91CD</button><button data-chat="\u63A8\u8350\u4E00\u676F\u517B\u751F\u8336">\u98DF\u517B\u8336\u996E</button><button data-chat="\u6211\u6700\u8FD1\u4F5C\u606F\u6709\u70B9\u4E71">\u4F5C\u606F\u8C03\u6574</button></div></section>${profileMini()}</div><section class="section">${sectionHead("\u4ECA\u5929\uFF0C\u600E\u4E48\u5403\u600E\u4E48\u8FC7", "EVERYDAY NOURISHMENT", `<div class="segmented" aria-label="\u4E09\u9910\u4E0E\u8D77\u5C45"><button class="${homeMode === "\u4E09\u9910" ? "active" : ""}" data-home-mode="\u4E09\u9910">\u4E09\u9910</button><button class="${homeMode === "\u8D77\u5C45" ? "active" : ""}" data-home-mode="\u8D77\u5C45">\u8D77\u5C45</button></div>`)}${homeMode === "\u4E09\u9910" ? `<div class="daily-meals">${[["breakfast", "\u65E9\u9910", "07:30", "\u4E00\u7897\u70ED\u7CA5\uFF0C\u5524\u9192\u65E9\u6668"], ["lunch", "\u5348\u9910", "12:00", "\u8364\u7D20\u642D\u914D\uFF0C\u597D\u597D\u5403\u996D"], ["dinner", "\u665A\u9910", "18:30", "\u5BB6\u5E38\u98DF\u6750\uFF0C\u7B80\u5355\u5403\u597D"]].map(([id, label, time, title], i) => `<button class="daily-meal" data-recipe="${id}"><div class="meal-badge ${i === 1 ? "midday" : i === 2 ? "evening" : ""}">${icon(i === 2 ? "moon" : i === 1 ? "sun" : "bowl")}</div><div><span class="meal-time">${label} <span>\xB7 ${time} \u793A\u4F8B</span></span><h3>${title}</h3><p>${recipes.find((r) => r.id === id).title}</p></div>${icon("arrow")}</button>`).join("")}</div>` : `<div class="routine-card"><span class="routine-icon">${icon("moon")}</span><div><span class="subtle-label">\u665A\u95F4\u8D77\u5C45\u53C2\u8003</span><h3>\u7ED9\u5FD9\u788C\u7684\u4E00\u5929\uFF0C\u7559\u4E00\u70B9\u7A7A\u767D\u3002</h3><p>\u9009\u62E9\u4F60\u81EA\u5DF1\u7684\u7761\u524D\u51C6\u5907\u65F6\u95F4\uFF0C\u5148\u5B8C\u6210\u4E00\u4EF6\u5C0F\u4E8B\u3002</p></div><button class="outline-button" data-lifestyle="sleep">\u67E5\u770B\u5EFA\u8BAE ${icon("arrow")}</button></div>`}</section><div class="home-lower"><section class="section">${sectionHead("\u98DF\u517B\u7075\u611F", "A LITTLE NOURISHMENT", `<button class="text-button" data-page="food">\u5168\u90E8 ${icon("arrow")}</button>`)}<div class="nourish-grid">${recipeCard(recipes.find((r) => r.id === "tea"), true)}${recipeCard(recipes.find((r) => r.id === "lunch"), true)}</div></section><section class="section">${sectionHead("\u6700\u8FD1\uFF0C\u4F60\u5728\u610F\u4EC0\u4E48", "TAKE CARE OF YOURSELF", `<button class="text-button" data-page="care">\u66F4\u591A ${icon("arrow")}</button>`)}<div class="topic-list">${topics.slice(0, 4).map(topicCard).join("")}</div></section></div><section class="section">${sectionHead("\u6162\u6162\u8BFB\uFF0C\u597D\u597D\u517B", "WELLNESS JOURNAL", `<button class="text-button" data-food-tab="\u6587\u7AE0">\u5168\u90E8\u6587\u7AE0 ${icon("arrow")}</button>`)}<div class="article-grid">${articles.map(articleCard).join("")}</div></section>`;
+}
+function food() {
+  const options2 = ["\u5168\u90E8", "\u4E09\u9910\u642D\u914D", "\u98DF\u517B\u8336\u996E", "\u8D77\u5C45\u5EFA\u8BAE", "\u6587\u7AE0"];
+  const visible = recipes.filter((r) => foodTab === "\u5168\u90E8" || r.category === foodTab);
+  return `${heading("\u4E00\u65E5\u4E09\u9910\uFF0C\u4E00\u70B9\u98DF\u517B\u3002", "\u628A\u9002\u5408\u81EA\u5DF1\u7684\u642D\u914D\uFF0C\u6162\u6162\u653E\u8FDB\u751F\u6D3B\u3002", "FOOD & EVERYDAY LIVING")}<div class="food-banner"><img src="assets/lunch.jpg" alt="\u4E2D\u5F0F\u4E09\u9910\u642D\u914D\u793A\u610F"><div><span class="subtle-label">\u4ECE\u5BB6\u5E38\u996D\u5F00\u59CB</span><h2>\u597D\u597D\u5403\u996D\uFF0C\u662F\u6BCF\u5929\u7684\u5C0F\u4E8B\u3002</h2><p>\u98DF\u8C31\u3001\u8336\u996E\u548C\u8D77\u5C45\u53C2\u8003\uFF0C<br>\u4E5F\u53EF\u4EE5\u4EA4\u7ED9\u77E5\u517B\u4E00\u8D77\u5E2E\u4F60\u9009\u3002</p><button class="primary-button" data-chat="\u5E2E\u6211\u5B89\u6392\u4E00\u65E5\u4E09\u9910">${icon("spark")} \u5E2E\u6211\u5B89\u6392\u4E09\u9910</button></div></div><div class="filter-row" aria-label="\u98DF\u517B\u5206\u7C7B">${options2.map((x) => `<button data-food-tab="${x}" class="filter-chip ${foodTab === x ? "active" : ""}" aria-pressed="${foodTab === x}">${x}</button>`).join("")}</div>${foodTab === "\u4E09\u9910\u642D\u914D" ? `<div class="inline-heading"><h2>${day}\u4E09\u9910\u53C2\u8003</h2><div class="segmented"><button data-day="\u4ECA\u65E5" class="${day === "\u4ECA\u65E5" ? "active" : ""}">\u4ECA\u65E5</button><button data-day="\u660E\u65E5" class="${day === "\u660E\u65E5" ? "active" : ""}">\u660E\u65E5</button></div></div><p class="muted section-note">\u793A\u4F8B\u5B89\u6392\uFF0C\u53EF\u6309\u4F60\u7684\u504F\u597D\u66FF\u6362\uFF1B\u4EFD\u91CF\u672A\u505A\u4E2A\u4EBA\u8BA1\u7B97\u3002</p>` : ""}${foodTab === "\u6587\u7AE0" ? `<div class="article-grid">${articles.map(articleCard).join("")}</div>` : foodTab === "\u8D77\u5C45\u5EFA\u8BAE" ? `<div class="routine-card"><span class="routine-icon">${icon("moon")}</span><div><span class="tag">\u665A\u95F4\u8D77\u5C45</span><h3>${lifestyle.title}</h3><p>${lifestyle.desc}</p></div><button class="primary-button" data-lifestyle="sleep">\u67E5\u770B\u5EFA\u8BAE</button></div>` : `<div class="food-grid">${(foodTab === "\u4E09\u9910\u642D\u914D" && day === "\u660E\u65E5" ? [recipes[0], { ...recipes[2], time: "\u5348\u9910" }, { ...recipes[1], time: "\u665A\u9910" }] : visible).map((r) => recipeCard(r)).join("")}</div>`}<div class="small-notice">${icon("book")} \u672C\u9875\u4E3A\u5185\u5BB9\u4E0E\u4EA4\u4E92\u793A\u4F8B\u3002\u53EF\u5728\u8BE6\u60C5\u4E2D\u67E5\u770B\u53C2\u8003\u6765\u6E90\u548C\u9002\u7528\u8BF4\u660E\u3002</div>`;
+}
+function care() {
+  const groups = ["\u5168\u90E8", "\u65E5\u5E38\u72B6\u6001", "\u547C\u5438\u4E0E\u54BD\u5589", "\u813E\u80C3\u4E0E\u6D88\u5316", "\u4F5C\u606F\u4E0E\u60C5\u7EEA"];
+  return `${heading("\u8EAB\u4F53\u7684\u5C0F\u4FE1\u53F7\uFF0C\u8BA4\u771F\u542C\u3002", "\u4ECE\u4F60\u7684\u611F\u53D7\u51FA\u53D1\uFF0C\u770B\u770B\u65E5\u5E38\u751F\u6D3B\u53EF\u4EE5\u600E\u6837\u8C03\u6574\u3002", "CARE & DAILY WELLBEING")}<div class="care-intro"><span class="care-intro-icon">${icon("heart")}</span><div><h2>\u65E5\u5E38\u8C03\u517B\uFF0C\u4E5F\u8981\u6709\u5206\u5BF8\u3002</h2><p>\u4EE5\u4E0B\u4E3A\u4E00\u822C\u751F\u6D3B\u3001\u996E\u98DF\u4E0E\u4F11\u606F\u53C2\u8003\uFF0C\u4E0D\u7528\u4E8E\u8BCA\u65AD\u6216\u6CBB\u7597\u3002<br>\u6D89\u53CA\u533B\u7597\u7528\u9014\uFF0C\u8BF7\u54A8\u8BE2\u533B\u751F\uFF1B\u6301\u7EED\u6216\u660E\u663E\u4E0D\u9002\u65F6\uFF0C\u4F18\u5148\u5BFB\u6C42\u4E13\u4E1A\u5E2E\u52A9\u3002</p></div><button class="outline-button" data-chat="\u6211\u60F3\u804A\u804A\u6700\u8FD1\u7684\u8EAB\u4F53\u611F\u53D7">${icon("spark")} \u548C\u52A9\u624B\u804A\u804A</button></div><section class="section">${sectionHead("\u5F53\u4E0B\u70ED\u95E8", "COMMON CONCERNS")}<div class="filter-row">${groups.map((x) => `<button class="filter-chip ${careTab === x ? "active" : ""}" data-care-tab="${x}" aria-pressed="${careTab === x}">${x}</button>`).join("")}</div><div class="care-grid">${topics.filter((t) => careTab === "\u5168\u90E8" || t.group === careTab).map((t) => `<button class="care-tile" data-topic="${t.id}"><span class="topic-symbol ${t.accent}">${icon(t.icon)}</span><span class="small muted">${t.group}</span><h3>${t.title}</h3><p>${t.subtitle}</p><span class="meal-link">\u751F\u6D3B\u5EFA\u8BAE \xB7 \u98DF\u517B\u53C2\u8003 ${icon("arrow")}</span></button>`).join("")}</div></section><div class="feature-line"><div><span class="eyebrow">KNOW YOURSELF</span><h3>\u6E7F\u6C14\u91CD\uFF0C\u5C31\u662F\u75F0\u6E7F\u8D28\u5417\uFF1F</h3><p>\u65E5\u5E38\u611F\u53D7\u4E0E\u6B63\u5F0F\u4F53\u8D28\u5224\u5B9A\u6709\u533A\u522B\u3002\u5148\u4E86\u89E3\u4E5D\u79CD\u57FA\u672C\u7C7B\u578B\u3002</p></div><button class="outline-button" data-action="constitutions">\u4E86\u89E3\u4E5D\u79CD\u4F53\u8D28 ${icon("arrow")}</button></div>`;
+}
+function planCard(p) {
+  return `<article class="saved-plan"><div class="section-mini"><span>${esc(p.goal)} \xB7 \u793A\u4F8B \xB7 \u4FEE\u8BA2 ${p.revision}</span><button class="icon-button" data-remove-plan="${esc(p.id)}" aria-label="\u79FB\u9664${esc(p.title)}">${icon("close")}</button></div><h3>${esc(p.title)}</h3><dl>${p.meals.map((m) => `<div><dt>${esc(m.label)}</dt><dd>${esc(m.value)}</dd></div>`).join("")}</dl><p class="small muted">${esc(p.note)}</p><button class="text-button" data-adjust-plan="${esc(p.id)}">\u548C\u52A9\u624B\u4E00\u8D77\u8C03\u6574 ${icon("arrow")}</button></article>`;
+}
+function profile() {
+  const p = state.profile;
+  return `${heading("\u66F4\u4E86\u89E3\u4F60\uFF0C\u624D\u80FD\u66F4\u8D34\u8FD1\u4F60\u3002", "\u4F60\u7684\u6863\u6848\u3001\u6536\u85CF\u548C\u65B9\u6848\uFF0C\u653E\u5728\u4E00\u8D77\u3002", "MY WELLNESS SPACE")}<section class="profile-overview"><span class="big-avatar">${esc((p.name || "\u517B").slice(0, 1))}</span><div><span class="subtle-label">\u4E2A\u4EBA\u6863\u6848 \xB7 \u4EC5\u5728\u672C\u673A</span><h2>${esc(p.name)}</h2><p>${esc(p.goal)} \xB7 ${esc(p.habit)}</p></div><button class="outline-button" data-action="edit-profile">\u7F16\u8F91\u6863\u6848</button></section><div class="profile-sections"><section class="constitution-panel"><div class="section-mini"><span>\u4F53\u8D28\u4E0E\u65E5\u5E38\u611F\u53D7</span><span class="tag">\u65B0\u95EE\u5377 \xB7 \u8BD5\u6D4B\u9636\u6BB5</span></div><h2>\u8BA4\u8BC6\u81EA\u5DF1\uFF0C\u6162\u6162\u6765\u3002</h2><p>32 \u9053\u5019\u9009\u9898\uFF0C\u8BB0\u5F55\u8FC7\u53BB\u4E00\u5E74\u7684\u65E5\u5E38\u611F\u53D7\u3002\u652F\u6301\u672C\u673A\u8349\u7A3F\u548C\u591A\u6B21\u8BB0\u5F55\uFF1B\u5F53\u524D\u4E0D\u4F5C\u6B63\u5F0F\u4F53\u8D28\u5224\u5B9A\u3002</p><div class="button-row"><button class="primary-button" data-action="quiz">${state.draft ? "\u7EE7\u7EED\u6216\u5F00\u59CB\u8BD5\u6D4B" : "\u5F00\u59CB\u65E5\u5E38\u611F\u53D7\u8BD5\u6D4B"} ${icon("arrow")}</button><button class="text-button" data-action="constitutions">\u4E5D\u79CD\u4F53\u8D28\u79D1\u666E</button></div><span class="small muted">\u9898\u76EE\u4E0E\u5224\u5B9A\u89C4\u5219\u4ECD\u9700\u4E13\u4E1A\u5BA1\u6838\u548C\u9A8C\u8BC1\u3002</span></section><section class="preferences-panel"><span class="subtle-label">\u6211\u5E0C\u671B\uFF0C\u517B\u6210\u8FD9\u6837\u7684\u751F\u6D3B</span><h3>${esc(p.goal)}</h3><div class="preference-row"><span>\u7528\u9910\u4E60\u60EF</span><strong>${esc(p.habit)}</strong></div><div class="preference-row"><span>\u996E\u98DF\u504F\u597D</span><strong>${esc(p.preference)}</strong></div><button class="text-button" data-action="edit-profile">\u8C03\u6574\u6211\u7684\u504F\u597D ${icon("arrow")}</button></section></div><section class="section">${assessmentHistory()}${sectionHead("\u6211\u7684\u65B9\u6848", "MY PLANS", `<span class="count-label">${state.plans.length} \u4EFD</span>`)}${state.plans.length ? `<div class="plans-grid">${state.plans.map(planCard).join("")}</div>` : `<div class="empty-state">${icon("spark")}<div><h3>\u4ECE\u4E00\u6B21\u54A8\u8BE2\u5F00\u59CB</h3><p>\u8BA9\u52A9\u624B\u7ED9\u51FA\u65B9\u6848\uFF0C\u70B9\u51FB\u4FDD\u5B58\uFF0C\u5C31\u80FD\u5728\u8FD9\u91CC\u7EE7\u7EED\u67E5\u770B\u3002</p></div><button class="outline-button" data-chat="\u6211\u60F3\u5065\u5EB7\u51CF\u91CD">\u4F53\u9A8C\u4E00\u6B21\u54A8\u8BE2</button></div>`}</section><section class="section">${sectionHead("\u6211\u7684\u6536\u85CF", "SAVED FOR LATER", `<span class="count-label">${state.saved.length} \u9879</span>`)}${state.saved.length ? `<div class="saved-grid">${state.saved.map((key) => {
+    const [type, id] = key.split(":");
+    const item = (type === "recipe" ? recipes : articles).find((x) => x.id === id);
+    return item ? `<button class="saved-item" data-${type}="${id}">${icon(type === "recipe" ? "bowl" : "book")}<span>${esc(item.title)}</span>${icon("arrow")}</button>` : "";
+  }).join("")}</div>` : `<p class="empty-copy">\u559C\u6B22\u7684\u98DF\u8C31\u3001\u8336\u996E\u548C\u6587\u7AE0\uFF0C\u53EF\u4EE5\u5148\u6536\u85CF\uFF0C\u6162\u6162\u770B\u3002</p>`}</section><div class="privacy-line"><p>\u6863\u6848\u3001\u6536\u85CF\u3001\u65B9\u6848\u548C\u6D4B\u8BC4\u53EA\u5B58\u5728\u5F53\u524D\u6D4F\u89C8\u5668\uFF0C\u6362\u8BBE\u5907\u4E0D\u4F1A\u540C\u6B65\u3002\u53D1\u9001\u54A8\u8BE2\u4F1A\u628A\u672C\u6B21\u95EE\u9898\u4E0E\u5F53\u524D\u5BF9\u8BDD\u53D1\u7ED9\u670D\u52A1\u7AEF\uFF1B\u52FE\u9009\u540E\u624D\u9644\u5E26\u996E\u98DF\u504F\u597D\u3002\u8BF7\u4F7F\u7528\u865A\u6784\u4FE1\u606F\u4F53\u9A8C\u3002</p><button class="text-button" data-action="reset">\u6E05\u9664\u672C\u5730\u6F14\u793A\u6570\u636E</button></div>`;
+}
+function render() {
+  document.querySelectorAll("[data-page]").forEach((b) => {
+    b.classList.toggle("active", b.dataset.page === page && b.classList.contains("nav-item"));
+    if (b.classList.contains("nav-item")) b.setAttribute("aria-current", b.dataset.page === page ? "page" : "false");
+  });
+  main.innerHTML = (storageError ? `<div class="storage-error" role="alert">${esc(storageError)} <button class="text-button" data-action="retry-storage">\u91CD\u8BD5\u5B58\u50A8</button></div>` : "") + ({ home, food, care, profile }[page] || home)();
+  document.querySelector(".topbar-label").textContent = matchMedia("(max-width:760px)").matches ? "\u77E5\u517B" : "\u4F60\u7684\u65E5\u5E38\u98DF\u517B\u7A7A\u95F4";
+  paintIcons();
+}
+function navigate(next, replace = false) {
+  if (!["home", "food", "care", "profile"].includes(next)) return;
+  page = next;
+  render();
+  historyAPI(replace);
+  window.scrollTo({ top: 0, behavior: "instant" });
+}
+function historyAPI(replace) {
+  window.history[replace ? "replaceState" : "pushState"]({}, "", `#${page}`);
+}
+window.addEventListener("popstate", () => {
+  page = location.hash.slice(1) || "home";
+  if (!["home", "food", "care", "profile"].includes(page)) page = "home";
+  render();
+});
+function detailHeader(label) {
+  return `<div class="dialog-toolbar"><span>${label}</span><button class="icon-button" data-close="detail" aria-label="\u5173\u95ED\u8BE6\u60C5">${icon("close")}</button></div>`;
+}
+function openDetail(html, label = "\u5185\u5BB9\u8BE6\u60C5") {
+  document.getElementById("detail-content").innerHTML = detailHeader(label) + html;
+  detail.setAttribute("aria-label", label);
+  if (!detail.open) detail.showModal();
+  detail.scrollTop = 0;
+}
+var sourceHtml = (key) => sources[key] ? `<details class="source-details"><summary>\u53C2\u8003\u6765\u6E90\u4E0E\u5185\u5BB9\u8BF4\u660E</summary><p>\u9875\u9762\u6587\u6848\u4E3A Demo \u7F16\u6392\u793A\u4F8B\uFF0C\u672A\u7ECF\u8FC7\u5B8C\u6574\u4E13\u4E1A\u5BA1\u6838\u3002\u4E0B\u5217\u6765\u6E90\u63D0\u4F9B\u76F8\u5173\u4E00\u822C\u539F\u5219\uFF0C\u4E0D\u662F\u5BF9\u672C\u65B9\u6848\u7684\u9A8C\u8BC1\u3002</p><a href="${sources[key].url}" target="_blank" rel="noopener noreferrer">${sources[key].title} \u2197</a></details>` : "";
+function recipeDetail(id) {
+  const r = recipes.find((x) => x.id === id);
+  if (!r) return;
+  const saved = state.saved.includes("recipe:" + id);
+  openDetail(`${r.image ? `<img class="detail-cover" src="${r.image}" alt="${r.title}\u793A\u610F\u56FE">` : ""}<div class="detail-body"><span class="tag">${r.category} \xB7 \u793A\u4F8B</span><h2>${r.title}</h2><p class="detail-lead">${r.desc}</p><div class="detail-meta">${icon("clock")} ${r.duration}<span>\xB7</span>\u65E5\u5E38\u98DF\u517B\u53C2\u8003</div><h3>\u51C6\u5907\u8FD9\u4E9B\u98DF\u6750</h3><div class="ingredient-list">${r.ingredients.map((x) => `<span>${x}</span>`).join("")}</div><h3>\u53EF\u4EE5\u8FD9\u6837\u642D\u914D</h3><ol class="step-list">${r.steps.map((x) => `<li>${x}</li>`).join("")}</ol><div class="gentle-note">${r.note}</div>${sourceHtml(r.source)}<div class="detail-actions"><button class="primary-button" data-ref-type="recipe" data-ref-id="${r.id}" data-detail-chat="${r.id === "tea" ? "\u63A8\u8350\u4E00\u676F\u517B\u751F\u8336" : `\u8FD9\u9053${r.title}\u600E\u4E48\u52A0\u5165\u6211\u7684\u4E09\u9910\uFF1F`}">${icon("spark")} \u7ED3\u5408\u6211\u7684\u60C5\u51B5\u95EE\u95EE AI</button><button class="outline-button" data-save="recipe:${r.id}">${icon("bookmark")} ${saved ? "\u5DF2\u6536\u85CF" : "\u6536\u85CF"}</button></div></div>`, "\u98DF\u517B\u8BE6\u60C5");
+}
+function topicDetail(id) {
+  const t = topics.find((x) => x.id === id);
+  if (!t) return;
+  openDetail(`<div class="detail-body"><span class="topic-symbol ${t.accent}">${icon(t.icon)}</span><span class="tag">${t.group} \xB7 \u4E13\u9898\u793A\u4F8B</span><h2>${t.title}</h2><p class="detail-lead">${t.subtitle}</p><div class="boundary-note"><strong>\u5148\u770B\u9002\u7528\u8FB9\u754C</strong><p>${t.boundary}</p></div><h3>\u65E5\u5E38\u751F\u6D3B\u53EF\u4EE5\u5148\u7559\u610F</h3><ol class="step-list">${t.tips.map((x) => `<li>${x}</li>`).join("")}</ol>${t.related ? `<h3>\u76F8\u5173\u98DF\u517B\u7075\u611F</h3><p class="small muted">\u4EC5\u4E3A\u5185\u5BB9\u5173\u8054\u793A\u4F8B\uFF0C\u4E0D\u4EE3\u8868\u5BF9\u8FD9\u4E00\u75C7\u72B6\u6709\u6548\u3002</p><button class="related-card" data-recipe="${t.related}">${icon("bowl")}<span>${recipes.find((r) => r.id === t.related).title}</span>${icon("arrow")}</button>` : ""}${sourceHtml(t.source)}<div class="detail-actions"><button class="primary-button" data-ref-type="topic" data-ref-id="${t.id}" data-detail-chat="${t.title}">${icon("spark")} \u628A\u6211\u7684\u60C5\u51B5\u544A\u8BC9 AI</button></div></div>`, "\u65E5\u5E38\u8C03\u517B");
+}
+function articleDetail(id) {
+  const a = articles.find((x) => x.id === id);
+  if (!a) return;
+  openDetail(`<img class="detail-cover" src="${a.image}" alt="${a.label}\u914D\u56FE"><article class="detail-body article-body"><span class="tag">${a.label}</span><h2>${a.title}</h2><p class="small muted">\u77E5\u517B\u5185\u5BB9\u793A\u4F8B \xB7 ${a.read}\u9605\u8BFB</p><p class="detail-lead">${a.intro}</p>${a.paragraphs.map(([h, p]) => `<h3>${h}</h3><p>${p}</p>`).join("")}${sourceHtml(a.source)}<div class="detail-actions"><button class="primary-button" data-ref-type="article" data-ref-id="${a.id}" data-detail-chat="\u5982\u4F55\u628A${a.label}\u7528\u5230\u6211\u7684\u4E00\u65E5\u4E09\u9910\uFF1F">${icon("spark")} \u548C\u52A9\u624B\u804A\u804A\u8FD9\u7BC7\u6587\u7AE0</button><button class="outline-button" data-save="article:${a.id}">${icon("bookmark")} ${state.saved.includes("article:" + id) ? "\u5DF2\u6536\u85CF" : "\u6536\u85CF"}</button></div></article>`, "\u98DF\u517B\u6587\u7AE0");
+}
+function lifestyleDetail() {
+  openDetail(`<div class="detail-body"><span class="topic-symbol purple">${icon("moon")}</span><span class="tag">\u8D77\u5C45\u5EFA\u8BAE</span><h2>${lifestyle.title}</h2><p class="detail-lead">${lifestyle.desc}</p><ol class="step-list">${lifestyle.points.map((p) => `<li>${p}</li>`).join("")}</ol><div class="gentle-note">\u5B89\u6392\u8981\u7B26\u5408\u4F60\u7684\u771F\u5B9E\u4F5C\u606F\u3002\u6301\u7EED\u7761\u7720\u56F0\u6270\u5E94\u5BFB\u6C42\u4E13\u4E1A\u5E2E\u52A9\u3002</div><button class="primary-button" data-detail-chat="\u5E2E\u6211\u8C03\u6574\u4F5C\u606F">${icon("spark")} \u5E2E\u6211\u5B89\u6392\u4ECA\u665A</button></div>`, "\u665A\u95F4\u8D77\u5C45");
+}
+function editProfile() {
+  const p = state.profile;
+  openDetail(`<div class="detail-body"><span class="tag">\u4EC5\u5728\u672C\u6D4F\u89C8\u5668\u4FDD\u5B58</span><h2>\u8BA9\u5EFA\u8BAE\uFF0C\u66F4\u8D34\u8FD1\u4F60\u7684\u751F\u6D3B</h2><p class="detail-lead">\u8FD9\u91CC\u53EF\u4EE5\u4F7F\u7528\u865A\u6784\u4FE1\u606F\u4F53\u9A8C\uFF0C\u4E0D\u5FC5\u586B\u5199\u771F\u5B9E\u5065\u5EB7\u8D44\u6599\u3002</p><form id="profile-form"><label class="form-label">\u600E\u4E48\u79F0\u547C\u4F60<input name="name" maxlength="20" value="${esc(p.name)}" required autocomplete="off"></label><label class="form-label">\u5F53\u524D\u6700\u60F3\u5173\u6CE8\u7684\u76EE\u6807<select name="goal">${["\u5747\u8861\u996E\u98DF", "\u5065\u5EB7\u51CF\u91CD", "\u5065\u5EB7\u589E\u91CD", "\u89C4\u5F8B\u4F5C\u606F"].map((v) => `<option ${v === p.goal ? "selected" : ""}>${v}</option>`).join("")}</select></label><label class="form-label">\u5E73\u65F6\u600E\u6837\u5403\u996D<select name="habit">${["\u81EA\u5DF1\u505A\u996D\u4E0E\u5916\u98DF\u90FD\u6709", "\u4E3B\u8981\u81EA\u5DF1\u505A\u996D", "\u4E3B\u8981\u5728\u5916\u5403\u996D"].map((v) => `<option ${v === p.habit ? "selected" : ""}>${v}</option>`).join("")}</select></label><label class="form-label">\u996E\u98DF\u504F\u597D<select name="preference">${["\u6682\u65E0\u504F\u597D", "\u504F\u7231\u5BB6\u5E38\u4E2D\u9910", "\u66F4\u559C\u6B22\u6E05\u6DE1\u53E3\u5473", "\u4E0D\u559C\u6B22\u5403\u9C7C"].map((v) => `<option ${v === p.preference ? "selected" : ""}>${v}</option>`).join("")}</select></label><p class="small muted">\u6B64\u5904\u6CA1\u6709\u91C7\u96C6\u75BE\u75C5\u3001\u7528\u836F\u548C\u8FC7\u654F\u53F2\uFF0C\u4E5F\u4E0D\u4F1A\u636E\u6B64\u751F\u6210\u771F\u5B9E\u4E2A\u4EBA\u5904\u65B9\u3002</p><button class="primary-button full-button" type="submit">\u4FDD\u5B58\u6863\u6848 ${icon("check")}</button></form></div>`, "\u7F16\u8F91\u6211\u7684\u6863\u6848");
+}
+function constitutionList() {
+  openDetail(`<div class="detail-body"><span class="tag">\u4F53\u8D28\u79D1\u666E</span><h2>\u8BA4\u8BC6\u4E2D\u533B\u4E5D\u79CD\u4F53\u8D28</h2><p class="detail-lead">\u4EE5\u4E0B\u662F\u4E5D\u79CD\u57FA\u672C\u7C7B\u578B\u3002\u4E0B\u9762\u7684\u63D0\u793A\u8BCD\u4EC5\u5E2E\u52A9\u6D4F\u89C8\uFF0C\u4E0D\u662F\u8BCA\u65AD\u4F9D\u636E\uFF0C\u4E5F\u4E0D\u80FD\u9760\u5355\u4E2A\u611F\u53D7\u7ED9\u81EA\u5DF1\u5B9A\u578B\u3002</p><div class="constitution-grid">${constitutions.map(([n, d], i) => `<div class="constitution-type"><span>${String(i + 1).padStart(2, "0")}</span><h3>${n}</h3><p>${d}</p></div>`).join("")}</div><p class="gentle-note">\u201C\u6E7F\u6C14\u91CD\u201D\u662F\u65E5\u5E38\u63CF\u8FF0\uFF0C\u4E0D\u7B49\u4E8E\u5DF2\u7ECF\u5224\u5B9A\u4E3A\u201C\u75F0\u6E7F\u8D28\u201D\u3002\u6B63\u5F0F\u5224\u5B9A\u5E94\u4F7F\u7528\u5B8C\u6574\u6807\u51C6\u91CF\u8868\u53CA\u76F8\u5E94\u8BA1\u5206\u65B9\u6CD5\u3002</p>${sourceHtml("constitution")}<button class="primary-button full-button" data-action="quiz">\u5F00\u59CB\u65E5\u5E38\u611F\u53D7\u8BD5\u6D4B ${icon("arrow")}</button></div>`, "\u4E2D\u533B\u4E5D\u79CD\u4F53\u8D28");
+}
+function assessmentHistory() {
+  return `<div class="assessment-history">${sectionHead("\u6211\u7684\u611F\u53D7\u8BB0\u5F55", "MY RECORDS", `<span class="count-label">${state.assessments.length} \u4EFD</span>`)}${state.assessments.length ? state.assessments.map((r) => `<div class="record-row"><button class="text-button" data-view-assessment="${esc(r.id)}">${esc(new Date(r.createdAt).toLocaleString("zh-CN"))} \xB7 \u8BD5\u6D4B\u53C2\u8003 \u2192</button><button class="text-button" data-delete-assessment="${esc(r.id)}">\u5220\u9664</button></div>`).join("") : '<p class="empty-copy">\u5B8C\u6210\u8BD5\u6D4B\u5E76\u81EA\u613F\u4FDD\u5B58\u540E\uFF0C\u53EF\u4EE5\u5728\u8FD9\u91CC\u56DE\u770B\u3002\u4E0D\u4F1A\u81EA\u52A8\u5224\u5B9A\u4F53\u8D28\u3002</p>'}</div>`;
+}
+function about() {
+  openDetail(`<div class="detail-body"><span class="tag">\u77E5\u517B \xB7 \u53EF\u4EA4\u4E92\u539F\u578B</span><h2>\u5148\u4F53\u9A8C\uFF0C\u518D\u6162\u6162\u517B\u6210\u3002</h2><p class="detail-lead">\u9996\u9875\u3001\u98DF\u517B\u5185\u5BB9\u3001\u8C03\u517B\u4E13\u9898\u3001\u6863\u6848\u3001\u8BD5\u6D4B\u548C\u65B9\u6848\u8C03\u6574\u5DF2\u53EF\u4F53\u9A8C\u3002</p><div class="about-list"><p><strong>\u54A8\u8BE2\u52A9\u624B\uFF1A</strong>\u771F\u5B9E\u6A21\u578B\u5C1A\u672A\u63A5\u5165\u3002\u5F53\u524D\u901A\u8FC7\u670D\u52A1\u7AEF\u9884\u8BBE\u573A\u666F\u6F14\u793A\u8FFD\u95EE\u3001\u65B9\u6848\u548C\u98CE\u9669\u89C4\u5219\uFF1B\u81EA\u7531\u95EE\u7B54\u80FD\u529B\u4ECD\u5F85\u63A5\u5165\u3002</p><p><strong>\u4F53\u8D28\u6D4B\u8BC4\uFF1A</strong>32 \u9053\u91CD\u65B0\u8BBE\u8BA1\u7684\u5019\u9009\u9898\uFF0C\u53EF\u7EE7\u7EED\u8349\u7A3F\u3001\u8BB0\u5F55\u56DE\u7B54\u3002\u672A\u5B8C\u6210\u6D4B\u91CF\u9A8C\u8BC1\uFF0C\u4E0D\u7ED9\u51FA\u4E2A\u4EBA\u4F53\u8D28\u5224\u5B9A\u3002</p><p><strong>\u672C\u673A\u8BB0\u5F55\uFF1A</strong>\u6863\u6848\u3001\u6536\u85CF\u3001\u65B9\u6848\u3001\u8349\u7A3F\u548C\u6D4B\u8BC4\u4EC5\u5728\u5F53\u524D\u6D4F\u89C8\u5668\u3002\u804A\u5929\u53EA\u4FDD\u7559\u4E8E\u672C\u6B21\u9875\u9762\uFF0C\u5237\u65B0\u540E\u6E05\u7A7A\u3002\u53EF\u5728\u201C\u6211\u7684\u201D\u6E05\u9664\u8BB0\u5F55\u3002</p><p><strong>\u53D1\u9001\u54A8\u8BE2\uFF1A</strong>\u95EE\u9898\u4E0E\u5F53\u524D\u5BF9\u8BDD\u4F1A\u53D1\u9001\u7ED9\u672C\u7F51\u7AD9\u670D\u52A1\u7AEF\uFF1B\u4F60\u53EF\u4EE5\u9009\u62E9\u662F\u5426\u9644\u5E26\u996E\u98DF\u504F\u597D\u3002\u539F\u59CB\u6D4B\u8BC4\u7B54\u6848\u4E0D\u4F1A\u81EA\u52A8\u53D1\u9001\u3002</p><p><strong>\u5065\u5EB7\u5185\u5BB9\uFF1A</strong>\u5F85\u4E13\u4E1A\u5BA1\u6838\u7684\u793A\u4F8B\uFF1B\u4E0D\u63D0\u4F9B\u533B\u5B66\u8BCA\u65AD\u3001\u6CBB\u7597\u6216\u81EA\u884C\u914D\u836F\u5EFA\u8BAE\u3002\u56FE\u7247\u4E3A AI \u751F\u6210\u793A\u610F\u3002</p></div><button class="primary-button full-button" data-close="detail">\u5F00\u59CB\u4F53\u9A8C</button></div>`, "\u5173\u4E8E\u77E5\u517B");
+}
+async function toggleSave(key) {
+  const was = state.saved.includes(key);
+  await writeStore((s) => s.favorite(key));
+  toast(was ? "\u5DF2\u53D6\u6D88\u6536\u85CF" : "\u5DF2\u6536\u85CF\uFF0C\u53EF\u5728\u201C\u6211\u7684\u201D\u67E5\u770B");
+  document.querySelectorAll("[data-save]").forEach((b) => {
+    if (b.dataset.save === key) b.innerHTML = icon("bookmark") + (was ? " \u6536\u85CF" : " \u5DF2\u6536\u85CF");
+  });
+}
+function cancelRequest() {
+  chatVersion++;
+  requestController?.abort();
+  requestController = null;
+  chatBusy = false;
+  document.querySelectorAll(".message.is-loading").forEach((el) => el.remove());
+  const cancel = document.getElementById("chat-cancel");
+  if (cancel) cancel.hidden = true;
+  const submit = document.getElementById("chat-submit");
+  if (submit) submit.disabled = false;
+}
+function newChat() {
+  cancelRequest();
+  history = [];
+  pendingPlans.clear();
+  activePlan = null;
+  contentRef = null;
+  urgentSession = false;
+  document.getElementById("chat-content").innerHTML = "";
+}
+function openChat(query = "") {
+  if (detail.open) detail.close();
+  if (!document.getElementById("chat-messages")) {
+    document.getElementById("chat-content").innerHTML = `<div class="chat-header"><span class="chat-avatar">${icon("spark")}</span><div><h2>\u77E5\u517B AI</h2><p>\u4E2D\u5F0F\u98DF\u517B \xB7 \u8D77\u5C45 \xB7 \u8EAB\u5FC3\u8C03\u517B</p></div><button class="icon-button" data-action="new-chat" aria-label="\u91CD\u65B0\u5F00\u59CB\u5BF9\u8BDD">${icon("book")}</button><button class="icon-button" data-close="chat" aria-label="\u5173\u95ED\u54A8\u8BE2">${icon("close")}</button></div><div class="chat-demo-note">\u6A21\u62DF\u4F53\u9A8C \xB7 \u771F\u5B9E\u6A21\u578B\u5C1A\u672A\u63A5\u5165</div><div class="chat-context">${activePlan ? `\u6B63\u5728\u8C03\u6574\uFF1A${esc(activePlan.title)} \xB7 \u4FEE\u8BA2 ${activePlan.revision}` : contentRef ? "\u5DF2\u9644\u5E26\u5F53\u524D\u5185\u5BB9\uFF0C\u65B9\u4FBF\u7EE7\u7EED\u8BA8\u8BBA" : "\u996E\u98DF\u504F\u597D\u6309\u9700\u4F7F\u7528\uFF0C\u6D4B\u8BC4\u539F\u59CB\u7B54\u6848\u4E0D\u4F1A\u81EA\u52A8\u53D1\u9001\u3002"}</div><div id="chat-messages" class="chat-messages" role="log" aria-label="\u54A8\u8BE2\u5BF9\u8BDD" aria-live="polite"><div class="welcome"><span>${icon("spark")}</span><h3>${activePlan ? "\u7EE7\u7EED\u5B8C\u5584\u8FD9\u4EFD\u65B9\u6848" : "\u4ECA\u5929\uFF0C\u60F3\u4ECE\u54EA\u91CC\u5F00\u59CB\uFF1F"}</h3><p>${activePlan ? activePlan.kind === "routine" ? "\u8BB0\u5F55\u4F60\u81EA\u5DF1\u9009\u62E9\u7684\u51C6\u5907\u65F6\u95F4\uFF1B\u4FDD\u5B58\u4F1A\u66F4\u65B0\u539F\u5B89\u6392\u3002" : "\u5F53\u524D\u53EF\u6F14\u793A\u628A\u9C7C\u7C7B\u642D\u914D\u6362\u4E3A\u8C46\u8150\uFF1B\u4FDD\u5B58\u4F1A\u66F4\u65B0\u539F\u65B9\u6848\u3002" : "\u6B22\u8FCE\u8BA8\u8BBA\u5404\u7C7B\u5065\u5EB7\u517B\u751F\u95EE\u9898\u3002<br>\u5F53\u524D\u5148\u4F53\u9A8C\u9884\u8BBE\u573A\u666F\uFF0C\u81EA\u7531\u95EE\u7B54\u7B49\u5F85\u6A21\u578B\u63A5\u5165\u3002"}</p><div class="welcome-grid">${(activePlan ? activePlan.kind === "routine" ? [["\u628A\u51C6\u5907\u65F6\u95F4\u6539\u4E3A22:30", "\u628A\u51C6\u5907\u65F6\u95F4\u6539\u4E3A22:30"]] : [["\u4E0D\u5403\u9C7C\uFF0C\u6362\u6210\u8C46\u8150", "\u4E0D\u5403\u9C7C\uFF0C\u6362\u6210\u8C46\u8150"]] : [["\u6211\u6700\u8FD1\u80D6\u4E86\uFF0C\u5E94\u8BE5\u600E\u4E48\u5403\uFF1F", "\u6211\u60F3\u5065\u5EB7\u51CF\u91CD"], ["\u60F3\u589E\u91CD\uFF0C\u4E09\u9910\u600E\u4E48\u5B89\u6392\uFF1F", "\u6211\u60F3\u5065\u5EB7\u589E\u91CD"], ["\u4E86\u89E3\u65E5\u5E38\u8336\u996E", "\u63A8\u8350\u4E00\u676F\u517B\u751F\u8336"], ["\u4F5C\u606F\u6709\u70B9\u4E71\uFF0C\u600E\u4E48\u8C03\u6574\uFF1F", "\u6211\u6700\u8FD1\u4F5C\u606F\u6709\u70B9\u4E71"]]).map(([t, q]) => `<button data-chat-send="${q}">${t} ${icon("arrow")}</button>`).join("")}</div></div></div><label class="chat-consent"><input id="use-profile" type="checkbox"> \u4F7F\u7528\u6211\u7684\u996E\u98DF\u76EE\u6807\u3001\u4E60\u60EF\u548C\u504F\u597D</label><form id="chat-form" class="chat-compose"><label class="sr-only" for="chat-input">\u8F93\u5165\u4F60\u60F3\u54A8\u8BE2\u7684\u95EE\u9898</label><textarea id="chat-input" maxlength="1500" rows="1" placeholder="\u804A\u804A\u996E\u98DF\u3001\u8D77\u5C45\uFF0C\u6216\u4F60\u60F3\u4E86\u89E3\u7684\u95EE\u9898"></textarea><button type="submit" aria-label="\u53D1\u9001\u54A8\u8BE2" id="chat-submit">${icon("arrow")}</button></form><div class="chat-footer-note">\u53D1\u9001\u4F1A\u5C06\u95EE\u9898\u4E0E\u5F53\u524D\u5BF9\u8BDD\u4EA4\u7ED9\u672C\u7F51\u7AD9\u670D\u52A1\u7AEF\u3002<button class="text-button" data-action="cancel-request" id="chat-cancel" hidden>\u53D6\u6D88\u672C\u6B21\u56DE\u590D</button></div>`;
+  }
+  chat.setAttribute("aria-label", "\u77E5\u517B AI \u6A21\u62DF\u54A8\u8BE2");
+  if (!chat.open) chat.showModal();
+  if (query) send(query);
+  else if (matchMedia("(min-width:761px)").matches) document.getElementById("chat-input").focus();
+}
+function appendMessage(type, html) {
+  const el = document.createElement("div");
+  el.className = `message ${type}`;
+  el.innerHTML = type === "assistant" ? `<span class="message-avatar">${icon("spark")}</span><div class="message-body">${html}</div>` : `<div class="user-bubble">${html}</div>`;
+  document.getElementById("chat-messages").append(el);
+  el.scrollIntoView({ block: "end", behavior: "instant" });
+  return el;
+}
+async function send(text) {
+  text = String(text).trim().slice(0, 1500);
+  if (!text) return;
+  if (chatBusy) cancelRequest();
+  document.querySelector(".welcome")?.remove();
+  document.getElementById("chat-input").value = "";
+  appendMessage("user", esc(text));
+  chatBusy = true;
+  document.getElementById("chat-cancel").hidden = false;
+  const loading = appendMessage("assistant", '<span class="typing"><i></i><i></i><i></i></span>');
+  loading.classList.add("is-loading");
+  const current = chatVersion, requestId = crypto.randomUUID();
+  requestController = new AbortController();
+  const ownController = requestController;
+  const timeout = setTimeout(() => ownController.abort(), 15e3);
+  const profileContext = document.getElementById("use-profile").checked ? { goal: state.profile.goal, habit: state.profile.habit, preference: state.profile.preference } : {};
+  const request = { requestId, message: text, history: history.slice(-16), safetyContext: { urgent: urgentSession || history.filter((h) => h.role === "user").some((h) => isExplicitUrgent(h.content)), sensitive: history.filter((h) => h.role === "user").some((h) => isSensitive(h.content)) }, profileContext, ...activePlan ? { activePlan: structuredClone(activePlan) } : {}, ...contentRef ? { contentRef } : {} };
+  history.push({ role: "user", content: text });
+  try {
+    const reply = await getAgentReply(request, { signal: requestController.signal });
+    if (current !== chatVersion) return;
+    loading.remove();
+    let content = `<p>${esc(reply.text).replace(/\n/g, "<br>")}</p>`;
+    if (reply.mode === "urgent_help") {
+      urgentSession = true;
+      pendingPlans.clear();
+      document.querySelectorAll(".chat-plan,.chat-recipes,.chat-choices,.message [data-save-plan]").forEach((el) => el.remove());
+      content = `<div class="urgent-help" role="alert"><strong>\u8BF7\u7ACB\u5373\u5BFB\u6C42\u4E13\u4E1A\u5E2E\u52A9</strong>${content}</div>`;
+    }
+    if (reply.planDraft && !urgentSession) {
+      const plan = reply.planDraft;
+      pendingPlans.set(plan.id, plan);
+      content += `<div class="chat-plan"><span class="tag">\u642D\u914D\u793A\u4F8B \xB7 \u5185\u5BB9\u5F85\u5BA1\u6838</span><h3>${esc(plan.title)}</h3><dl>${plan.meals.map((m) => `<div><dt>${esc(m.label)}</dt><dd>${esc(m.value)}</dd></div>`).join("")}</dl><p class="small muted">${esc(plan.note)}</p><button class="primary-button" data-save-plan="${esc(plan.id)}">${icon("bookmark")} ${plan.baseRevision ? "\u4FDD\u5B58\u5BF9\u539F\u65B9\u6848\u7684\u8C03\u6574" : "\u4FDD\u5B58\u5230\u6211\u7684\u65B9\u6848"}</button></div>`;
+    }
+    if (reply.contentRefs.length && !urgentSession) content += `<div class="chat-recipes">${reply.contentRefs.filter((ref) => ref.type === "recipe").map(({ id }) => {
+      const r = recipes.find((x) => x.id === id);
+      return `<button data-chat-recipe="${r.id}">${r.image ? `<img src="${r.image}" alt="${r.title}\u793A\u610F">` : `<span class="chat-recipe-icon">${icon("bowl")}</span>`}<span><strong>${r.title}</strong><small>\u5185\u5BB9\u793A\u4F8B \xB7 \u67E5\u770B\u9002\u7528\u8BF4\u660E</small></span>${icon("arrow")}</button>`;
+    }).join("")}</div>`;
+    if (reply.followUpQuestions.length && !urgentSession) content += `<div class="chat-choices">${reply.followUpQuestions.map((q) => `<button data-chat-send="${esc(q)}">${esc(q)}</button>`).join("")}</div>`;
+    appendMessage("assistant", content);
+    history.push({ role: "assistant", content: reply.text });
+  } catch (error) {
+    if (current === chatVersion) {
+      loading.remove();
+      appendMessage("assistant", `<p>${esc(error.name === "AbortError" ? "\u56DE\u590D\u8D85\u65F6\uFF0C\u5C1A\u672A\u4FDD\u5B58\u4EFB\u4F55\u65B9\u6848\u3002" : error.message || "\u8FD9\u6B21\u56DE\u590D\u672A\u5B8C\u6210\u3002")}</p><button class="outline-button" data-chat-send="${esc(text)}">\u91CD\u8BD5\u8FD9\u6B21\u54A8\u8BE2</button>`);
+      document.getElementById("chat-input").value = text;
+    }
+  } finally {
+    clearTimeout(timeout);
+    if (current === chatVersion) {
+      chatBusy = false;
+      requestController = null;
+      document.getElementById("chat-cancel").hidden = true;
+      document.getElementById("chat-messages").scrollTop = document.getElementById("chat-messages").scrollHeight;
+    }
+  }
+}
+async function savePlan(id) {
+  if (urgentSession) return;
+  const p = pendingPlans.get(id);
+  if (!p) return;
+  const saved = await writeStore((s) => s.plan(p));
+  pendingPlans.delete(id);
+  if (activePlan?.id === id) activePlan = saved;
+  document.querySelectorAll("[data-save-plan]").forEach((b) => {
+    if (b.dataset.savePlan === id) {
+      b.innerHTML = icon("check") + " \u5DF2\u4FDD\u5B58";
+      b.disabled = true;
+    }
+  });
+  toast("\u5DF2\u4FDD\u5B58\uFF0C\u53EF\u5728\u201C\u6211\u7684\u65B9\u6848\u201D\u4E2D\u7EE7\u7EED\u8C03\u6574");
+}
+document.addEventListener("click", async (e) => {
+  const b = e.target.closest("button,a.brand");
+  if (!b) return;
+  const d = b.dataset;
+  if (await assessment.action(b)) return;
+  try {
+    if (b.classList.contains("brand")) {
+      e.preventDefault();
+      navigate("home");
+    } else if (d.page) navigate(d.page);
+    else if (b.hasAttribute("data-chat")) {
+      if (activePlan || contentRef) newChat();
+      openChat(d.chat);
+    } else if (d.foodTab) {
+      foodTab = d.foodTab;
+      navigate("food");
+    } else if (d.careTab) {
+      careTab = d.careTab;
+      render();
+    } else if (d.homeMode) {
+      homeMode = d.homeMode;
+      render();
+    } else if (d.day) {
+      day = d.day;
+      render();
+    } else if (d.recipe) recipeDetail(d.recipe);
+    else if (d.topic) topicDetail(d.topic);
+    else if (d.article) articleDetail(d.article);
+    else if (d.lifestyle) lifestyleDetail();
+    else if (d.close) (d.close === "chat" ? chat : detail).close();
+    else if (d.detailChat) {
+      newChat();
+      contentRef = d.refId ? { type: d.refType, id: d.refId } : null;
+      openChat(d.detailChat);
+    } else if (d.chatSend) await send(d.chatSend);
+    else if (d.chatRecipe) {
+      chat.close();
+      recipeDetail(d.chatRecipe);
+    } else if (d.save) await toggleSave(d.save);
+    else if (d.savePlan) {
+      b.disabled = true;
+      try {
+        await savePlan(d.savePlan);
+      } catch (error) {
+        b.disabled = false;
+        throw error;
+      }
+    } else if (d.adjustPlan) {
+      await refreshState();
+      const plan = state.plans.find((p) => p.id === d.adjustPlan);
+      if (!plan) throw new Error("\u8FD9\u4EFD\u65B9\u6848\u5DF2\u88AB\u5220\u9664");
+      newChat();
+      activePlan = structuredClone(plan);
+      openChat();
+    } else if (d.removePlan) {
+      await writeStore((s) => s.removePlan(d.removePlan));
+      toast("\u5DF2\u79FB\u9664\u8FD9\u4EFD\u65B9\u6848");
+    } else if (d.viewAssessment) {
+      const record = state.assessments.find((r) => r.id === d.viewAssessment);
+      if (record) assessment.view(record);
+    } else if (d.deleteAssessment) {
+      await writeStore((s) => s.removeAssessment(d.deleteAssessment));
+      toast("\u5DF2\u5220\u9664\u8FD9\u4EFD\u611F\u53D7\u8BB0\u5F55");
+    } else if (d.action) {
+      switch (d.action) {
+        case "about":
+          about();
+          break;
+        case "edit-profile":
+          editProfile();
+          break;
+        case "constitutions":
+          constitutionList();
+          break;
+        case "quiz":
+          await assessment.open();
+          break;
+        case "new-chat":
+          newChat();
+          openChat();
+          break;
+        case "cancel-request":
+          cancelRequest();
+          appendMessage("assistant", "<p>\u5DF2\u53D6\u6D88\u672C\u6B21\u56DE\u590D\uFF0C\u5C1A\u672A\u4FDD\u5B58\u65B9\u6848\u3002</p>");
+          break;
+        case "retry-storage":
+          await bootStorage();
+          break;
+        case "reset":
+          openDetail('<div class="detail-body"><h2>\u6E05\u9664\u672C\u673A\u8BB0\u5F55\uFF1F</h2><p class="detail-lead">\u5C06\u6E05\u9664\u5F53\u524D\u6D4F\u89C8\u5668\u4E2D\u7684\u6863\u6848\u3001\u6536\u85CF\u3001\u65B9\u6848\u3001\u6D4B\u8BC4\u3001\u8349\u7A3F\u53CA\u65E7\u7248\u6F14\u793A\u6570\u636E\uFF0C\u5E76\u7ED3\u675F\u5F53\u524D\u5BF9\u8BDD\u3002\u6B64\u64CD\u4F5C\u65E0\u6CD5\u6062\u590D\u3002</p><div class="button-row"><button class="outline-button" data-close="detail">\u5148\u4FDD\u7559</button><button class="primary-button" data-action="confirm-reset">\u786E\u8BA4\u6E05\u9664</button></div></div>', "\u6E05\u9664\u672C\u673A\u8BB0\u5F55");
+          break;
+        case "confirm-reset": {
+          if (!storage) throw new Error("\u672C\u673A\u5B58\u50A8\u4E0D\u53EF\u7528\uFF0C\u65E0\u6CD5\u786E\u8BA4\u5DF2\u6E05\u9664");
+          b.disabled = true;
+          clearing = true;
+          dataEpoch++;
+          newChat();
+          await assessment.reset();
+          try {
+            await writeQueue.catch(() => {
+            });
+            await storage.clear();
+            state = emptyState();
+            detail.close();
+            navigate("profile");
+            toast("\u672C\u673A\u8BB0\u5F55\u548C\u5F53\u524D\u5BF9\u8BDD\u5DF2\u6E05\u9664");
+          } finally {
+            clearing = false;
+            b.disabled = false;
+          }
+          break;
+        }
+      }
+    }
+  } catch (error) {
+    toast(error.message || "\u672C\u6B21\u64CD\u4F5C\u672A\u5B8C\u6210\uFF0C\u8BF7\u91CD\u8BD5");
+  }
+});
+document.addEventListener("submit", async (e) => {
+  if (e.target.id === "profile-form") {
+    e.preventDefault();
+    const form = e.target, button = form.querySelector("[type=submit]"), f = new FormData(form);
+    button.disabled = true;
+    try {
+      await writeStore((s) => s.profile({ name: String(f.get("name")).trim() || "\u4F53\u9A8C\u7528\u6237", goal: String(f.get("goal")), habit: String(f.get("habit")), preference: String(f.get("preference")), updated: (/* @__PURE__ */ new Date()).toISOString() }));
+      detail.close();
+      toast("\u6863\u6848\u5DF2\u4FDD\u5B58\uFF0C\u53EF\u5728\u54A8\u8BE2\u65F6\u9009\u62E9\u4F7F\u7528\u996E\u98DF\u504F\u597D");
+    } catch (error) {
+      toast(error.message || "\u4FDD\u5B58\u5931\u8D25\uFF0C\u8F93\u5165\u4ECD\u4FDD\u7559");
+    } finally {
+      button.disabled = false;
+    }
+  } else if (e.target.id === "chat-form") {
+    e.preventDefault();
+    send(document.getElementById("chat-input").value);
+  }
+});
+chat.addEventListener("close", cancelRequest);
+document.addEventListener("keydown", (e) => {
+  if (e.target.id === "chat-input" && e.key === "Enter" && !e.shiftKey && !e.isComposing) {
+    e.preventDefault();
+    send(e.target.value);
+  }
+});
+for (const dialog of [detail, chat]) dialog.addEventListener("click", (e) => {
+  if (e.target !== dialog) return;
+  const r = dialog.getBoundingClientRect();
+  if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) dialog.close();
+});
+var width = innerWidth;
+window.addEventListener("resize", () => {
+  if (width <= 760 !== innerWidth <= 760) {
+    document.querySelector(".topbar-label").textContent = innerWidth <= 760 ? "\u77E5\u517B" : "\u4F60\u7684\u65E5\u5E38\u98DF\u517B\u7A7A\u95F4";
+  }
+  width = innerWidth;
+});
+page = ["home", "food", "care", "profile"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "home";
+render();
+historyAPI(true);
+await bootStorage();
+var context = document.modelContext;
+if (context?.registerTool) {
+  const life = new AbortController();
+  const tools = [{ name: "get_wellness_demo_overview", title: "\u8BFB\u53D6\u77E5\u517B\u6F14\u793A\u6982\u89C8", description: "Read the current demo page and counts of saved plans and content. Does not expose chat or personal profile data.", inputSchema: { type: "object", properties: {}, additionalProperties: false }, annotations: { readOnlyHint: true, untrustedContentHint: false }, execute(input) {
+    if (!input || typeof input !== "object" || Object.keys(input).length) throw new Error("Expected an empty object");
+    return { page, mode: "mock", savedPlans: state.plans.length, savedItems: state.saved.length };
+  } }, { name: "navigate_wellness_demo", title: "\u5207\u6362\u77E5\u517B\u6F14\u793A\u9875\u9762", description: "Navigate to an existing demo page. Does not send a message, assess health, or save a plan.", inputSchema: { type: "object", properties: { page: { type: "string", enum: ["home", "food", "care", "profile"] } }, required: ["page"], additionalProperties: false }, annotations: { readOnlyHint: false, untrustedContentHint: false }, execute(input) {
+    if (!input || Object.keys(input).length !== 1 || !["home", "food", "care", "profile"].includes(input.page)) throw new Error("Invalid page");
+    navigate(input.page);
+    return { page };
+  } }];
+  for (const tool of tools) {
+    try {
+      Promise.resolve(context.registerTool(tool, { signal: life.signal })).catch(() => {
+      });
+    } catch {
+    }
+  }
+  window.addEventListener("pagehide", () => life.abort(), { once: true });
+}
