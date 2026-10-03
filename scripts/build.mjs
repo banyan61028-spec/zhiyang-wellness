@@ -1,5 +1,7 @@
 import { build } from 'esbuild';
 import { mkdir, rm, cp, copyFile, writeFile, readFile } from 'node:fs/promises';
+import { importNutrition } from './import-nutrition.mjs';
+if (await importNutrition() !== 0) process.exit(1);
 await rm('dist', { recursive: true, force: true });
 await mkdir('dist/client', { recursive: true });
 await mkdir('dist/server', { recursive: true });
@@ -10,4 +12,4 @@ await build({ entryPoints: ['src/client/app.js'], bundle: true, format: 'esm', t
 await build({ entryPoints: ['src/server/index.js'], bundle: true, format: 'esm', platform: 'browser', target: 'es2022', outfile: 'dist/server/index.js' });
 const manifest = JSON.parse(await readFile('.openai/hosting.json', 'utf8'));
 await writeFile('dist/.openai/hosting.json', JSON.stringify(manifest, null, 2) + '\n');
-console.log('Built browser app and provider-neutral Worker. No model configured.');
+console.log('Built browser app and provider-neutral Worker. Diet data read from data/nutrition.');

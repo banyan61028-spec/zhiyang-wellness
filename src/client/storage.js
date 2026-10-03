@@ -1,12 +1,13 @@
 import { cleanProfile, emptyState, migrateLegacy, nextPlanRecord, validFavorite } from '../shared/records.js';
 import { scoreAssessment, questionnaire } from '../shared/assessment.js';
+import { cleanDietSettings, validateMeal } from '../shared/meals.js';
 export const DB_NAME = 'zhiyang-local-v2';
-const stores = ['profile', 'favorites', 'plans', 'assessments', 'drafts', 'meta'];
+const stores = ['profile', 'favorites', 'plans', 'assessments', 'drafts', 'meta', 'meals', 'dietSettings'];
 export async function openStorage(factory = globalThis.indexedDB, legacy = globalThis.localStorage) {
   if (!factory) throw new Error('此浏览器无法使用本机存储');
   const db = await new Promise((resolve, reject) => {
-    const req = factory.open(DB_NAME, 1);
-    req.onupgradeneeded = () => stores.forEach(name => req.result.createObjectStore(name));
+    const req = factory.open(DB_NAME, 2);
+    req.onupgradeneeded = () => { const db = req.result; for (const name of stores) if (!db.objectStoreNames.contains(name)) db.createObjectStore(name); };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
     req.onblocked = () => reject(new Error('请关闭其他旧版页面后重试'));
@@ -41,9 +42,15 @@ export async function openStorage(factory = globalThis.indexedDB, legacy = globa
     close: () => db.close(),
     load: () => transact(stores, (tx, set) => {
       const state = emptyState(); set(state);
-      for (const [store, field, key] of [['profile', 'profile', 'current'], ['favorites', 'saved'], ['plans', 'plans'], ['assessments', 'assessments'], ['drafts', 'draft', 'current']]) {
+      for (const [store, field, key] of [['profile', 'profile', 'current'], ['favorites', 'saved'], ['plans', 'plans'], ['assessments', 'assessments'], ['drafts', 'draft', 'current'], ['meals', 'meals'], ['dietSettings', 'dietSettings', 'current']]) {
         const req = key ? tx.objectStore(store).get(key) : tx.objectStore(store).getAll();
-        req.onsuccess = () => { if (req.result !== undefined) state[field] = field === 'profile' ? cleanProfile(req.result) : req.result; };
+        req.onsuccess = () => {
+          if (req.result === undefined) return;
+          if (field === 'profile') state.profile = cleanProfile(req.result);
+          else if (field === 'dietSettings') { try { state.dietSettings = cleanDietSettings(req.result); } catch { /* Keep the empty confirmed-target default. */ } }
+          else if (field === 'meals') state.meals = req.result.filter(meal => { try { validateMeal(meal); return true; } catch { return false; } });
+          else state[field] = req.result;
+        };
       }
     }, 'readonly'),
     profile: input => transact(['profile'], tx => tx.objectStore('profile').put(cleanProfile(input), 'current')),
@@ -66,6 +73,9 @@ export async function openStorage(factory = globalThis.indexedDB, legacy = globa
       if (draft && draft.questionnaireVersion !== questionnaire.id) return Promise.reject(new Error('草稿版本不匹配'));
       return transact(['drafts'], tx => draft ? tx.objectStore('drafts').put(draft, 'current') : tx.objectStore('drafts').delete('current'));
     },
+    saveMeal: meal => transact(['meals'], (tx, set, abort) => { try { const record = validateMeal(meal); tx.objectStore('meals').put(record, record.id); set(record); } catch (error) { abort(error); } }),
+    removeMeal: id => transact(['meals'], tx => tx.objectStore('meals').delete(id)),
+    dietSettings: input => transact(['dietSettings'], (tx, set, abort) => { try { const record = cleanDietSettings(input); tx.objectStore('dietSettings').put(record, 'current'); set(record); } catch (error) { abort(error); } }),
     clear: async () => {
       // Remove legacy first; never claim a full reset if this fails.
       legacy?.removeItem('zhiyang-demo-v1');

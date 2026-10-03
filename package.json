@@ -6,6 +6,7 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "dev": "node scripts/dev.mjs",
+    "import-nutrition": "node scripts/import-nutrition.mjs",
     "test": "node --test tests/*.test.js"
   },
   "devDependencies": { "esbuild": "0.25.12", "fake-indexeddb": "6.2.4" }

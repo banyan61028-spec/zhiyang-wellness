@@ -1,4 +1,5 @@
 import { respond } from './agent.js';
+import { handleDiet } from './diet.js';
 const MAX_BYTES = 48 * 1024;
 const buckets = new Map();
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' } });
@@ -15,10 +16,11 @@ async function boundedJSON(request) {
 export default {
   async fetch(request, env = {}) {
     const url = new URL(request.url);
-    if (url.pathname !== '/api/agent') return env.ASSETS ? env.ASSETS.fetch(request) : new Response('Not found', { status: 404 });
-    if (request.method !== 'POST') return json({ error: '请使用 POST 请求' }, 405);
+    const diet = url.pathname.startsWith('/api/diet');
+    if (!diet && url.pathname !== '/api/agent') return env.ASSETS ? env.ASSETS.fetch(request) : new Response('Not found', { status: 404 });
     if (request.headers.get('origin') && request.headers.get('origin') !== url.origin) return json({ error: '请求来源不匹配' }, 403);
-    if (!request.headers.get('content-type')?.startsWith('application/json')) return json({ error: '请求需为 JSON' }, 415);
+    if (request.method !== 'POST' && !(diet && request.method === 'GET')) return json({ error: '请使用 POST 请求' }, 405);
+    if (request.method === 'POST' && !diet && !request.headers.get('content-type')?.startsWith('application/json')) return json({ error: '请求需为 JSON' }, 415);
     // Prototype-only, per-isolate rate limit; only short-lived request counters use the platform-provided IP; no health text is logged.
     const key = request.headers.get('cf-connecting-ip') || 'local';
     const now = Date.now();
@@ -27,7 +29,7 @@ export default {
     if (buckets.size >= 1000 && !buckets.has(key)) return json({ error: '服务繁忙，请稍后重试' }, 429);
     buckets.set(key, bucket);
     if (bucket.count > 40) return json({ error: '请求较多，请稍后重试' }, 429);
-    try { return json(respond(await boundedJSON(request))); }
+    try { return diet ? handleDiet(request, env, url) : json(respond(await boundedJSON(request))); }
     catch (error) { return json({ error: error.message === 'size' ? '请求内容过长' : '请求或回复校验未通过' }, error.message === 'size' ? 413 : 400); }
   },
 };

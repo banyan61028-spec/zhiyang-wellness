@@ -45,6 +45,19 @@ test('reset clears every store and legacy; re-opening never remigrates old recor
   const reopened = await openStorage(factory, legacy), state = await reopened.load();
   assert.deepEqual([state.saved.length, state.plans.length, state.assessments.length], [0, 0, 0]); assert.equal(state.draft, null); assert.equal(state.profile.name, '体验用户'); reopened.close();
 });
+test('meal records stay on this device and reject invented calories for unmatched foods', async () => {
+  const s = await openStorage(new IDBFactory(), fakeLegacy(null));
+  const meal = { id: crypto.randomUUID(), date: '2026-10-03', meal: 'lunch', inputType: 'text', rawText: '米饭', items: [{ name: '米饭', foodId: 'rice-cooked', status: 'matched', grams: 150, portionLabel: '中', nutrition: { kcal: 195, protein: 4, fat: 0, carb: 42, grams: 150, source: '示例', sourceNote: '示例来源', version: 't', foodId: 'rice-cooked' }, userAdjusted: false }], stub: true };
+  await s.saveMeal(meal);
+  assert.equal((await s.load()).meals[0].items[0].nutrition.kcal, 195);
+  await assert.rejects(s.saveMeal({ ...meal, id: crypto.randomUUID(), items: [{ name: '牛肉面', status: 'unestimated', grams: 400, nutrition: { kcal: 1, protein: 0, fat: 0, carb: 0, source: 'x', sourceNote: 'x', version: 't', foodId: 'x' } }] }), /无法估算/);
+  await s.dietSettings({ targets: { kcal: 1800, protein: null, fat: null, carb: null, confirmed: true }, flags: { kidney: true }, flagsConfirmed: true });
+  assert.equal((await s.load()).dietSettings.targets.kcal, 1800);
+  assert.equal((await s.load()).dietSettings.flags.kidney, true);
+  await s.clear();
+  assert.equal((await s.load()).meals.length, 0);
+  s.close();
+});
 test('closed/unavailable storage rejects writes instead of reporting success', async () => {
   const s = await openStorage(new IDBFactory(), fakeLegacy(null)); s.close(); await assert.rejects(s.profile({ name: '未保存' }));
   await assert.rejects(openStorage(null, fakeLegacy(null)));

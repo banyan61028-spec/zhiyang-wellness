@@ -1,0 +1,40 @@
+id,name,aliases,kcal_per_100g,protein_g_per_100g,fat_g_per_100g,carb_g_per_100g,source,source_note,version,calculable,example,portion_small_g,portion_medium_g,portion_large_g
+rice-cooked,米饭,白饭|蒸米饭|大米饭,130,2.7,0.3,28.2,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,100,150,200
+rice-porridge,白粥,大米粥|粥,46,0.9,0.1,9.7,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,200,300,400
+noodle-cooked,面条,煮面条|挂面|阳春面,138,4.5,2.1,25.2,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,150,250,350
+oat-cooked,燕麦粥,燕麦|麦片粥,71,2.5,1.5,12,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,150,200,280
+millet-cooked,小米粥,煮小米,119,3.5,1,23.7,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,200,250,350
+sweet-potato,红薯,地瓜|烤红薯,90,2,0.2,20.7,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,100,150,250
+corn-cooked,玉米,玉米粒|甜玉米,96,3.4,1.5,21,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,80,150,200
+potato-cooked,土豆,马铃薯,87,1.9,0.1,20.1,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,100,150,250
+egg-whole,鸡蛋,蛋|煮鸡蛋|荷包蛋,143,12.6,9.5,0.7,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,40,50,60
+egg-white,鸡蛋白,蛋白|蛋清,52,10.9,0.2,0.7,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,30,33,40
+chicken-breast,鸡胸肉,鸡胸|熟鸡胸,165,31,3.6,0,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,80,120,180
+pork-lean,猪瘦肉,瘦肉|里脊,197,27.3,9,0,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,50,80,120
+beef-cooked,牛肉,瘦牛肉|熟牛肉,250,26,15,0,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,50,80,120
+salmon,三文鱼,鲑鱼,208,20,13,0,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,80,100,150
+shrimp,虾仁,虾|熟虾,99,24,0.3,0.2,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,60,100,150
+tofu-firm,北豆腐,豆腐|老豆腐,76,8.1,4.8,1.9,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,80,150,200
+tofu-silken,内酯豆腐,嫩豆腐,55,4.8,2.7,2,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,80,150,200
+edamame,毛豆,熟毛豆,121,11.9,5.2,8.9,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,50,80,120
+milk,牛奶,纯牛奶,61,3.2,3.3,4.8,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,200,250,300
+yogurt,原味酸奶,酸奶,63,5.3,1.6,7,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,100,150,200
+broccoli,西兰花,绿花菜,34,2.8,0.4,6.6,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,80,150,200
+spinach,菠菜,,23,2.9,0.4,3.6,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,80,150,200
+tomato,番茄,西红柿,18,0.9,0.2,3.9,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,100,150,250
+cucumber,黄瓜,青瓜,15,0.7,0.1,3.6,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,80,150,200
+carrot,胡萝卜,红萝卜,41,0.9,0.2,9.6,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,50,100,150
+cabbage,大白菜,白菜,13,1.5,0.2,2.2,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,100,150,250
+eggplant,茄子,,25,1,0.2,5.9,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,80,150,200
+shiitake,香菇,鲜香菇,34,2.2,0.5,6.8,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,50,80,120
+lettuce,生菜,,15,1.4,0.2,2.9,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,50,80,120
+pumpkin,南瓜,,20,0.7,0.1,4.9,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,80,150,200
+apple,苹果,,52,0.3,0.2,13.8,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,100,150,200
+banana,香蕉,,89,1.1,0.3,22.8,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,80,120,150
+orange,橙子,橘子|橙,47,0.9,0.1,11.8,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,100,150,200
+peanut,花生,熟花生,567,25.8,49.2,16.1,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,15,25,40
+oil,食用油,油|植物油,884,0,100,0,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,5,10,15
+beef-noodle,牛肉面,牛肉拉面,,,,,示例占位,示例占位。没有可计算的每100克营养数据；匹配到也会标为无法估算，不会编造热量。,example-2026-10-03,false,true,300,450,600
+steamed-bun,馒头,,,,,,示例占位,示例占位。没有可计算的每100克营养数据；匹配到也会标为无法估算，不会编造热量。,example-2026-10-03,false,true,50,100,150
+dumpling,饺子,水饺,,,,,示例占位,示例占位。没有可计算的每100克营养数据；匹配到也会标为无法估算，不会编造热量。,example-2026-10-03,false,true,100,200,300
+takeout-combo,外卖套餐,套餐,,,,,示例占位,示例占位。没有可计算的每100克营养数据；匹配到也会标为无法估算，不会编造热量。,example-2026-10-03,false,true,300,450,600

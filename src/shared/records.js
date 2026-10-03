@@ -1,5 +1,6 @@
+import { defaultDietSettings } from './meals.js';
 export const defaultProfile = { name: '体验用户', goal: '均衡饮食', habit: '自己做饭与外食都有', preference: '暂无偏好', updated: '' };
-export const emptyState = () => ({ profile: { ...defaultProfile }, saved: [], plans: [], assessments: [], draft: null });
+export const emptyState = () => ({ profile: { ...defaultProfile }, saved: [], plans: [], assessments: [], draft: null, meals: [], dietSettings: defaultDietSettings() });
 export function cleanProfile(input = {}) {
   return Object.fromEntries(Object.entries(defaultProfile).map(([key, fallback]) => [key, typeof input[key] === 'string' ? input[key].slice(0, key === 'name' ? 20 : 80) : fallback]));
 }
