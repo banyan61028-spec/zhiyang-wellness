@@ -1,5 +1,5 @@
 :root{
-  --color-bg:#f3f6f4;--color-surface:#ffffff;--color-ink:#1b2420;--color-muted:#5c6761;--color-line:#e3eae6;
+  --color-bg:#f3f6f4;--color-surface:#ffffff;--color-ink:#263c32;--color-muted:#69736c;--color-line:#e3eae6;
   --color-primary:#0f766e;--color-primary-strong:#115e59;--color-primary-soft:#e7f5f2;
   --color-over:#b43324;--color-over-soft:#fdecea;--color-under:#0f766e;--color-warn:#8a5a00;--color-warn-soft:#f8f1e3;
   --color-fat:#a68448;--color-carb:#5f8f86;
@@ -37,8 +37,10 @@
 .navigation .nav-item,.primary-button,.outline-button,.secondary-button{min-height:44px}
 .primary-button{border-radius:var(--radius-sm);background:var(--color-primary)}
 .primary-button:hover{background:var(--color-primary-strong)}
-.outline-button{border-radius:var(--radius-sm);border-color:var(--color-line);color:var(--color-primary-strong)}
-.nav-item.active{color:var(--color-primary-strong);background:var(--color-primary-soft)}
+.outline-button{border-radius:var(--radius-sm);border-color:var(--color-line);color:#627751}
+.nav-item.active{color:#205746;background:var(--color-primary-soft)}
+.brand,.avatar,.date-stamp strong,.text-button:hover,a,.sidebar-ai,.secondary-button,.segmented button.active{color:#205746}
+.brand-mark{color:#d9edb6}
 .icon-button{width:44px;height:44px}
 .demo-badge,.avatar{min-width:44px;min-height:44px}
 input[type="number"],input[type="text"],select{font-variant-numeric:tabular-nums}
@@ -46,7 +48,7 @@ input[type="number"],input[type="text"],select{font-variant-numeric:tabular-nums
 .diet-page{max-width:1080px}
 .diet-heading{margin-bottom:var(--space-5)}
 .diet-heading h1{font-size:var(--text-2xl);letter-spacing:-.02em}
-.diet-heading .eyebrow{font-size:var(--text-xs);letter-spacing:.12em;color:var(--color-primary)}
+.diet-heading .eyebrow{font-size:var(--text-xs);letter-spacing:.12em;color:#6a7461}
 .privacy-banner{margin:0 0 var(--space-4);padding:var(--space-3) var(--space-4);border-radius:var(--radius-md);background:var(--color-surface);border:1px solid var(--color-line);color:var(--color-muted);font-size:var(--text-sm);line-height:1.7;box-shadow:var(--shadow-sm)}
 .diet-layout{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(280px,.85fr);gap:var(--space-4);align-items:start}
 .diet-card,.dash,.recipe-feature,.saved-meal,.draft-editor{background:var(--color-surface);border:1px solid var(--color-line);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm)}
@@ -153,9 +155,10 @@ input[type="number"],input[type="text"],select{font-variant-numeric:tabular-nums
 .check-line input{width:20px;height:20px;accent-color:var(--color-primary)}
 .frozen-block{margin-top:var(--space-6);background:var(--color-surface);border:1px dashed var(--color-line);border-radius:var(--radius-lg);padding:var(--space-1) var(--space-5) var(--space-5)}
 .frozen-block>summary{cursor:pointer;min-height:44px;display:flex;align-items:center;color:var(--color-muted)}
-.diet-link{color:var(--color-primary-strong)}
+.diet-link{color:#205746}
 
 @media(max-width:760px){
+  .topbar-label,.nav-item.active{color:#205746}
   .navigation .nav-item{height:100%}
   .diet-layout,.target-grid,.recipe-feature,.dash{grid-template-columns:1fr}
   .diet-library{grid-template-columns:repeat(2,minmax(0,1fr))}
