@@ -220,13 +220,14 @@ export async function buildRecommendation(body, env, source, requestId) {
 }
 
 export function mealMessages({ text, image, source }) {
-  const names = source.foods.map(food => food.aliases.length ? `${food.name}（${food.aliases.join('、')}）` : food.name).join('、');
+  const names = source.foods.map(food => food.aliases.length ? `${food.name}：${food.aliases.join('、')}` : food.name).join('；');
   const instruction = [
     '把这一餐分成若干项，每项只要名称、分量说法和估计克数。不要输出热量或营养素。',
+    'name 只输出一个简短菜名，不要带别名，不要加括号。',
     '用户说的是一道菜时，保留这道菜的整体名称，不要拆成原料。例如「番茄炒蛋」「红烧肉」「牛肉面」各算一项，不要拆成番茄、鸡蛋、油或面条。',
     '只有用户明确分开列出的食材，才各自成项。例如「米饭、青菜和鸡腿」是三项。',
     '照片里确实分开的食物各自成项。已经用整道菜表示的，不要再把这道菜的原料重复列出来，也不要又写菜名又写原料。',
-    `能对上这些名字就用表里的叫法：${names}。对不上就保留用户说的或照片里看到的名字。不要为了凑表里的原料把一道菜拆开。`,
+    `能对上就用冒号左边的标准名。对照：${names}。对不上就保留用户说的或照片里看到的简短名字。不要为了凑表里的原料把一道菜拆开。`,
     '只返回 JSON：{"items":[{"name":"","portionLabel":"","grams":0}]}',
   ].join('');
   if (!image) return [{ role: 'system', content: instruction }, { role: 'user', content: text }];

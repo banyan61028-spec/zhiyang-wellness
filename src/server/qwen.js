@@ -33,11 +33,21 @@ export function extractJson(text) {
   return JSON.parse(raw.slice(start, end + 1));
 }
 
+export function cleanModelFoodName(value) {
+  let text = String(value ?? '');
+  let previous;
+  do {
+    previous = text;
+    text = text.replace(/[（(][^（()）]*[）)]/g, '');
+  } while (text !== previous);
+  return text.replace(/[（(].*$/g, '').replace(/[）)]/g, '').replace(/[\s\u3000]+/g, '').slice(0, 40);
+}
+
 export function readModelItems(payload) {
   const items = payload?.items;
   if (!Array.isArray(items) || !items.length || items.length > 12) throw new Error('模型返回的食物列表无效');
   return items.map(item => {
-    const name = String(item?.name ?? '').trim().slice(0, 40);
+    const name = cleanModelFoodName(item?.name);
     if (!name) throw new Error('模型返回的食物名为空');
     const grams = Number(item?.grams);
     return {

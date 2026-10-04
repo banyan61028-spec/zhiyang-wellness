@@ -2657,11 +2657,20 @@ function extractJson(text) {
   if (start < 0 || end <= start) throw new Error("\u6A21\u578B\u6CA1\u6709\u8FD4\u56DE\u53EF\u89E3\u6790\u7684\u7ED3\u679C");
   return JSON.parse(raw.slice(start, end + 1));
 }
+function cleanModelFoodName(value) {
+  let text = String(value ?? "");
+  let previous;
+  do {
+    previous = text;
+    text = text.replace(/[（(][^（()）]*[）)]/g, "");
+  } while (text !== previous);
+  return text.replace(/[（(].*$/g, "").replace(/[）)]/g, "").replace(/[\s\u3000]+/g, "").slice(0, 40);
+}
 function readModelItems(payload) {
   const items = payload?.items;
   if (!Array.isArray(items) || !items.length || items.length > 12) throw new Error("\u6A21\u578B\u8FD4\u56DE\u7684\u98DF\u7269\u5217\u8868\u65E0\u6548");
   return items.map((item) => {
-    const name = String(item?.name ?? "").trim().slice(0, 40);
+    const name = cleanModelFoodName(item?.name);
     if (!name) throw new Error("\u6A21\u578B\u8FD4\u56DE\u7684\u98DF\u7269\u540D\u4E3A\u7A7A");
     const grams = Number(item?.grams);
     return {
@@ -2947,13 +2956,14 @@ async function buildRecommendation(body, env, source, requestId) {
   };
 }
 function mealMessages({ text, image, source }) {
-  const names = source.foods.map((food) => food.aliases.length ? `${food.name}\uFF08${food.aliases.join("\u3001")}\uFF09` : food.name).join("\u3001");
+  const names = source.foods.map((food) => food.aliases.length ? `${food.name}\uFF1A${food.aliases.join("\u3001")}` : food.name).join("\uFF1B");
   const instruction = [
     "\u628A\u8FD9\u4E00\u9910\u5206\u6210\u82E5\u5E72\u9879\uFF0C\u6BCF\u9879\u53EA\u8981\u540D\u79F0\u3001\u5206\u91CF\u8BF4\u6CD5\u548C\u4F30\u8BA1\u514B\u6570\u3002\u4E0D\u8981\u8F93\u51FA\u70ED\u91CF\u6216\u8425\u517B\u7D20\u3002",
+    "name \u53EA\u8F93\u51FA\u4E00\u4E2A\u7B80\u77ED\u83DC\u540D\uFF0C\u4E0D\u8981\u5E26\u522B\u540D\uFF0C\u4E0D\u8981\u52A0\u62EC\u53F7\u3002",
     "\u7528\u6237\u8BF4\u7684\u662F\u4E00\u9053\u83DC\u65F6\uFF0C\u4FDD\u7559\u8FD9\u9053\u83DC\u7684\u6574\u4F53\u540D\u79F0\uFF0C\u4E0D\u8981\u62C6\u6210\u539F\u6599\u3002\u4F8B\u5982\u300C\u756A\u8304\u7092\u86CB\u300D\u300C\u7EA2\u70E7\u8089\u300D\u300C\u725B\u8089\u9762\u300D\u5404\u7B97\u4E00\u9879\uFF0C\u4E0D\u8981\u62C6\u6210\u756A\u8304\u3001\u9E21\u86CB\u3001\u6CB9\u6216\u9762\u6761\u3002",
     "\u53EA\u6709\u7528\u6237\u660E\u786E\u5206\u5F00\u5217\u51FA\u7684\u98DF\u6750\uFF0C\u624D\u5404\u81EA\u6210\u9879\u3002\u4F8B\u5982\u300C\u7C73\u996D\u3001\u9752\u83DC\u548C\u9E21\u817F\u300D\u662F\u4E09\u9879\u3002",
     "\u7167\u7247\u91CC\u786E\u5B9E\u5206\u5F00\u7684\u98DF\u7269\u5404\u81EA\u6210\u9879\u3002\u5DF2\u7ECF\u7528\u6574\u9053\u83DC\u8868\u793A\u7684\uFF0C\u4E0D\u8981\u518D\u628A\u8FD9\u9053\u83DC\u7684\u539F\u6599\u91CD\u590D\u5217\u51FA\u6765\uFF0C\u4E5F\u4E0D\u8981\u53C8\u5199\u83DC\u540D\u53C8\u5199\u539F\u6599\u3002",
-    `\u80FD\u5BF9\u4E0A\u8FD9\u4E9B\u540D\u5B57\u5C31\u7528\u8868\u91CC\u7684\u53EB\u6CD5\uFF1A${names}\u3002\u5BF9\u4E0D\u4E0A\u5C31\u4FDD\u7559\u7528\u6237\u8BF4\u7684\u6216\u7167\u7247\u91CC\u770B\u5230\u7684\u540D\u5B57\u3002\u4E0D\u8981\u4E3A\u4E86\u51D1\u8868\u91CC\u7684\u539F\u6599\u628A\u4E00\u9053\u83DC\u62C6\u5F00\u3002`,
+    `\u80FD\u5BF9\u4E0A\u5C31\u7528\u5192\u53F7\u5DE6\u8FB9\u7684\u6807\u51C6\u540D\u3002\u5BF9\u7167\uFF1A${names}\u3002\u5BF9\u4E0D\u4E0A\u5C31\u4FDD\u7559\u7528\u6237\u8BF4\u7684\u6216\u7167\u7247\u91CC\u770B\u5230\u7684\u7B80\u77ED\u540D\u5B57\u3002\u4E0D\u8981\u4E3A\u4E86\u51D1\u8868\u91CC\u7684\u539F\u6599\u628A\u4E00\u9053\u83DC\u62C6\u5F00\u3002`,
     '\u53EA\u8FD4\u56DE JSON\uFF1A{"items":[{"name":"","portionLabel":"","grams":0}]}'
   ].join("");
   if (!image) return [{ role: "system", content: instruction }, { role: "user", content: text }];

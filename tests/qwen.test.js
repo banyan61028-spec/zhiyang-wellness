@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { qwenChat, qwenConfig } from '../src/server/qwen.js';
+import { cleanModelFoodName, qwenChat, qwenConfig, readModelItems } from '../src/server/qwen.js';
 import { loadNutrition, mealMessages, recognizeMeal } from '../src/server/diet.js';
 import { createBooheeClient } from '../src/server/boohee.js';
 
@@ -125,7 +125,44 @@ test('a named dish stays whole for Boohee, and the prompt refuses to split it in
   assert.match(instruction, /不要拆成原料/);
   assert.match(instruction, /不要再把这道菜的原料重复列出来/);
   assert.match(instruction, /又写菜名又写原料/);
+  assert.match(instruction, /name 只输出一个简短菜名/);
+  assert.match(instruction, /不要带别名/);
+  assert.match(instruction, /不要加括号/);
+  assert.match(instruction, /米饭：白饭、蒸米饭、大米饭/);
+  assert.equal(instruction.includes('米饭（白饭'), false);
   const photo = mealMessages({ text: '', image: 'data:image/jpeg;base64,aaaa', source });
   assert.equal(photo[0].content, instruction);
   assert.match(photo[1].content[1].text, /照片/);
+});
+
+test('alias parentheses copied from the prompt are removed before matching', async () => {
+  assert.equal(cleanModelFoodName('米饭（白饭、蒸米饭、大米饭）'), '米饭');
+  assert.equal(cleanModelFoodName('  苹果 (红富士)  '), '苹果');
+  assert.equal(cleanModelFoodName('煮小米（干饭式）'), '煮小米');
+  assert.equal(cleanModelFoodName('米饭（白饭）（蒸米饭）'), '米饭');
+  assert.equal(cleanModelFoodName('米\u3000饭（白饭、蒸'), '米饭');
+  assert.deepEqual(readModelItems({ items: [{ name: '米饭（白饭、蒸米饭、大米饭）', portionLabel: '一碗', grams: 200 }] }).map(item => item.name), ['米饭']);
+  assert.throws(() => readModelItems({ items: [{ name: '（白饭、蒸米饭）' }] }), /食物名为空/);
+
+  const keywords = [];
+  const draft = await recognizeMeal({ imageDataUrl: 'data:image/jpeg;base64,aaaa' }, {
+    DASHSCOPE_API_KEY: 'test-key',
+    DASHSCOPE_VISION_MODEL: 'qwen3.8-flash',
+    qwenFetch: async (_url, options) => Response.json({
+      choices: [{ message: { content: JSON.stringify({ items: [
+        { name: '米饭（白饭、蒸米饭、大米饭）', portionLabel: '中', grams: 150 },
+      ] }) } }],
+    }),
+    booheeClient: createBooheeClient({
+      apiKey: 'boohee-key',
+      fetch: async (url) => {
+        keywords.push(new URL(String(url)).searchParams.get('keyword'));
+        return Response.json({ code: 0, data: { foods: [] } });
+      },
+    }),
+  }, source, crypto.randomUUID());
+  assert.equal(draft.items[0].name, '米饭');
+  assert.equal(draft.items[0].foodId, 'rice-cooked');
+  assert.equal(draft.items[0].nutrition.kcal, 195);
+  assert.deepEqual(keywords, []);
 });
