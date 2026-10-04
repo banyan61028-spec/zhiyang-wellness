@@ -36,18 +36,13 @@
       "name": "白粥",
       "aliases": [
         "大米粥",
-        "粥"
+        "稀饭"
       ],
-      "per100g": {
-        "kcal": 46,
-        "protein": 0.9,
-        "fat": 0.1,
-        "carb": 9.7
-      },
-      "source": "USDA FoodData Central（示例）",
-      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
-      "version": "example-2026-10-03",
-      "calculable": true,
+      "per100g": null,
+      "source": "本地占位",
+      "sourceNote": "本地没有可引用的稀粥数据。原先每100克 46 千卡对不上 USDA 条目，是把煮米饭按比例稀释后的数字，已撤下。记录时按这个名字查询薄荷；查不到或失败才无法估算。",
+      "version": "example-2026-10-04",
+      "calculable": false,
       "example": true,
       "portion": {
         "small": 200,
@@ -57,11 +52,9 @@
     },
     {
       "id": "noodle-cooked",
-      "name": "面条",
+      "name": "煮鸡蛋面",
       "aliases": [
-        "煮面条",
-        "挂面",
-        "阳春面"
+        "鸡蛋面"
       ],
       "per100g": {
         "kcal": 138,
@@ -69,9 +62,9 @@
         "fat": 2.1,
         "carb": 25.2
       },
-      "source": "USDA FoodData Central（示例）",
-      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
-      "version": "example-2026-10-03",
+      "source": "USDA FoodData Central",
+      "sourceNote": "参考 USDA FoodData Central SR Legacy FDC 169732（Noodles egg enriched cooked）每100克。蛋白质 4.54 四舍五入为 4.5，脂肪 2.07 为 2.1，碳水 25.16 为 25.2。这是煮鸡蛋面，不是挂面，也不是阳春面。公开领域数据，不是中国食物成分表。待审核。",
+      "version": "usda-fdc-2026-10-04",
       "calculable": true,
       "example": true,
       "portion": {
@@ -84,8 +77,8 @@
       "id": "oat-cooked",
       "name": "燕麦粥",
       "aliases": [
-        "燕麦",
-        "麦片粥"
+        "麦片粥",
+        "煮燕麦"
       ],
       "per100g": {
         "kcal": 71,
@@ -93,9 +86,9 @@
         "fat": 1.5,
         "carb": 12
       },
-      "source": "USDA FoodData Central（示例）",
-      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
-      "version": "example-2026-10-03",
+      "source": "USDA FoodData Central",
+      "sourceNote": "参考 USDA FoodData Central SR Legacy FDC 173905（Cereals oats regular and quick unenriched cooked with water without salt）每100克。蛋白质 2.54 四舍五入为 2.5，脂肪 1.52 为 1.5，碳水 12.0。这是加水煮软的燕麦，不是干燕麦片。公开领域数据，不是中国食物成分表。待审核。",
+      "version": "usda-fdc-2026-10-04",
       "calculable": true,
       "example": true,
       "portion": {
@@ -106,9 +99,10 @@
     },
     {
       "id": "millet-cooked",
-      "name": "小米粥",
+      "name": "煮小米（干饭式）",
       "aliases": [
-        "煮小米"
+        "煮小米",
+        "干饭小米"
       ],
       "per100g": {
         "kcal": 119,
@@ -116,23 +110,24 @@
         "fat": 1,
         "carb": 23.7
       },
-      "source": "USDA FoodData Central（示例）",
-      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
-      "version": "example-2026-10-03",
+      "source": "USDA FoodData Central",
+      "sourceNote": "参考 USDA FoodData Central SR Legacy FDC 168871（Millet cooked）每100克。蛋白质 3.51 四舍五入为 3.5，碳水 23.67 为 23.7。这是煮熟的小米干饭，不是稀小米粥。公开领域数据，不是中国食物成分表。待审核。",
+      "version": "usda-fdc-2026-10-04",
       "calculable": true,
       "example": true,
       "portion": {
-        "small": 200,
-        "medium": 250,
-        "large": 350
+        "small": 100,
+        "medium": 150,
+        "large": 200
       }
     },
     {
       "id": "sweet-potato",
-      "name": "红薯",
+      "name": "烤红薯",
       "aliases": [
+        "红薯",
         "地瓜",
-        "烤红薯"
+        "烤地瓜"
       ],
       "per100g": {
         "kcal": 90,
@@ -140,9 +135,9 @@
         "fat": 0.2,
         "carb": 20.7
       },
-      "source": "USDA FoodData Central（示例）",
-      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
-      "version": "example-2026-10-03",
+      "source": "USDA FoodData Central",
+      "sourceNote": "参考 USDA FoodData Central SR Legacy FDC 170134（Sweet potato cooked baked in skin flesh with salt）每100克。蛋白质 2.01 四舍五入为 2，脂肪 0.15 为 0.2，碳水 20.71 为 20.7。这是烤红薯，不是生红薯。公开领域数据，不是中国食物成分表。待审核。",
+      "version": "usda-fdc-2026-10-04",
       "calculable": true,
       "example": true,
       "portion": {
@@ -153,8 +148,9 @@
     },
     {
       "id": "corn-cooked",
-      "name": "玉米",
+      "name": "甜玉米（煮）",
       "aliases": [
+        "玉米",
         "玉米粒",
         "甜玉米"
       ],
@@ -164,9 +160,9 @@
         "fat": 1.5,
         "carb": 21
       },
-      "source": "USDA FoodData Central（示例）",
-      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
-      "version": "example-2026-10-03",
+      "source": "USDA FoodData Central",
+      "sourceNote": "参考 USDA FoodData Central SR Legacy FDC 168525（Corn sweet yellow cooked boiled drained with salt）每100克。蛋白质 3.41 四舍五入为 3.4，碳水 20.98 为 21。这是煮甜玉米，不是玉米面或爆米花。公开领域数据，不是中国食物成分表。待审核。",
+      "version": "usda-fdc-2026-10-04",
       "calculable": true,
       "example": true,
       "portion": {
@@ -177,8 +173,9 @@
     },
     {
       "id": "potato-cooked",
-      "name": "土豆",
+      "name": "煮土豆",
       "aliases": [
+        "土豆",
         "马铃薯"
       ],
       "per100g": {
@@ -187,9 +184,9 @@
         "fat": 0.1,
         "carb": 20.1
       },
-      "source": "USDA FoodData Central（示例）",
-      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
-      "version": "example-2026-10-03",
+      "source": "USDA FoodData Central",
+      "sourceNote": "参考 USDA FoodData Central SR Legacy FDC 170438（Potatoes boiled cooked in skin flesh without salt）每100克。能量 87，蛋白质 1.87 四舍五入为 1.9，碳水 20.13 为 20.1。这是带皮煮的土豆肉，不是生土豆或炸土豆。公开领域数据，不是中国食物成分表。待审核。",
+      "version": "usda-fdc-2026-10-04",
       "calculable": true,
       "example": true,
       "portion": {
@@ -980,6 +977,57 @@
       }
     },
     {
+      "id": "millet-porridge",
+      "name": "小米粥",
+      "aliases": [],
+      "per100g": null,
+      "source": "本地占位",
+      "sourceNote": "本地没有可引用的稀小米粥数据。煮小米（干饭式）是另一种食物，不能拿来当稀粥。记录时按这个名字查询薄荷；查不到或失败才无法估算。",
+      "version": "example-2026-10-04",
+      "calculable": false,
+      "example": true,
+      "portion": {
+        "small": 200,
+        "medium": 300,
+        "large": 400
+      }
+    },
+    {
+      "id": "chinese-noodle",
+      "name": "面条",
+      "aliases": [
+        "煮面条",
+        "挂面"
+      ],
+      "per100g": null,
+      "source": "本地占位",
+      "sourceNote": "本地能算的面是煮鸡蛋面，不是挂面或普通面条。记录时按这个名字查询薄荷；查不到或失败才无法估算。",
+      "version": "example-2026-10-04",
+      "calculable": false,
+      "example": true,
+      "portion": {
+        "small": 150,
+        "medium": 250,
+        "large": 350
+      }
+    },
+    {
+      "id": "yangchun-noodle",
+      "name": "阳春面",
+      "aliases": [],
+      "per100g": null,
+      "source": "本地占位",
+      "sourceNote": "阳春面是带汤的面，不是煮鸡蛋面。本地不计算。记录时按这个名字查询薄荷；查不到或失败才无法估算。",
+      "version": "example-2026-10-04",
+      "calculable": false,
+      "example": true,
+      "portion": {
+        "small": 300,
+        "medium": 450,
+        "large": 600
+      }
+    },
+    {
       "id": "beef-noodle",
       "name": "牛肉面",
       "aliases": [
@@ -1053,12 +1101,12 @@
   "recipes": [
     {
       "id": "millet-egg",
-      "name": "小米粥配煮蛋",
+      "name": "煮小米配煮蛋",
       "meal": "breakfast",
       "ingredients": [
         {
           "foodId": "millet-cooked",
-          "grams": 250
+          "grams": 100
         },
         {
           "foodId": "egg-whole",
@@ -1066,10 +1114,10 @@
         }
       ],
       "steps": [
-        "小米加水熬成粥。",
-        "鸡蛋煮熟，配粥一起吃。"
+        "煮小米按干饭盛一碗。",
+        "鸡蛋煮熟，配在旁边。"
       ],
-      "note": "北方常见的温和早餐。蛋白质不算高。",
+      "note": "这是干饭式煮小米，不是稀小米粥。蛋白质不算高。",
       "avoid": [],
       "sourceNote": "待审核草稿。家常做法简述。热量由原料克数和食物表计算，不在这里手写。",
       "example": true
@@ -1127,7 +1175,7 @@
     },
     {
       "id": "sweet-potato-egg",
-      "name": "红薯鸡蛋",
+      "name": "烤红薯鸡蛋",
       "meal": "breakfast",
       "ingredients": [
         {
@@ -1140,32 +1188,33 @@
         }
       ],
       "steps": [
-        "红薯蒸熟或烤熟。",
+        "红薯烤熟。",
         "配一个煮鸡蛋。"
       ],
-      "note": "好做，主食是薯类。",
+      "note": "好做，主食用的是烤红薯。",
       "avoid": [],
       "sourceNote": "待审核草稿。家常做法简述。热量由原料克数和食物表计算，不在这里手写。",
       "example": true
     },
     {
       "id": "pumpkin-millet",
-      "name": "南瓜小米粥",
+      "name": "南瓜配煮小米",
       "meal": "breakfast",
       "ingredients": [
         {
           "foodId": "pumpkin",
-          "grams": 120
+          "grams": 150
         },
         {
           "foodId": "millet-cooked",
-          "grams": 200
+          "grams": 80
         }
       ],
       "steps": [
-        "南瓜切块和小米一起熬软。"
+        "南瓜蒸熟或煮软。",
+        "配一小份干饭式煮小米。"
       ],
-      "note": "可以当清淡早餐。热量不高，蛋白质也少。",
+      "note": "清淡早餐。小米是煮熟的干饭，不是熬稀的粥。热量不高，蛋白质也少。",
       "avoid": [],
       "sourceNote": "待审核草稿。家常做法简述。热量由原料克数和食物表计算，不在这里手写。",
       "example": true
@@ -1295,9 +1344,9 @@
       ],
       "steps": [
         "瘦肉切碎，和番茄、胡萝卜、豆腐一起炒熟或煮熟。",
-        "面条煮好，浇上这一份。"
+        "煮鸡蛋面煮好，浇上这一份。"
       ],
-      "note": "陕西家常面。这里按能买到的瘦肉、番茄和豆腐来写，不是馆子的标准臊子。",
+      "note": "陕西家常面。面条按 USDA 煮鸡蛋面计，不是汤面。浇头按家里买得到的瘦肉、番茄和豆腐来写。",
       "avoid": [],
       "sourceNote": "待审核草稿。家常做法简述。热量由原料克数和食物表计算，不在这里手写。",
       "example": true
@@ -1422,10 +1471,10 @@
         }
       ],
       "steps": [
-        "面条煮好，菠菜焯熟垫在下面。",
+        "煮鸡蛋面煮好，菠菜焯熟垫在下面。",
         "一小勺热油和拍碎的熟花生浇上。"
       ],
-      "note": "陕西家常面的简化版。油和花生都算进热量。",
+      "note": "陕西家常面的简化版。面条按 USDA 煮鸡蛋面计。油和花生都算进热量。",
       "avoid": [],
       "sourceNote": "待审核草稿。家常做法简述。热量由原料克数和食物表计算，不在这里手写。",
       "example": true
@@ -1544,10 +1593,10 @@
         }
       ],
       "steps": [
-        "牛肉煮熟，和土豆、胡萝卜一起炖软。",
+        "牛肉煮熟，和煮土豆、胡萝卜一起炖软。",
         "油按这一小份计算。"
       ],
-      "note": "北方家常炖菜，吃得比较实在。蛋白质不低。",
+      "note": "北方家常炖菜。土豆按带皮煮熟的可食部计。蛋白质不低。",
       "avoid": [
         "kidney_high_protein"
       ],

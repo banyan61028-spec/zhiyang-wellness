@@ -230,18 +230,13 @@ var catalog_default = {
       name: "\u767D\u7CA5",
       aliases: [
         "\u5927\u7C73\u7CA5",
-        "\u7CA5"
+        "\u7A00\u996D"
       ],
-      per100g: {
-        kcal: 46,
-        protein: 0.9,
-        fat: 0.1,
-        carb: 9.7
-      },
-      source: "USDA FoodData Central\uFF08\u793A\u4F8B\uFF09",
-      sourceNote: "\u793A\u4F8B\u3002\u53C2\u8003 USDA FoodData Central \u516C\u5F00\u9886\u57DF\u6570\u636E\u7684\u5E38\u89C1\u6570\u503C\u624B\u5DE5\u5F55\u5165\u5E76\u56DB\u820D\u4E94\u5165\uFF1B\u6CA1\u6709\u8054\u7F51\u6293\u53D6\uFF0C\u4E5F\u4E0D\u662F\u4E2D\u56FD\u98DF\u7269\u6210\u5206\u8868\u3002\u6B63\u5F0F\u4F7F\u7528\u8BF7\u66FF\u6362\u3002",
-      version: "example-2026-10-03",
-      calculable: true,
+      per100g: null,
+      source: "\u672C\u5730\u5360\u4F4D",
+      sourceNote: "\u672C\u5730\u6CA1\u6709\u53EF\u5F15\u7528\u7684\u7A00\u7CA5\u6570\u636E\u3002\u539F\u5148\u6BCF100\u514B 46 \u5343\u5361\u5BF9\u4E0D\u4E0A USDA \u6761\u76EE\uFF0C\u662F\u628A\u716E\u7C73\u996D\u6309\u6BD4\u4F8B\u7A00\u91CA\u540E\u7684\u6570\u5B57\uFF0C\u5DF2\u64A4\u4E0B\u3002\u8BB0\u5F55\u65F6\u6309\u8FD9\u4E2A\u540D\u5B57\u67E5\u8BE2\u8584\u8377\uFF1B\u67E5\u4E0D\u5230\u6216\u5931\u8D25\u624D\u65E0\u6CD5\u4F30\u7B97\u3002",
+      version: "example-2026-10-04",
+      calculable: false,
       example: true,
       portion: {
         small: 200,
@@ -251,11 +246,9 @@ var catalog_default = {
     },
     {
       id: "noodle-cooked",
-      name: "\u9762\u6761",
+      name: "\u716E\u9E21\u86CB\u9762",
       aliases: [
-        "\u716E\u9762\u6761",
-        "\u6302\u9762",
-        "\u9633\u6625\u9762"
+        "\u9E21\u86CB\u9762"
       ],
       per100g: {
         kcal: 138,
@@ -263,9 +256,9 @@ var catalog_default = {
         fat: 2.1,
         carb: 25.2
       },
-      source: "USDA FoodData Central\uFF08\u793A\u4F8B\uFF09",
-      sourceNote: "\u793A\u4F8B\u3002\u53C2\u8003 USDA FoodData Central \u516C\u5F00\u9886\u57DF\u6570\u636E\u7684\u5E38\u89C1\u6570\u503C\u624B\u5DE5\u5F55\u5165\u5E76\u56DB\u820D\u4E94\u5165\uFF1B\u6CA1\u6709\u8054\u7F51\u6293\u53D6\uFF0C\u4E5F\u4E0D\u662F\u4E2D\u56FD\u98DF\u7269\u6210\u5206\u8868\u3002\u6B63\u5F0F\u4F7F\u7528\u8BF7\u66FF\u6362\u3002",
-      version: "example-2026-10-03",
+      source: "USDA FoodData Central",
+      sourceNote: "\u53C2\u8003 USDA FoodData Central SR Legacy FDC 169732\uFF08Noodles egg enriched cooked\uFF09\u6BCF100\u514B\u3002\u86CB\u767D\u8D28 4.54 \u56DB\u820D\u4E94\u5165\u4E3A 4.5\uFF0C\u8102\u80AA 2.07 \u4E3A 2.1\uFF0C\u78B3\u6C34 25.16 \u4E3A 25.2\u3002\u8FD9\u662F\u716E\u9E21\u86CB\u9762\uFF0C\u4E0D\u662F\u6302\u9762\uFF0C\u4E5F\u4E0D\u662F\u9633\u6625\u9762\u3002\u516C\u5F00\u9886\u57DF\u6570\u636E\uFF0C\u4E0D\u662F\u4E2D\u56FD\u98DF\u7269\u6210\u5206\u8868\u3002\u5F85\u5BA1\u6838\u3002",
+      version: "usda-fdc-2026-10-04",
       calculable: true,
       example: true,
       portion: {
@@ -278,8 +271,8 @@ var catalog_default = {
       id: "oat-cooked",
       name: "\u71D5\u9EA6\u7CA5",
       aliases: [
-        "\u71D5\u9EA6",
-        "\u9EA6\u7247\u7CA5"
+        "\u9EA6\u7247\u7CA5",
+        "\u716E\u71D5\u9EA6"
       ],
       per100g: {
         kcal: 71,
@@ -287,9 +280,9 @@ var catalog_default = {
         fat: 1.5,
         carb: 12
       },
-      source: "USDA FoodData Central\uFF08\u793A\u4F8B\uFF09",
-      sourceNote: "\u793A\u4F8B\u3002\u53C2\u8003 USDA FoodData Central \u516C\u5F00\u9886\u57DF\u6570\u636E\u7684\u5E38\u89C1\u6570\u503C\u624B\u5DE5\u5F55\u5165\u5E76\u56DB\u820D\u4E94\u5165\uFF1B\u6CA1\u6709\u8054\u7F51\u6293\u53D6\uFF0C\u4E5F\u4E0D\u662F\u4E2D\u56FD\u98DF\u7269\u6210\u5206\u8868\u3002\u6B63\u5F0F\u4F7F\u7528\u8BF7\u66FF\u6362\u3002",
-      version: "example-2026-10-03",
+      source: "USDA FoodData Central",
+      sourceNote: "\u53C2\u8003 USDA FoodData Central SR Legacy FDC 173905\uFF08Cereals oats regular and quick unenriched cooked with water without salt\uFF09\u6BCF100\u514B\u3002\u86CB\u767D\u8D28 2.54 \u56DB\u820D\u4E94\u5165\u4E3A 2.5\uFF0C\u8102\u80AA 1.52 \u4E3A 1.5\uFF0C\u78B3\u6C34 12.0\u3002\u8FD9\u662F\u52A0\u6C34\u716E\u8F6F\u7684\u71D5\u9EA6\uFF0C\u4E0D\u662F\u5E72\u71D5\u9EA6\u7247\u3002\u516C\u5F00\u9886\u57DF\u6570\u636E\uFF0C\u4E0D\u662F\u4E2D\u56FD\u98DF\u7269\u6210\u5206\u8868\u3002\u5F85\u5BA1\u6838\u3002",
+      version: "usda-fdc-2026-10-04",
       calculable: true,
       example: true,
       portion: {
@@ -300,9 +293,10 @@ var catalog_default = {
     },
     {
       id: "millet-cooked",
-      name: "\u5C0F\u7C73\u7CA5",
+      name: "\u716E\u5C0F\u7C73\uFF08\u5E72\u996D\u5F0F\uFF09",
       aliases: [
-        "\u716E\u5C0F\u7C73"
+        "\u716E\u5C0F\u7C73",
+        "\u5E72\u996D\u5C0F\u7C73"
       ],
       per100g: {
         kcal: 119,
@@ -310,23 +304,24 @@ var catalog_default = {
         fat: 1,
         carb: 23.7
       },
-      source: "USDA FoodData Central\uFF08\u793A\u4F8B\uFF09",
-      sourceNote: "\u793A\u4F8B\u3002\u53C2\u8003 USDA FoodData Central \u516C\u5F00\u9886\u57DF\u6570\u636E\u7684\u5E38\u89C1\u6570\u503C\u624B\u5DE5\u5F55\u5165\u5E76\u56DB\u820D\u4E94\u5165\uFF1B\u6CA1\u6709\u8054\u7F51\u6293\u53D6\uFF0C\u4E5F\u4E0D\u662F\u4E2D\u56FD\u98DF\u7269\u6210\u5206\u8868\u3002\u6B63\u5F0F\u4F7F\u7528\u8BF7\u66FF\u6362\u3002",
-      version: "example-2026-10-03",
+      source: "USDA FoodData Central",
+      sourceNote: "\u53C2\u8003 USDA FoodData Central SR Legacy FDC 168871\uFF08Millet cooked\uFF09\u6BCF100\u514B\u3002\u86CB\u767D\u8D28 3.51 \u56DB\u820D\u4E94\u5165\u4E3A 3.5\uFF0C\u78B3\u6C34 23.67 \u4E3A 23.7\u3002\u8FD9\u662F\u716E\u719F\u7684\u5C0F\u7C73\u5E72\u996D\uFF0C\u4E0D\u662F\u7A00\u5C0F\u7C73\u7CA5\u3002\u516C\u5F00\u9886\u57DF\u6570\u636E\uFF0C\u4E0D\u662F\u4E2D\u56FD\u98DF\u7269\u6210\u5206\u8868\u3002\u5F85\u5BA1\u6838\u3002",
+      version: "usda-fdc-2026-10-04",
       calculable: true,
       example: true,
       portion: {
-        small: 200,
-        medium: 250,
-        large: 350
+        small: 100,
+        medium: 150,
+        large: 200
       }
     },
     {
       id: "sweet-potato",
-      name: "\u7EA2\u85AF",
+      name: "\u70E4\u7EA2\u85AF",
       aliases: [
+        "\u7EA2\u85AF",
         "\u5730\u74DC",
-        "\u70E4\u7EA2\u85AF"
+        "\u70E4\u5730\u74DC"
       ],
       per100g: {
         kcal: 90,
@@ -334,9 +329,9 @@ var catalog_default = {
         fat: 0.2,
         carb: 20.7
       },
-      source: "USDA FoodData Central\uFF08\u793A\u4F8B\uFF09",
-      sourceNote: "\u793A\u4F8B\u3002\u53C2\u8003 USDA FoodData Central \u516C\u5F00\u9886\u57DF\u6570\u636E\u7684\u5E38\u89C1\u6570\u503C\u624B\u5DE5\u5F55\u5165\u5E76\u56DB\u820D\u4E94\u5165\uFF1B\u6CA1\u6709\u8054\u7F51\u6293\u53D6\uFF0C\u4E5F\u4E0D\u662F\u4E2D\u56FD\u98DF\u7269\u6210\u5206\u8868\u3002\u6B63\u5F0F\u4F7F\u7528\u8BF7\u66FF\u6362\u3002",
-      version: "example-2026-10-03",
+      source: "USDA FoodData Central",
+      sourceNote: "\u53C2\u8003 USDA FoodData Central SR Legacy FDC 170134\uFF08Sweet potato cooked baked in skin flesh with salt\uFF09\u6BCF100\u514B\u3002\u86CB\u767D\u8D28 2.01 \u56DB\u820D\u4E94\u5165\u4E3A 2\uFF0C\u8102\u80AA 0.15 \u4E3A 0.2\uFF0C\u78B3\u6C34 20.71 \u4E3A 20.7\u3002\u8FD9\u662F\u70E4\u7EA2\u85AF\uFF0C\u4E0D\u662F\u751F\u7EA2\u85AF\u3002\u516C\u5F00\u9886\u57DF\u6570\u636E\uFF0C\u4E0D\u662F\u4E2D\u56FD\u98DF\u7269\u6210\u5206\u8868\u3002\u5F85\u5BA1\u6838\u3002",
+      version: "usda-fdc-2026-10-04",
       calculable: true,
       example: true,
       portion: {
@@ -347,8 +342,9 @@ var catalog_default = {
     },
     {
       id: "corn-cooked",
-      name: "\u7389\u7C73",
+      name: "\u751C\u7389\u7C73\uFF08\u716E\uFF09",
       aliases: [
+        "\u7389\u7C73",
         "\u7389\u7C73\u7C92",
         "\u751C\u7389\u7C73"
       ],
@@ -358,9 +354,9 @@ var catalog_default = {
         fat: 1.5,
         carb: 21
       },
-      source: "USDA FoodData Central\uFF08\u793A\u4F8B\uFF09",
-      sourceNote: "\u793A\u4F8B\u3002\u53C2\u8003 USDA FoodData Central \u516C\u5F00\u9886\u57DF\u6570\u636E\u7684\u5E38\u89C1\u6570\u503C\u624B\u5DE5\u5F55\u5165\u5E76\u56DB\u820D\u4E94\u5165\uFF1B\u6CA1\u6709\u8054\u7F51\u6293\u53D6\uFF0C\u4E5F\u4E0D\u662F\u4E2D\u56FD\u98DF\u7269\u6210\u5206\u8868\u3002\u6B63\u5F0F\u4F7F\u7528\u8BF7\u66FF\u6362\u3002",
-      version: "example-2026-10-03",
+      source: "USDA FoodData Central",
+      sourceNote: "\u53C2\u8003 USDA FoodData Central SR Legacy FDC 168525\uFF08Corn sweet yellow cooked boiled drained with salt\uFF09\u6BCF100\u514B\u3002\u86CB\u767D\u8D28 3.41 \u56DB\u820D\u4E94\u5165\u4E3A 3.4\uFF0C\u78B3\u6C34 20.98 \u4E3A 21\u3002\u8FD9\u662F\u716E\u751C\u7389\u7C73\uFF0C\u4E0D\u662F\u7389\u7C73\u9762\u6216\u7206\u7C73\u82B1\u3002\u516C\u5F00\u9886\u57DF\u6570\u636E\uFF0C\u4E0D\u662F\u4E2D\u56FD\u98DF\u7269\u6210\u5206\u8868\u3002\u5F85\u5BA1\u6838\u3002",
+      version: "usda-fdc-2026-10-04",
       calculable: true,
       example: true,
       portion: {
@@ -371,8 +367,9 @@ var catalog_default = {
     },
     {
       id: "potato-cooked",
-      name: "\u571F\u8C46",
+      name: "\u716E\u571F\u8C46",
       aliases: [
+        "\u571F\u8C46",
         "\u9A6C\u94C3\u85AF"
       ],
       per100g: {
@@ -381,9 +378,9 @@ var catalog_default = {
         fat: 0.1,
         carb: 20.1
       },
-      source: "USDA FoodData Central\uFF08\u793A\u4F8B\uFF09",
-      sourceNote: "\u793A\u4F8B\u3002\u53C2\u8003 USDA FoodData Central \u516C\u5F00\u9886\u57DF\u6570\u636E\u7684\u5E38\u89C1\u6570\u503C\u624B\u5DE5\u5F55\u5165\u5E76\u56DB\u820D\u4E94\u5165\uFF1B\u6CA1\u6709\u8054\u7F51\u6293\u53D6\uFF0C\u4E5F\u4E0D\u662F\u4E2D\u56FD\u98DF\u7269\u6210\u5206\u8868\u3002\u6B63\u5F0F\u4F7F\u7528\u8BF7\u66FF\u6362\u3002",
-      version: "example-2026-10-03",
+      source: "USDA FoodData Central",
+      sourceNote: "\u53C2\u8003 USDA FoodData Central SR Legacy FDC 170438\uFF08Potatoes boiled cooked in skin flesh without salt\uFF09\u6BCF100\u514B\u3002\u80FD\u91CF 87\uFF0C\u86CB\u767D\u8D28 1.87 \u56DB\u820D\u4E94\u5165\u4E3A 1.9\uFF0C\u78B3\u6C34 20.13 \u4E3A 20.1\u3002\u8FD9\u662F\u5E26\u76AE\u716E\u7684\u571F\u8C46\u8089\uFF0C\u4E0D\u662F\u751F\u571F\u8C46\u6216\u70B8\u571F\u8C46\u3002\u516C\u5F00\u9886\u57DF\u6570\u636E\uFF0C\u4E0D\u662F\u4E2D\u56FD\u98DF\u7269\u6210\u5206\u8868\u3002\u5F85\u5BA1\u6838\u3002",
+      version: "usda-fdc-2026-10-04",
       calculable: true,
       example: true,
       portion: {
@@ -1174,6 +1171,57 @@ var catalog_default = {
       }
     },
     {
+      id: "millet-porridge",
+      name: "\u5C0F\u7C73\u7CA5",
+      aliases: [],
+      per100g: null,
+      source: "\u672C\u5730\u5360\u4F4D",
+      sourceNote: "\u672C\u5730\u6CA1\u6709\u53EF\u5F15\u7528\u7684\u7A00\u5C0F\u7C73\u7CA5\u6570\u636E\u3002\u716E\u5C0F\u7C73\uFF08\u5E72\u996D\u5F0F\uFF09\u662F\u53E6\u4E00\u79CD\u98DF\u7269\uFF0C\u4E0D\u80FD\u62FF\u6765\u5F53\u7A00\u7CA5\u3002\u8BB0\u5F55\u65F6\u6309\u8FD9\u4E2A\u540D\u5B57\u67E5\u8BE2\u8584\u8377\uFF1B\u67E5\u4E0D\u5230\u6216\u5931\u8D25\u624D\u65E0\u6CD5\u4F30\u7B97\u3002",
+      version: "example-2026-10-04",
+      calculable: false,
+      example: true,
+      portion: {
+        small: 200,
+        medium: 300,
+        large: 400
+      }
+    },
+    {
+      id: "chinese-noodle",
+      name: "\u9762\u6761",
+      aliases: [
+        "\u716E\u9762\u6761",
+        "\u6302\u9762"
+      ],
+      per100g: null,
+      source: "\u672C\u5730\u5360\u4F4D",
+      sourceNote: "\u672C\u5730\u80FD\u7B97\u7684\u9762\u662F\u716E\u9E21\u86CB\u9762\uFF0C\u4E0D\u662F\u6302\u9762\u6216\u666E\u901A\u9762\u6761\u3002\u8BB0\u5F55\u65F6\u6309\u8FD9\u4E2A\u540D\u5B57\u67E5\u8BE2\u8584\u8377\uFF1B\u67E5\u4E0D\u5230\u6216\u5931\u8D25\u624D\u65E0\u6CD5\u4F30\u7B97\u3002",
+      version: "example-2026-10-04",
+      calculable: false,
+      example: true,
+      portion: {
+        small: 150,
+        medium: 250,
+        large: 350
+      }
+    },
+    {
+      id: "yangchun-noodle",
+      name: "\u9633\u6625\u9762",
+      aliases: [],
+      per100g: null,
+      source: "\u672C\u5730\u5360\u4F4D",
+      sourceNote: "\u9633\u6625\u9762\u662F\u5E26\u6C64\u7684\u9762\uFF0C\u4E0D\u662F\u716E\u9E21\u86CB\u9762\u3002\u672C\u5730\u4E0D\u8BA1\u7B97\u3002\u8BB0\u5F55\u65F6\u6309\u8FD9\u4E2A\u540D\u5B57\u67E5\u8BE2\u8584\u8377\uFF1B\u67E5\u4E0D\u5230\u6216\u5931\u8D25\u624D\u65E0\u6CD5\u4F30\u7B97\u3002",
+      version: "example-2026-10-04",
+      calculable: false,
+      example: true,
+      portion: {
+        small: 300,
+        medium: 450,
+        large: 600
+      }
+    },
+    {
       id: "beef-noodle",
       name: "\u725B\u8089\u9762",
       aliases: [
@@ -1247,12 +1295,12 @@ var catalog_default = {
   recipes: [
     {
       id: "millet-egg",
-      name: "\u5C0F\u7C73\u7CA5\u914D\u716E\u86CB",
+      name: "\u716E\u5C0F\u7C73\u914D\u716E\u86CB",
       meal: "breakfast",
       ingredients: [
         {
           foodId: "millet-cooked",
-          grams: 250
+          grams: 100
         },
         {
           foodId: "egg-whole",
@@ -1260,10 +1308,10 @@ var catalog_default = {
         }
       ],
       steps: [
-        "\u5C0F\u7C73\u52A0\u6C34\u71AC\u6210\u7CA5\u3002",
-        "\u9E21\u86CB\u716E\u719F\uFF0C\u914D\u7CA5\u4E00\u8D77\u5403\u3002"
+        "\u716E\u5C0F\u7C73\u6309\u5E72\u996D\u76DB\u4E00\u7897\u3002",
+        "\u9E21\u86CB\u716E\u719F\uFF0C\u914D\u5728\u65C1\u8FB9\u3002"
       ],
-      note: "\u5317\u65B9\u5E38\u89C1\u7684\u6E29\u548C\u65E9\u9910\u3002\u86CB\u767D\u8D28\u4E0D\u7B97\u9AD8\u3002",
+      note: "\u8FD9\u662F\u5E72\u996D\u5F0F\u716E\u5C0F\u7C73\uFF0C\u4E0D\u662F\u7A00\u5C0F\u7C73\u7CA5\u3002\u86CB\u767D\u8D28\u4E0D\u7B97\u9AD8\u3002",
       avoid: [],
       sourceNote: "\u5F85\u5BA1\u6838\u8349\u7A3F\u3002\u5BB6\u5E38\u505A\u6CD5\u7B80\u8FF0\u3002\u70ED\u91CF\u7531\u539F\u6599\u514B\u6570\u548C\u98DF\u7269\u8868\u8BA1\u7B97\uFF0C\u4E0D\u5728\u8FD9\u91CC\u624B\u5199\u3002",
       example: true
@@ -1321,7 +1369,7 @@ var catalog_default = {
     },
     {
       id: "sweet-potato-egg",
-      name: "\u7EA2\u85AF\u9E21\u86CB",
+      name: "\u70E4\u7EA2\u85AF\u9E21\u86CB",
       meal: "breakfast",
       ingredients: [
         {
@@ -1334,32 +1382,33 @@ var catalog_default = {
         }
       ],
       steps: [
-        "\u7EA2\u85AF\u84B8\u719F\u6216\u70E4\u719F\u3002",
+        "\u7EA2\u85AF\u70E4\u719F\u3002",
         "\u914D\u4E00\u4E2A\u716E\u9E21\u86CB\u3002"
       ],
-      note: "\u597D\u505A\uFF0C\u4E3B\u98DF\u662F\u85AF\u7C7B\u3002",
+      note: "\u597D\u505A\uFF0C\u4E3B\u98DF\u7528\u7684\u662F\u70E4\u7EA2\u85AF\u3002",
       avoid: [],
       sourceNote: "\u5F85\u5BA1\u6838\u8349\u7A3F\u3002\u5BB6\u5E38\u505A\u6CD5\u7B80\u8FF0\u3002\u70ED\u91CF\u7531\u539F\u6599\u514B\u6570\u548C\u98DF\u7269\u8868\u8BA1\u7B97\uFF0C\u4E0D\u5728\u8FD9\u91CC\u624B\u5199\u3002",
       example: true
     },
     {
       id: "pumpkin-millet",
-      name: "\u5357\u74DC\u5C0F\u7C73\u7CA5",
+      name: "\u5357\u74DC\u914D\u716E\u5C0F\u7C73",
       meal: "breakfast",
       ingredients: [
         {
           foodId: "pumpkin",
-          grams: 120
+          grams: 150
         },
         {
           foodId: "millet-cooked",
-          grams: 200
+          grams: 80
         }
       ],
       steps: [
-        "\u5357\u74DC\u5207\u5757\u548C\u5C0F\u7C73\u4E00\u8D77\u71AC\u8F6F\u3002"
+        "\u5357\u74DC\u84B8\u719F\u6216\u716E\u8F6F\u3002",
+        "\u914D\u4E00\u5C0F\u4EFD\u5E72\u996D\u5F0F\u716E\u5C0F\u7C73\u3002"
       ],
-      note: "\u53EF\u4EE5\u5F53\u6E05\u6DE1\u65E9\u9910\u3002\u70ED\u91CF\u4E0D\u9AD8\uFF0C\u86CB\u767D\u8D28\u4E5F\u5C11\u3002",
+      note: "\u6E05\u6DE1\u65E9\u9910\u3002\u5C0F\u7C73\u662F\u716E\u719F\u7684\u5E72\u996D\uFF0C\u4E0D\u662F\u71AC\u7A00\u7684\u7CA5\u3002\u70ED\u91CF\u4E0D\u9AD8\uFF0C\u86CB\u767D\u8D28\u4E5F\u5C11\u3002",
       avoid: [],
       sourceNote: "\u5F85\u5BA1\u6838\u8349\u7A3F\u3002\u5BB6\u5E38\u505A\u6CD5\u7B80\u8FF0\u3002\u70ED\u91CF\u7531\u539F\u6599\u514B\u6570\u548C\u98DF\u7269\u8868\u8BA1\u7B97\uFF0C\u4E0D\u5728\u8FD9\u91CC\u624B\u5199\u3002",
       example: true
@@ -1489,9 +1538,9 @@ var catalog_default = {
       ],
       steps: [
         "\u7626\u8089\u5207\u788E\uFF0C\u548C\u756A\u8304\u3001\u80E1\u841D\u535C\u3001\u8C46\u8150\u4E00\u8D77\u7092\u719F\u6216\u716E\u719F\u3002",
-        "\u9762\u6761\u716E\u597D\uFF0C\u6D47\u4E0A\u8FD9\u4E00\u4EFD\u3002"
+        "\u716E\u9E21\u86CB\u9762\u716E\u597D\uFF0C\u6D47\u4E0A\u8FD9\u4E00\u4EFD\u3002"
       ],
-      note: "\u9655\u897F\u5BB6\u5E38\u9762\u3002\u8FD9\u91CC\u6309\u80FD\u4E70\u5230\u7684\u7626\u8089\u3001\u756A\u8304\u548C\u8C46\u8150\u6765\u5199\uFF0C\u4E0D\u662F\u9986\u5B50\u7684\u6807\u51C6\u81CA\u5B50\u3002",
+      note: "\u9655\u897F\u5BB6\u5E38\u9762\u3002\u9762\u6761\u6309 USDA \u716E\u9E21\u86CB\u9762\u8BA1\uFF0C\u4E0D\u662F\u6C64\u9762\u3002\u6D47\u5934\u6309\u5BB6\u91CC\u4E70\u5F97\u5230\u7684\u7626\u8089\u3001\u756A\u8304\u548C\u8C46\u8150\u6765\u5199\u3002",
       avoid: [],
       sourceNote: "\u5F85\u5BA1\u6838\u8349\u7A3F\u3002\u5BB6\u5E38\u505A\u6CD5\u7B80\u8FF0\u3002\u70ED\u91CF\u7531\u539F\u6599\u514B\u6570\u548C\u98DF\u7269\u8868\u8BA1\u7B97\uFF0C\u4E0D\u5728\u8FD9\u91CC\u624B\u5199\u3002",
       example: true
@@ -1616,10 +1665,10 @@ var catalog_default = {
         }
       ],
       steps: [
-        "\u9762\u6761\u716E\u597D\uFF0C\u83E0\u83DC\u712F\u719F\u57AB\u5728\u4E0B\u9762\u3002",
+        "\u716E\u9E21\u86CB\u9762\u716E\u597D\uFF0C\u83E0\u83DC\u712F\u719F\u57AB\u5728\u4E0B\u9762\u3002",
         "\u4E00\u5C0F\u52FA\u70ED\u6CB9\u548C\u62CD\u788E\u7684\u719F\u82B1\u751F\u6D47\u4E0A\u3002"
       ],
-      note: "\u9655\u897F\u5BB6\u5E38\u9762\u7684\u7B80\u5316\u7248\u3002\u6CB9\u548C\u82B1\u751F\u90FD\u7B97\u8FDB\u70ED\u91CF\u3002",
+      note: "\u9655\u897F\u5BB6\u5E38\u9762\u7684\u7B80\u5316\u7248\u3002\u9762\u6761\u6309 USDA \u716E\u9E21\u86CB\u9762\u8BA1\u3002\u6CB9\u548C\u82B1\u751F\u90FD\u7B97\u8FDB\u70ED\u91CF\u3002",
       avoid: [],
       sourceNote: "\u5F85\u5BA1\u6838\u8349\u7A3F\u3002\u5BB6\u5E38\u505A\u6CD5\u7B80\u8FF0\u3002\u70ED\u91CF\u7531\u539F\u6599\u514B\u6570\u548C\u98DF\u7269\u8868\u8BA1\u7B97\uFF0C\u4E0D\u5728\u8FD9\u91CC\u624B\u5199\u3002",
       example: true
@@ -1738,10 +1787,10 @@ var catalog_default = {
         }
       ],
       steps: [
-        "\u725B\u8089\u716E\u719F\uFF0C\u548C\u571F\u8C46\u3001\u80E1\u841D\u535C\u4E00\u8D77\u7096\u8F6F\u3002",
+        "\u725B\u8089\u716E\u719F\uFF0C\u548C\u716E\u571F\u8C46\u3001\u80E1\u841D\u535C\u4E00\u8D77\u7096\u8F6F\u3002",
         "\u6CB9\u6309\u8FD9\u4E00\u5C0F\u4EFD\u8BA1\u7B97\u3002"
       ],
-      note: "\u5317\u65B9\u5BB6\u5E38\u7096\u83DC\uFF0C\u5403\u5F97\u6BD4\u8F83\u5B9E\u5728\u3002\u86CB\u767D\u8D28\u4E0D\u4F4E\u3002",
+      note: "\u5317\u65B9\u5BB6\u5E38\u7096\u83DC\u3002\u571F\u8C46\u6309\u5E26\u76AE\u716E\u719F\u7684\u53EF\u98DF\u90E8\u8BA1\u3002\u86CB\u767D\u8D28\u4E0D\u4F4E\u3002",
       avoid: [
         "kidney_high_protein"
       ],

@@ -80,6 +80,26 @@ test('portion buttons change grams and the table recalculates', () => {
   assert.equal(large.nutrition.kcal, small.nutrition.kcal * 2);
 });
 
+test('chinese porridge and noodle names are not filled from a different USDA food', () => {
+  const grain = resolveMealItem({ name: '煮小米（干饭式）', grams: 100 }, source);
+  assert.equal(grain.status, 'matched');
+  assert.equal(grain.nutrition.kcal, 119);
+  const milletPorridge = resolveMealItem({ name: '小米粥', grams: 250, kcal: 300 }, source);
+  assert.equal(milletPorridge.reason, 'not_calculable');
+  assert.equal(milletPorridge.nutrition, null);
+  const ricePorridge = resolveMealItem({ name: '白粥', grams: 300, kcal: 140 }, source);
+  assert.equal(ricePorridge.reason, 'not_calculable');
+  assert.equal(ricePorridge.nutrition, null);
+  assert.equal(matchFood('燕麦', source).reason, 'no_match');
+  assert.equal(resolveMealItem({ name: '燕麦粥', grams: 100 }, source).nutrition.kcal, 71);
+  assert.equal(matchFood('面条', source).reason, 'not_calculable');
+  assert.equal(matchFood('挂面', source).reason, 'not_calculable');
+  assert.equal(matchFood('阳春面', source).reason, 'not_calculable');
+  assert.equal(resolveMealItem({ name: '煮鸡蛋面', grams: 100 }, source).nutrition.kcal, 138);
+  assert.equal(source.getRecipe('millet-egg').name, '煮小米配煮蛋');
+  assert.equal(source.getRecipe('pumpkin-millet').name, '南瓜配煮小米');
+});
+
 test('text stub splits beef noodles and an egg without filling the unknown dish', () => {
   const items = stubParseText('中午一碗牛肉面加个蛋').map(item => resolveMealItem(item, source));
   assert.equal(items[0].name, '牛肉面');
