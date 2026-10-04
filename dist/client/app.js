@@ -807,6 +807,8 @@ var requestRecommendation = (body, signal) => post("/api/diet/recommend", body, 
 // src/client/diet-page.js
 var mealNames = { breakfast: "\u65E9\u9910", lunch: "\u5348\u9910", dinner: "\u665A\u9910", snack: "\u52A0\u9910" };
 var mealOrder = ["breakfast", "lunch", "dinner", "snack"];
+var RING_R = 52;
+var RING_C = 2 * Math.PI * RING_R;
 function createDietPages(ctx) {
   let catalog = null;
   let catalogError = "";
@@ -817,9 +819,30 @@ function createDietPages(ctx) {
   let excludeIds = [];
   let inflight = "";
   let urgent = null;
+  let composeText = "";
+  let composeMeal = "";
+  let composeError = "";
+  let photoName = "";
+  let pendingFile = null;
+  document.addEventListener("input", (event) => {
+    const el = event.target;
+    if (!(el instanceof HTMLTextAreaElement)) return;
+    if (el.name === "text" && el.closest("#meal-form")) composeText = el.value;
+  });
   document.addEventListener("change", (event) => {
     const el = event.target;
     if (!(el instanceof HTMLElement)) return;
+    if (el.id === "meal-photo") {
+      pendingFile = el.files?.[0] || null;
+      photoName = pendingFile ? pendingFile.name : "";
+      const hint = document.querySelector("[data-photo-name]");
+      if (hint) hint.textContent = photoName ? `\u5DF2\u9009 ${photoName}` : "";
+      return;
+    }
+    if (el.name === "meal" && el.closest("#meal-form")) {
+      composeMeal = el.value;
+      return;
+    }
     if (el.dataset.dietFood != null) void changeFood(el.dataset.dietFood, el.value).catch((error) => ctx.toast(error.message));
     if (el.dataset.dietGrams != null) void changeGrams(el.dataset.dietGrams, el.value).catch((error) => ctx.toast(error.message));
   });
@@ -835,23 +858,55 @@ function createDietPages(ctx) {
   function record() {
     const state2 = ctx.getState();
     const todayMeals = mealsOn(state2, localDateString());
-    return `${heading("\u8BB0\u4E0B\u8FD9\u4E00\u9910\u3002", "\u62CD\u7167\u6216\u5199\u4E00\u53E5\u8BDD\u3002\u70ED\u91CF\u6309\u98DF\u7269\u8868\u8BA1\u7B97\uFF0C\u754C\u9762\u5199\u300C\u7EA6\u300D\u3002")}${privacy()}${catalogError ? `<div class="storage-error" role="alert">${ctx.esc(catalogError)}</div>` : ""}${urgent ? urgentBanner(urgent) : ""}<div class="diet-layout"><section class="diet-card"><form id="meal-form"><label class="form-label">\u8FD9\u4E00\u9910<select name="meal">${mealOrder.map((key) => `<option value="${key}" ${key === defaultMeal() ? "selected" : ""}>${mealNames[key]}</option>`).join("")}</select></label><label class="form-label">\u5199\u4E0B\u6765<textarea name="text" maxlength="1500" rows="3" placeholder="\u4F8B\u5982\uFF1A\u4E2D\u5348\u4E00\u7897\u725B\u8089\u9762\u52A0\u4E2A\u86CB"></textarea></label><label class="outline-button file-button">\u62CD\u7167\u6216\u4E0A\u4F20\u7167\u7247<input id="meal-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" capture="environment"></label><button class="primary-button full-button" type="submit" ${busy ? "disabled" : ""}>\u8BC6\u522B\u8FD9\u4E00\u9910</button></form>${draft ? editor(draft) : ""}</section><aside class="diet-card"><h2>\u4ECA\u5929\u5DF2\u7ECF\u8BB0\u4E0B</h2>${todayMeals.length ? todayMeals.map(mealCard).join("") : '<p class="empty-copy">\u8FD8\u6CA1\u6709\u8BB0\u5F55\u3002\u8BB0\u4E0B\u4E00\u9910\u540E\uFF0C\u8FD9\u91CC\u548C\u300C\u4ECA\u65E5\u300D\u90FD\u4F1A\u66F4\u65B0\u3002</p>'}<button class="text-button" data-page="today">\u770B\u4ECA\u65E5\u62A5\u544A ${ctx.icon("arrow")}</button></aside></div>`;
+    const meal = composeMeal || defaultMeal();
+    const status = busy ? "\u6B63\u5728\u8BC6\u522B\u98DF\u7269\u548C\u5206\u91CF" : photoName ? `\u5DF2\u9009 ${photoName}` : "\u5199\u597D\u540E\u70B9\u53D1\u9001\uFF0C\u6216\u5148\u62CD\u4E00\u5F20";
+    return `${heading("\u8BB0\u4E0B\u8FD9\u4E00\u9910", "\u5199\u4E00\u53E5\u8BDD\uFF0C\u6216\u62CD\u4E00\u5F20\u3002\u70ED\u91CF\u6309\u98DF\u7269\u8868\u8BA1\u7B97\uFF0C\u754C\u9762\u5199\u300C\u7EA6\u300D\u3002")}
+      <div class="diet-page">${privacy()}${catalogError ? `<div class="storage-error" role="alert">${ctx.esc(catalogError)}</div>` : ""}${urgent ? urgentBanner(urgent) : ""}
+      <div class="diet-layout">
+        <section>
+          <form id="meal-form" class="composer ${busy ? "is-busy" : ""}">
+            <label class="meal-chip">\u8FD9\u4E00\u9910
+              <select name="meal" aria-label="\u8FD9\u4E00\u9910">${mealOrder.map((key) => `<option value="${key}" ${key === meal ? "selected" : ""}>${mealNames[key]}</option>`).join("")}</select>
+            </label>
+            <div class="composer-box">
+              <textarea name="text" maxlength="1500" rows="2" placeholder="\u4E2D\u5348\u5403\u4E86\u4E00\u7897\u7C73\u996D\u548C\u756A\u8304\u7092\u86CB" aria-label="\u5199\u4E0B\u5403\u4E86\u4EC0\u4E48">${ctx.esc(composeText)}</textarea>
+              <div class="composer-actions">
+                <label class="icon-hit">
+                  <span class="sr-only">\u62CD\u7167\u6216\u4E0A\u4F20\u7167\u7247</span>
+                  <input id="meal-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" capture="environment">
+                  ${ctx.icon("camera")}
+                </label>
+                <button class="icon-hit send" type="submit" aria-label="${busy ? "\u6B63\u5728\u8BC6\u522B" : "\u8BC6\u522B\u8FD9\u4E00\u9910"}" aria-busy="${busy ? "true" : "false"}" ${busy ? "disabled" : ""}>${ctx.icon("send")}</button>
+              </div>
+            </div>
+            <p class="composer-status" role="status" data-photo-name>${ctx.esc(status)}</p>
+            ${composeError ? `<p class="composer-error" role="alert">${ctx.esc(composeError)}</p>` : ""}
+          </form>
+          ${draft ? editor(draft) : ""}
+        </section>
+        <aside class="diet-card today-side">
+          <h2>\u4ECA\u5929\u5DF2\u7ECF\u8BB0\u4E0B</h2>
+          ${todayMeals.length ? todayMeals.map(mealCard).join("") : '<p class="empty-copy">\u8FD8\u6CA1\u6709\u8BB0\u5F55\u3002\u8BB0\u4E0B\u4E00\u9910\u540E\uFF0C\u8FD9\u91CC\u548C\u300C\u4ECA\u65E5\u300D\u90FD\u4F1A\u66F4\u65B0\u3002</p>'}
+          <button class="text-button diet-link" data-page="today">\u770B\u4ECA\u65E5\u62A5\u544A ${ctx.icon("arrow")}</button>
+        </aside>
+      </div></div>`;
   }
   function today2() {
     scheduleToday();
     const state2 = ctx.getState();
     const meals = mealsOn(state2, localDateString());
-    return `${heading("\u4ECA\u5929\u5403\u5F97\u600E\u6837\u3002", "\u5408\u8BA1\u6765\u81EA\u98DF\u7269\u8868\u3002\u5EFA\u8BAE\u53EA\u6709\u4E00\u4E24\u53E5\uFF0C\u6570\u5B57\u5BF9\u4E0D\u4E0A\u5C31\u4F1A\u88AB\u62FF\u6389\u3002")}${privacy()}${urgent ? urgentBanner(urgent) : ""}${meals.length ? meals.map(mealCard).join("") : '<div class="empty-state"><div><h3>\u4ECA\u5929\u8FD8\u662F\u7A7A\u7684</h3><p>\u5148\u8BB0\u4E0B\u5403\u4E86\u4EC0\u4E48\u3002\u6CA1\u6709\u8BB0\u5F55\u65F6\uFF0C\u4E0D\u4F1A\u7F16\u4E00\u4EFD\u62A5\u544A\u3002</p><button class="primary-button" data-page="home">\u53BB\u8BB0\u4E00\u9910</button></div></div>'}${reportBlock()}${recommendBlock()}`;
+    const body = meals.length ? `${reportBlock()}${recommendBlock()}<section class="diet-section"><h2>\u4ECA\u5929\u8BB0\u4E0B\u7684</h2>${meals.map(mealCard).join("")}</section>` : '<div class="empty-state"><div><h3>\u4ECA\u5929\u8FD8\u662F\u7A7A\u7684</h3><p>\u5148\u8BB0\u4E0B\u5403\u4E86\u4EC0\u4E48\u3002\u6CA1\u6709\u8BB0\u5F55\u65F6\uFF0C\u4E0D\u4F1A\u7F16\u4E00\u4EFD\u62A5\u544A\u3002</p><button class="primary-button" data-page="home">\u53BB\u8BB0\u4E00\u9910</button></div></div>';
+    return `${heading("\u4ECA\u5929", "\u5408\u8BA1\u6765\u81EA\u98DF\u7269\u8868\u3002\u5EFA\u8BAE\u53EA\u6709\u4E00\u4E24\u53E5\uFF0C\u6570\u5B57\u5BF9\u4E0D\u4E0A\u5C31\u4F1A\u88AB\u62FF\u6389\u3002")}<div class="diet-page">${privacy()}${urgent ? urgentBanner(urgent) : ""}${body}</div>`;
   }
   function library2() {
-    if (!catalog) return `${heading("\u98DF\u8C31\u5E93\u3002", "\u4E0B\u4E00\u9910\u53EA\u4ECE\u8FD9\u91CC\u9009\u3002")}${catalogError ? `<div class="storage-error">${ctx.esc(catalogError)}</div>` : '<p class="empty-copy">\u6B63\u5728\u8BFB\u53D6\u98DF\u8C31\u3002</p>'}`;
-    return `${heading("\u98DF\u8C31\u5E93\u3002", "\u6BCF\u9053\u83DC\u7684\u70ED\u91CF\u90FD\u7531\u539F\u6599\u514B\u6570\u8BA1\u7B97\uFF0C\u4E0D\u662F\u624B\u5199\u7684\u5927\u7EA6\u503C\u3002")}<div class="food-grid">${catalog.recipes.map((recipe) => `<button class="recipe-tile" data-diet-action="recipe" data-diet-id="${ctx.esc(recipe.id)}"><div class="recipe-type-art"><span>${mealNames[recipe.meal] || "\u5BB6\u5E38"}</span></div><div class="recipe-tile-body"><span class="tag">${recipe.example ? "\u793A\u4F8B" : "\u98DF\u8C31"}${recipe.blockedByHerbs ? " \xB7 \u4E0D\u63A8\u8350" : ""}</span><h3>${ctx.esc(recipe.name)}</h3><p>\u7EA6 ${recipe.nutrition.kcal} \u5343\u5361 \xB7 \u86CB\u767D\u8D28 ${recipe.nutrition.protein} \u514B</p></div></button>`).join("")}</div>`;
+    if (!catalog) return `${heading("\u98DF\u8C31", "\u4E0B\u4E00\u9910\u53EA\u4ECE\u8FD9\u91CC\u9009\u3002")}<div class="diet-page">${catalogError ? `<div class="storage-error">${ctx.esc(catalogError)}</div>` : '<p class="empty-copy">\u6B63\u5728\u8BFB\u53D6\u98DF\u8C31\u3002</p>'}</div>`;
+    return `${heading("\u98DF\u8C31", "\u6BCF\u9053\u83DC\u7684\u70ED\u91CF\u90FD\u7531\u539F\u6599\u514B\u6570\u8BA1\u7B97\uFF0C\u4E0D\u662F\u624B\u5199\u7684\u5927\u7EA6\u503C\u3002")}<div class="diet-page"><p class="library-note">\u6B63\u5F0F\u98DF\u8C31\u6574\u7406\u4E2D\u3002</p><div class="food-grid diet-library">${catalog.recipes.map((recipe) => `<button class="recipe-tile diet-recipe" data-diet-action="recipe" data-diet-id="${ctx.esc(recipe.id)}"><div class="recipe-type-art"><span>${mealNames[recipe.meal] || "\u5BB6\u5E38"}</span></div><div class="recipe-tile-body">${recipe.example ? '<span class="example-mark">\u793A\u4F8B\u98DF\u8C31</span>' : ""}<h3>${ctx.esc(recipe.name)}</h3><p class="num">\u7EA6 ${recipe.nutrition.kcal} \u5343\u5361</p>${recipe.blockedByHerbs ? '<span class="chip chip-quiet">\u6682\u4E0D\u4E3B\u52A8\u63A8\u8350</span>' : ""}</div></button>`).join("")}</div></div>`;
   }
   function settings() {
     const settingsState = ctx.getState().dietSettings;
     const targets = settingsState.targets;
     const flags = settingsState.flags;
-    return `${heading("\u76EE\u6807\u548C\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u8BB0\u5F55\u3002", "\u6CA1\u6709\u8D26\u53F7\u3002\u6362\u6D4F\u89C8\u5668\u6216\u6E05\u9664\u6570\u636E\u540E\uFF0C\u8BB0\u5F55\u4E0D\u4F1A\u8DDF\u7740\u8D70\u3002")}${privacy()}<section class="diet-card"><h2>\u6BCF\u65E5\u76EE\u6807</h2><p class="small muted">\u8FD9\u662F\u4F60\u81EA\u5DF1\u586B\u7684\u53C2\u8003\uFF0C\u4E0D\u662F\u81B3\u98DF\u5904\u65B9\u3002\u7559\u7A7A\u7684\u9879\u76EE\u4E0D\u53C2\u4E0E\u5BF9\u6BD4\u3002</p><form id="target-form"><div class="target-grid"><label class="form-label">\u70ED\u91CF\uFF08\u5343\u5361\uFF09<input name="kcal" inputmode="numeric" min="0" max="10000" value="${targets.kcal ?? ""}"></label><label class="form-label">\u86CB\u767D\u8D28\uFF08\u514B\uFF09<input name="protein" inputmode="numeric" min="0" max="500" value="${targets.protein ?? ""}"></label><label class="form-label">\u8102\u80AA\uFF08\u514B\uFF09<input name="fat" inputmode="numeric" min="0" max="500" value="${targets.fat ?? ""}"></label><label class="form-label">\u78B3\u6C34\uFF08\u514B\uFF09<input name="carb" inputmode="numeric" min="0" max="500" value="${targets.carb ?? ""}"></label></div><label class="check-line"><input type="checkbox" name="confirm" ${targets.confirmed ? "checked" : ""}> \u6211\u786E\u8BA4\u628A\u8FD9\u4E9B\u6570\u5B57\u5F53\u4F5C\u81EA\u5DF1\u7684\u6BCF\u65E5\u76EE\u6807</label><button class="primary-button" type="submit">\u4FDD\u5B58\u76EE\u6807</button></form></section><section class="diet-card"><h2>\u9700\u8981\u653E\u5BBD\u5EFA\u8BAE\u7684\u60C5\u51B5</h2><p class="small muted">\u52FE\u9009\u540E\uFF0C\u62A5\u544A\u4E0D\u518D\u6309\u70ED\u91CF\u7F3A\u53E3\u9F13\u52B1\u5C11\u5403\uFF1B\u80BE\u75C5\u4E0D\u4F1A\u6309\u86CB\u767D\u8D28\u7F3A\u53E3\u63A8\u8350\u9AD8\u86CB\u767D\u83DC\u3002\u8FD9\u4E0D\u662F\u8BCA\u65AD\u3002</p><form id="flags-form">${flagBox("pregnancy", "\u5B55\u671F\u6216\u5907\u5B55", flags.pregnancy)}${flagBox("lactation", "\u54FA\u4E73", flags.lactation)}${flagBox("minor", "\u672A\u6210\u5E74", flags.minor)}${flagBox("kidney", "\u80BE\u75C5", flags.kidney)}${flagBox("diabetes", "\u7CD6\u5C3F\u75C5", flags.diabetes)}${flagBox("hypertension", "\u9AD8\u8840\u538B", flags.hypertension)}${flagBox("eatingDisorder", "\u8FDB\u98DF\u8BA9\u6211\u5F88\u75DB\u82E6\uFF0C\u6216\u51FA\u73B0\u50AC\u5410\u3001\u7EDD\u98DF", flags.eatingDisorder)}<label class="check-line"><input type="checkbox" name="confirm" ${settingsState.flagsConfirmed ? "checked" : ""}> \u6211\u786E\u8BA4\u7528\u8FD9\u4E9B\u60C5\u51B5\u8C03\u6574\u6587\u5B57\u5EFA\u8BAE\uFF0C\u4E0D\u636E\u6B64\u5F00\u996E\u98DF\u5904\u65B9</label><button class="primary-button" type="submit">\u4FDD\u5B58\u8FD9\u4E9B\u60C5\u51B5</button></form></section><section class="diet-card"><h2>\u6E05\u9664\u672C\u673A\u6570\u636E</h2><p class="small muted">\u4F1A\u540C\u65F6\u6E05\u9664\u996E\u98DF\u8BB0\u5F55\u3001\u6BCF\u65E5\u76EE\u6807\u3001\u65E7\u6863\u6848\u3001\u6536\u85CF\u3001\u65B9\u6848\u548C\u6D4B\u8BC4\u3002\u6E05\u9664\u540E\u627E\u4E0D\u56DE\u6765\u3002</p><button class="outline-button" data-action="reset">\u6E05\u9664\u672C\u673A\u8BB0\u5F55</button></section>`;
+    return `${heading("\u6211\u7684", "\u6CA1\u6709\u8D26\u53F7\u3002\u6362\u6D4F\u89C8\u5668\u6216\u6E05\u9664\u6570\u636E\u540E\uFF0C\u8BB0\u5F55\u4E0D\u4F1A\u8DDF\u7740\u8D70\u3002")}<div class="diet-page">${privacy()}<section class="diet-card"><h2>\u6BCF\u65E5\u76EE\u6807</h2><p class="small muted">\u8FD9\u662F\u4F60\u81EA\u5DF1\u586B\u7684\u53C2\u8003\uFF0C\u4E0D\u662F\u81B3\u98DF\u5904\u65B9\u3002\u7559\u7A7A\u7684\u9879\u76EE\u4E0D\u53C2\u4E0E\u5BF9\u6BD4\u3002</p><form id="target-form"><div class="target-grid"><label class="form-label">\u70ED\u91CF\uFF08\u5343\u5361\uFF09<input name="kcal" inputmode="numeric" min="0" max="10000" value="${targets.kcal ?? ""}"></label><label class="form-label">\u86CB\u767D\u8D28\uFF08\u514B\uFF09<input name="protein" inputmode="numeric" min="0" max="500" value="${targets.protein ?? ""}"></label><label class="form-label">\u8102\u80AA\uFF08\u514B\uFF09<input name="fat" inputmode="numeric" min="0" max="500" value="${targets.fat ?? ""}"></label><label class="form-label">\u78B3\u6C34\uFF08\u514B\uFF09<input name="carb" inputmode="numeric" min="0" max="500" value="${targets.carb ?? ""}"></label></div><label class="check-line"><input type="checkbox" name="confirm" ${targets.confirmed ? "checked" : ""}> \u6211\u786E\u8BA4\u628A\u8FD9\u4E9B\u6570\u5B57\u5F53\u4F5C\u81EA\u5DF1\u7684\u6BCF\u65E5\u76EE\u6807</label><button class="primary-button" type="submit">\u4FDD\u5B58\u76EE\u6807</button></form></section><section class="diet-card"><h2>\u9700\u8981\u653E\u5BBD\u5EFA\u8BAE\u7684\u60C5\u51B5</h2><p class="small muted">\u52FE\u9009\u540E\uFF0C\u62A5\u544A\u4E0D\u518D\u6309\u70ED\u91CF\u7F3A\u53E3\u9F13\u52B1\u5C11\u5403\uFF1B\u80BE\u75C5\u4E0D\u4F1A\u6309\u86CB\u767D\u8D28\u7F3A\u53E3\u63A8\u8350\u9AD8\u86CB\u767D\u83DC\u3002\u8FD9\u4E0D\u662F\u8BCA\u65AD\u3002</p><form id="flags-form">${flagBox("pregnancy", "\u5B55\u671F\u6216\u5907\u5B55", flags.pregnancy)}${flagBox("lactation", "\u54FA\u4E73", flags.lactation)}${flagBox("minor", "\u672A\u6210\u5E74", flags.minor)}${flagBox("kidney", "\u80BE\u75C5", flags.kidney)}${flagBox("diabetes", "\u7CD6\u5C3F\u75C5", flags.diabetes)}${flagBox("hypertension", "\u9AD8\u8840\u538B", flags.hypertension)}${flagBox("eatingDisorder", "\u8FDB\u98DF\u8BA9\u6211\u5F88\u75DB\u82E6\uFF0C\u6216\u51FA\u73B0\u50AC\u5410\u3001\u7EDD\u98DF", flags.eatingDisorder)}<label class="check-line"><input type="checkbox" name="confirm" ${settingsState.flagsConfirmed ? "checked" : ""}> \u6211\u786E\u8BA4\u7528\u8FD9\u4E9B\u60C5\u51B5\u8C03\u6574\u6587\u5B57\u5EFA\u8BAE\uFF0C\u4E0D\u636E\u6B64\u5F00\u996E\u98DF\u5904\u65B9</label><button class="primary-button" type="submit">\u4FDD\u5B58\u8FD9\u4E9B\u60C5\u51B5</button></form></section><section class="diet-card"><h2>\u6E05\u9664\u672C\u673A\u6570\u636E</h2><p class="small muted">\u4F1A\u540C\u65F6\u6E05\u9664\u996E\u98DF\u8BB0\u5F55\u3001\u6BCF\u65E5\u76EE\u6807\u3001\u65E7\u6863\u6848\u3001\u6536\u85CF\u3001\u65B9\u6848\u548C\u6D4B\u8BC4\u3002\u6E05\u9664\u540E\u627E\u4E0D\u56DE\u6765\u3002</p><button class="outline-button" data-action="reset">\u6E05\u9664\u672C\u673A\u8BB0\u5F55</button></section></div>`;
   }
   async function onClick(button) {
     const action = button.dataset.dietAction;
@@ -894,14 +949,24 @@ function createDietPages(ctx) {
     return false;
   }
   async function submitMeal(form) {
-    const text = String(new FormData(form).get("text") || "").trim();
-    const file = form.querySelector("#meal-photo")?.files?.[0];
+    const data = new FormData(form);
+    const text = String(data.get("text") || "").trim();
+    const meal = String(data.get("meal") || composeMeal || defaultMeal());
+    const file = form.querySelector("#meal-photo")?.files?.[0] || pendingFile;
+    composeText = String(data.get("text") || "");
+    composeMeal = meal;
+    if (file) {
+      pendingFile = file;
+      photoName = file.name;
+    }
     if (!text && !file) {
-      ctx.toast("\u8BF7\u62CD\u7167\u6216\u5199\u4E00\u53E5\u8BDD");
+      composeError = "\u5199\u4E00\u53E5\u8BDD\uFF0C\u6216\u62CD\u4E00\u5F20\u8FD9\u4E00\u9910\u7684\u7167\u7247\u3002";
+      ctx.render();
       return;
     }
     busy = true;
     urgent = null;
+    composeError = "";
     ctx.render();
     try {
       const imageDataUrl = file ? await compressImage(file) : "";
@@ -909,12 +974,15 @@ function createDietPages(ctx) {
       if (result.mode === "urgent_help") {
         draft = null;
         urgent = result;
+        composeText = "";
+        pendingFile = null;
+        photoName = "";
         return;
       }
       draft = {
         id: crypto.randomUUID(),
         date: localDateString(),
-        meal: String(new FormData(form).get("meal")),
+        meal,
         inputType: file ? "photo" : "text",
         rawText: text,
         stub: result.stub === true,
@@ -922,19 +990,40 @@ function createDietPages(ctx) {
         createdAt: (/* @__PURE__ */ new Date()).toISOString(),
         items: result.items.map((item) => ({ ...item, clientId: crypto.randomUUID() }))
       };
+      composeText = "";
+      pendingFile = null;
+      photoName = "";
+      composeError = "";
+    } catch (error) {
+      composeError = error.message || "\u8BC6\u522B\u6CA1\u6709\u5B8C\u6210\u3002\u5DF2\u5199\u7684\u5185\u5BB9\u8FD8\u5728\uFF0C\u53EF\u4EE5\u518D\u53D1\u4E00\u6B21\u3002";
+      ctx.toast(composeError);
     } finally {
       busy = false;
       ctx.render();
     }
   }
   function editor(current) {
-    return `<div class="draft-editor"><h2>\u6838\u5BF9\u8FD9\u4E00\u9910</h2><p class="small muted">${ctx.esc(current.notice)}</p>${current.items.map((item) => itemCard(item)).join("")}<div class="button-row"><button class="primary-button" type="button" data-diet-action="save-draft">\u8BB0\u4E0B\u6765</button><button class="outline-button" type="button" data-diet-action="discard">\u5148\u4E0D\u8BB0</button></div></div>`;
+    return `<section class="draft-editor" aria-label="\u6838\u5BF9\u8FD9\u4E00\u9910"><div class="draft-head"><h2>\u6838\u5BF9\u8FD9\u4E00\u9910</h2><p class="small muted">${ctx.esc(current.notice)}</p></div>${current.items.map((item) => itemCard(item)).join("")}<div class="button-row"><button class="primary-button" type="button" data-diet-action="save-draft">\u8BB0\u4E0B\u6765</button><button class="outline-button" type="button" data-diet-action="discard">\u5148\u4E0D\u8BB0</button></div></section>`;
   }
   function itemCard(item) {
     const food2 = catalog?.foods.find((entry) => entry.id === item.foodId);
     const nutrition = item.nutrition;
-    const tag = nutrition ? nutrition.source === "\u8584\u8377\u5065\u5EB7" ? "\u8584\u8377\u5065\u5EB7" : "\u5DF2\u5339\u914D\u98DF\u7269\u8868" : "\u65E0\u6CD5\u4F30\u7B97";
-    return `<article class="food-item"><header><strong>${ctx.esc(item.name || item.inputName)}</strong>${item.inputName && item.inputName !== item.name ? `<span class="small muted">\u8BC6\u522B\u4E3A ${ctx.esc(item.inputName)}</span>` : ""}<span class="${nutrition ? "tag" : "unestimated"}">${tag}</span></header>${foodSelect(item)}<div class="portion-row" role="group" aria-label="\u4FEE\u6B63\u5206\u91CF"><button type="button" data-diet-action="portion" data-diet-item="${ctx.esc(item.clientId)}" data-diet-size="small" class="${item.portionLabel === "\u5C0F" ? "active" : ""}">\u5C0F</button><button type="button" data-diet-action="portion" data-diet-item="${ctx.esc(item.clientId)}" data-diet-size="medium" class="${item.portionLabel === "\u4E2D" ? "active" : ""}">\u4E2D</button><button type="button" data-diet-action="portion" data-diet-item="${ctx.esc(item.clientId)}" data-diet-size="large" class="${item.portionLabel === "\u5927" ? "active" : ""}">\u5927</button><label>\u514B\u6570<input data-diet-grams="${ctx.esc(item.clientId)}" type="number" min="1" max="5000" value="${item.grams ?? ""}"></label></div>${nutrition ? `<p class="kcal-figure">\u7EA6 ${nutrition.kcal} \u5343\u5361</p><p class="macro-row"><span>\u86CB\u767D\u8D28 ${nutrition.protein} \u514B</span><span>\u8102\u80AA ${nutrition.fat} \u514B</span><span>\u78B3\u6C34 ${nutrition.carb} \u514B</span></p><p class="small muted">\u6765\u6E90\uFF1A${ctx.esc(nutrition.source)}\u3002${ctx.esc(nutrition.sourceNote)}</p>` : `<p class="unestimated">${unestimatedCopy(item.reason)}</p>`}${food2 && !nutrition ? `<p class="small muted">${ctx.esc(food2.sourceNote)}</p>` : ""}</article>`;
+    const sourceLabel = nutrition ? nutrition.source === "\u8584\u8377\u5065\u5EB7" ? "\u8584\u8377\u5065\u5EB7" : "\u672C\u5730\u98DF\u7269\u8868" : "";
+    const kcal = nutrition ? `<p class="food-kcal"><span class="num">${nutrition.kcal}</span><small>\u7EA6\u5343\u5361</small></p>` : '<p class="food-kcal food-kcal-soft"><span>\u65E0\u6CD5\u4F30\u7B97</span><small>\u53EF\u4EE5\u6539\u9009\uFF0C\u6216\u5148\u7559\u7740</small></p>';
+    return `<article class="food-card">
+      <header class="food-card-head"><div><h3>${ctx.esc(item.name || item.inputName)}</h3>${item.inputName && item.inputName !== item.name ? `<p class="small muted">\u8BC6\u522B\u4E3A ${ctx.esc(item.inputName)}</p>` : ""}</div>${kcal}</header>
+      <div class="chip-row">${sourceLabel ? `<span class="chip">${sourceLabel}</span>` : '<span class="chip chip-soft">\u65E0\u6CD5\u4F30\u7B97</span>'}${item.portionLabel ? `<span class="chip chip-quiet">${ctx.esc(item.portionLabel)}</span>` : ""}</div>
+      ${foodSelect(item)}
+      <div class="portion-row" role="group" aria-label="\u4FEE\u6B63\u5206\u91CF">
+        ${portionButton(item, "small", "\u5C0F")}${portionButton(item, "medium", "\u4E2D")}${portionButton(item, "large", "\u5927")}
+        <label class="grams-field">\u514B\u6570<input data-diet-grams="${ctx.esc(item.clientId)}" type="number" min="1" max="5000" inputmode="numeric" value="${item.grams ?? ""}" aria-label="\u514B\u6570"></label>
+      </div>
+      ${nutrition ? `${macroPills(nutrition)}<p class="small muted">\u6765\u6E90\uFF1A${ctx.esc(nutrition.source)}\u3002${ctx.esc(nutrition.sourceNote)}</p>` : `<div class="unestimated-panel"><p>${unestimatedCopy(item.reason)}</p>${food2 ? `<p class="small">${ctx.esc(food2.sourceNote)}</p>` : ""}</div>`}
+    </article>`;
+  }
+  function portionButton(item, size, label) {
+    const active = item.portionLabel === label;
+    return `<button type="button" data-diet-action="portion" data-diet-item="${ctx.esc(item.clientId)}" data-diet-size="${size}" class="${active ? "active" : ""}" aria-pressed="${active}">${label}</button>`;
   }
   function foodSelect(item) {
     if (!catalog) return "";
@@ -947,8 +1036,9 @@ function createDietPages(ctx) {
     const local = catalog.foods.filter((food2) => food2.calculable && !extras.some((entry) => entry.id === food2.id));
     const options2 = [...extras, ...local];
     const selected = item.nutrition ? item.foodId : "";
-    const prompt = item.status === "ambiguous" && !item.nutrition ? "\u8BF7\u9009\u62E9" : "\u65E0\u6CD5\u4F30\u7B97";
-    return `<label class="form-label">${item.status === "ambiguous" && !item.nutrition ? "\u8BF7\u9009\u62E9\u5BF9\u5E94\u7684\u98DF\u7269" : "\u6539\u98DF\u7269"}<select data-diet-food="${ctx.esc(item.clientId)}"><option value="">${prompt}</option>${options2.map((option) => `<option value="${ctx.esc(option.id)}" ${option.id === selected ? "selected" : ""}>${ctx.esc(option.branded ? `${option.name}\uFF08\u54C1\u724C\u5305\u88C5\uFF09` : option.name)}</option>`).join("")}</select></label>`;
+    const asking = item.status === "ambiguous" && !item.nutrition;
+    const prompt = asking ? "\u8BF7\u9009\u62E9" : "\u65E0\u6CD5\u4F30\u7B97";
+    return `<label class="form-label food-pick">${asking ? "\u8FD9\u51E0\u9879\u90FD\u53EF\u80FD\uFF0C\u9009\u4E00\u4E2A" : "\u6362\u6210\u522B\u7684"}<select data-diet-food="${ctx.esc(item.clientId)}" aria-label="${asking ? "\u9009\u62E9\u5BF9\u5E94\u7684\u98DF\u7269" : "\u6539\u98DF\u7269"}"><option value="">${prompt}</option>${options2.map((option) => `<option value="${ctx.esc(option.id)}" ${option.id === selected ? "selected" : ""}>${ctx.esc(option.branded ? `${option.name}\uFF08\u54C1\u724C\u5305\u88C5\uFF09` : option.name)}</option>`).join("")}</select></label>`;
   }
   async function changePortion(clientId, size) {
     const item = draft?.items.find((entry) => entry.clientId === clientId);
@@ -1072,31 +1162,43 @@ function createDietPages(ctx) {
     };
   }
   function reportBlock() {
-    if (!report || report.mode === "empty") return "";
-    if (report.mode === "error") return `<div class="storage-error">${ctx.esc(report.adviceNote)} <button class="text-button" data-diet-action="retry-today">\u91CD\u8BD5</button></div>`;
+    if (!report || report.mode === "empty") return '<section class="diet-card dash-loading"><p class="composer-status">\u6B63\u5728\u6C47\u603B\u4ECA\u5929\u7684\u70ED\u91CF\u3002</p></section>';
+    if (report.mode === "error") return `<div class="storage-error" role="alert">${ctx.esc(report.adviceNote)} <button class="text-button diet-link" data-diet-action="retry-today">\u91CD\u8BD5</button></div>`;
     if (report.mode === "urgent_help") return "";
     const totals = report.totals;
     if (!totals) return "";
     const target = report.targets;
     const gap = target?.kcal != null ? target.kcal - totals.kcal : null;
-    return `<section class="diet-card report-card"><p class="eyebrow">\u6309\u5F53\u524D\u98DF\u7269\u8868\u91CD\u7B97</p><p class="kcal-figure">${totals.counted ? `\u7EA6 ${totals.kcal} \u5343\u5361` : "\u6CA1\u6709\u53EF\u8BA1\u7B97\u7684\u70ED\u91CF"}</p><p class="macro-row"><span>\u86CB\u767D\u8D28 ${totals.protein} \u514B</span><span>\u8102\u80AA ${totals.fat} \u514B</span><span>\u78B3\u6C34 ${totals.carb} \u514B</span></p>${gap == null ? '<p class="small muted">\u6BCF\u65E5\u76EE\u6807\u8FD8\u6CA1\u786E\u8BA4\uFF0C\u6240\u4EE5\u8FD9\u91CC\u53EA\u663E\u793A\u5408\u8BA1\u3002</p>' : `<p>\u548C\u4F60\u786E\u8BA4\u8FC7\u7684 ${target.kcal} \u5343\u5361\u76F8\u6BD4\uFF0C${gap >= 0 ? `\u5927\u7EA6\u8FD8\u5C11 ${gap} \u5343\u5361` : `\u5927\u7EA6\u591A\u4E86 ${Math.abs(gap)} \u5343\u5361`}\u3002</p>`}${report.skipped?.length ? `<p class="small muted">\u672A\u8BA1\u5165\uFF1A${report.skipped.map((name) => ctx.esc(name)).join("\u3001")}\u3002\u8FD9\u4E9B\u98DF\u7269\u65E0\u6CD5\u4F30\u7B97\u3002</p>` : ""}${report.adviceKept && report.advice ? `<p class="advice-line">${ctx.esc(report.advice)}</p>` : `<p class="small muted">${ctx.esc(report.adviceNote || "")}</p>`}</section>`;
+    const ratio = target?.kcal ? totals.kcal / target.kcal : null;
+    const tone = ratio != null && ratio > 1 ? "over" : "under";
+    const center = totals.counted ? String(totals.kcal) : "\u2014";
+    const aria = gap == null ? totals.counted ? `\u4ECA\u65E5\u7EA6 ${totals.kcal} \u5343\u5361\uFF0C\u8FD8\u6CA1\u6709\u786E\u8BA4\u6BCF\u65E5\u76EE\u6807` : "\u4ECA\u5929\u8FD8\u6CA1\u6709\u53EF\u8BA1\u7B97\u7684\u70ED\u91CF" : `\u4ECA\u65E5\u7EA6 ${totals.kcal} \u5343\u5361\uFF0C\u76EE\u6807 ${target.kcal} \u5343\u5361\uFF0C${gap >= 0 ? `\u5927\u7EA6\u8FD8\u5C11 ${gap} \u5343\u5361` : `\u5927\u7EA6\u591A\u4E86 ${Math.abs(gap)} \u5343\u5361`}`;
+    const gapCopy = gap == null ? '<p class="dash-gap">\u6BCF\u65E5\u76EE\u6807\u8FD8\u6CA1\u786E\u8BA4\uFF0C\u6240\u4EE5\u8FD9\u91CC\u53EA\u663E\u793A\u5408\u8BA1\u3002</p>' : `<p class="dash-gap ${gap < 0 ? "over" : ""}">\u548C\u4F60\u786E\u8BA4\u8FC7\u7684 <span class="num">${target.kcal}</span> \u5343\u5361\u76F8\u6BD4\uFF0C${gap >= 0 ? `\u5927\u7EA6\u8FD8\u5C11 <span class="num">${gap}</span> \u5343\u5361` : `\u5927\u7EA6\u591A\u4E86 <span class="num">${Math.abs(gap)}</span> \u5343\u5361`}\u3002</p>`;
+    const advice = report.adviceKept && report.advice ? `<p>${ctx.esc(report.advice)}</p>` : `<p class="small muted">${ctx.esc(report.adviceNote || "")}</p>`;
+    return `<section class="dash" aria-label="\u4ECA\u65E5\u70ED\u91CF">
+      <div class="ring-wrap" role="img" aria-label="${ctx.esc(aria)}">${ringSvg(ratio, tone)}<div class="ring-center"><strong class="num">${center}</strong><span>${totals.counted ? "\u4ECA\u65E5\u5343\u5361" : "\u6CA1\u6709\u53EF\u8BA1\u7B97\u7684\u70ED\u91CF"}</span></div></div>
+      <div class="dash-copy"><p class="eyebrow">\u6309\u5F53\u524D\u98DF\u7269\u8868\u91CD\u7B97</p>${gapCopy}${report.skipped?.length ? `<p class="small muted">\u672A\u8BA1\u5165\uFF1A${report.skipped.map((name) => ctx.esc(name)).join("\u3001")}\u3002\u8FD9\u4E9B\u98DF\u7269\u65E0\u6CD5\u4F30\u7B97\u3002</p>` : ""}</div>
+    </section>
+    <section class="diet-card"><h2>\u4E09\u5927\u8425\u517B\u7D20</h2>${macroBars(totals, target)}</section>
+    <section class="diet-card advice-card"><h2>\u4ECA\u5929\u7684\u5EFA\u8BAE</h2>${advice}</section>`;
   }
   function recommendBlock() {
-    if (!recommendation) return mealsOn(ctx.getState(), localDateString()).length ? '<p class="empty-copy">\u6B63\u5728\u4ECE\u98DF\u8C31\u5E93\u91CC\u9009\u4E0B\u4E00\u9910\u3002</p>' : "";
-    if (!recommendation.recipe) return `<section class="diet-card"><h2>\u4E0B\u4E00\u9910</h2><p>${ctx.esc(recommendation.reason || recommendation.reasonNote || "\u98DF\u8C31\u5E93\u91CC\u6CA1\u6709\u66F4\u5408\u9002\u7684\u4E00\u9053\u3002")}</p><button class="text-button" data-page="library">\u67E5\u770B\u73B0\u6709\u98DF\u8C31 ${ctx.icon("arrow")}</button></section>`;
+    if (!recommendation) return '<section class="diet-card"><p class="composer-status">\u6B63\u5728\u4ECE\u98DF\u8C31\u5E93\u91CC\u9009\u4E0B\u4E00\u9910\u3002</p></section>';
+    if (!recommendation.recipe) return `<section class="diet-card"><h2>\u4E0B\u4E00\u9910</h2><p>${ctx.esc(recommendation.reason || recommendation.reasonNote || "\u98DF\u8C31\u5E93\u91CC\u6CA1\u6709\u66F4\u5408\u9002\u7684\u4E00\u9053\u3002")}</p><button class="text-button diet-link" data-page="library">\u67E5\u770B\u73B0\u6709\u98DF\u8C31 ${ctx.icon("arrow")}</button></section>`;
     const recipe = recommendation.recipe;
-    return `<section class="diet-card"><h2>\u4E0B\u4E00\u9910\u53EF\u4EE5\u4ECE\u8FD9\u9053\u5F00\u59CB</h2><h3>${ctx.esc(recipe.name)}</h3><p class="kcal-figure">\u7EA6 ${recipe.nutrition.kcal} \u5343\u5361</p><p class="macro-row"><span>\u86CB\u767D\u8D28 ${recipe.nutrition.protein} \u514B</span><span>\u8102\u80AA ${recipe.nutrition.fat} \u514B</span><span>\u78B3\u6C34 ${recipe.nutrition.carb} \u514B</span></p>${recommendation.reasonKept && recommendation.reason ? `<p class="advice-line">${ctx.esc(recommendation.reason)}</p>` : `<p class="small muted">${ctx.esc(recommendation.reasonNote || "\u63A8\u8350\u7406\u7531\u6CA1\u6709\u901A\u8FC7\u6838\u5BF9\uFF0C\u53EA\u4FDD\u7559\u98DF\u8C31\u5E93\u91CC\u7684\u8FD9\u9053\u83DC\u3002")}</p>`}<div class="button-row"><button class="primary-button" data-diet-action="recipe" data-diet-id="${ctx.esc(recipe.id)}">\u67E5\u770B\u505A\u6CD5</button><button class="outline-button" data-diet-action="another">\u6362\u4E00\u9053\u5E93\u91CC\u7684\u83DC</button></div></section>`;
+    const reason = recommendation.reasonKept && recommendation.reason ? `<p class="advice-line">${ctx.esc(recommendation.reason)}</p>` : `<p class="small muted">${ctx.esc(recommendation.reasonNote || "\u63A8\u8350\u7406\u7531\u6CA1\u6709\u901A\u8FC7\u6838\u5BF9\uFF0C\u53EA\u4FDD\u7559\u98DF\u8C31\u5E93\u91CC\u7684\u8FD9\u9053\u83DC\u3002")}</p>`;
+    return `<article class="recipe-feature"><div class="recipe-feature-art"><span>${mealNames[recipe.meal] || "\u5BB6\u5E38"}</span>${recipe.example ? '<span class="example-mark">\u793A\u4F8B\u98DF\u8C31</span>' : ""}</div><div class="recipe-feature-body"><p class="eyebrow">\u4E0B\u4E00\u9910\u53EF\u4EE5\u4ECE\u8FD9\u9053\u5F00\u59CB</p><h2>${ctx.esc(recipe.name)}</h2><p class="food-kcal"><span class="num">${recipe.nutrition.kcal}</span><small>\u7EA6\u5343\u5361</small></p>${macroPills(recipe.nutrition)}${reason}<div class="button-row"><button class="primary-button" data-diet-action="recipe" data-diet-id="${ctx.esc(recipe.id)}">\u67E5\u770B\u505A\u6CD5</button><button class="outline-button" data-diet-action="another">\u6362\u4E00\u9053\u5E93\u91CC\u7684\u83DC</button></div></div></article>`;
   }
   function mealCard(meal) {
     const estimated = meal.items.filter((item) => item.nutrition);
     const kcal = estimated.reduce((sum, item) => sum + item.nutrition.kcal, 0);
-    return `<article class="saved-meal"><div class="section-mini"><span>${mealNames[meal.meal]} \xB7 ${ctx.esc(meal.date)}</span><span><button class="text-button" data-diet-action="edit-meal" data-diet-id="${ctx.esc(meal.id)}">\u4FEE\u6539</button><button class="text-button" data-diet-action="delete-meal" data-diet-id="${ctx.esc(meal.id)}">\u5220\u9664</button></span></div><p>${meal.items.map((item) => `${ctx.esc(item.name)} ${item.grams ?? ""} \u514B${item.nutrition ? ` \xB7 \u7EA6 ${item.nutrition.kcal} \u5343\u5361` : " \xB7 \u65E0\u6CD5\u4F30\u7B97"}`).join("<br>")}</p><p class="small muted">${estimated.length ? `\u8FD9\u4E00\u9910\u53EF\u4F30\u7B97\u90E8\u5206\u7EA6 ${kcal} \u5343\u5361` : "\u8FD9\u4E00\u9910\u6CA1\u6709\u53EF\u4F30\u7B97\u7684\u70ED\u91CF"}</p></article>`;
+    return `<article class="saved-meal"><div class="section-mini"><span>${mealNames[meal.meal]} \xB7 <span class="num">${ctx.esc(meal.date)}</span></span><span class="meal-actions"><button class="text-button" data-diet-action="edit-meal" data-diet-id="${ctx.esc(meal.id)}">\u4FEE\u6539</button><button class="text-button" data-diet-action="delete-meal" data-diet-id="${ctx.esc(meal.id)}">\u5220\u9664</button></span></div><ul class="meal-lines">${meal.items.map((item) => `<li><span>${ctx.esc(item.name)}</span><span class="num">${item.grams ?? "\u2014"} \u514B</span><span class="num">${item.nutrition ? `\u7EA6 ${item.nutrition.kcal} \u5343\u5361` : "\u65E0\u6CD5\u4F30\u7B97"}</span></li>`).join("")}</ul><p class="small muted">${estimated.length ? `\u8FD9\u4E00\u9910\u53EF\u4F30\u7B97\u90E8\u5206\u7EA6 <span class="num">${kcal}</span> \u5343\u5361` : "\u8FD9\u4E00\u9910\u6CA1\u6709\u53EF\u4F30\u7B97\u7684\u70ED\u91CF"}</p></article>`;
   }
   function openRecipe(id) {
     const recipe = catalog?.recipes.find((item) => item.id === id) || recommendation?.recipe;
     if (!recipe || recipe.id !== id && recommendation?.recipe?.id !== id) return;
     const chosen = recipe.id === id ? recipe : recommendation.recipe;
-    ctx.openDetail(`<div class="detail-body"><span class="tag">${chosen.example ? "\u793A\u4F8B\u98DF\u8C31" : "\u98DF\u8C31"} \xB7 ${mealNames[chosen.meal] || "\u5BB6\u5E38"}</span><h2>${ctx.esc(chosen.name)}</h2><p class="kcal-figure">\u7EA6 ${chosen.nutrition.kcal} \u5343\u5361</p><p class="macro-row"><span>\u86CB\u767D\u8D28 ${chosen.nutrition.protein} \u514B</span><span>\u8102\u80AA ${chosen.nutrition.fat} \u514B</span><span>\u78B3\u6C34 ${chosen.nutrition.carb} \u514B</span></p><h3>\u539F\u6599\u548C\u514B\u6570</h3><div class="ingredient-list">${chosen.ingredients.map((item) => `<span>${ctx.esc(item.name)} ${item.grams} \u514B</span>`).join("")}</div><h3>\u505A\u6CD5</h3><ol class="step-list">${chosen.steps.map((step) => `<li>${ctx.esc(step)}</li>`).join("")}</ol><p class="gentle-note">${ctx.esc(chosen.note || "")} ${ctx.esc(chosen.sourceNote || "")}</p>${chosen.avoid?.includes("kidney_high_protein") ? '<p class="boundary-note">\u8FD9\u9053\u83DC\u6807\u8BB0\u4E3A\u86CB\u767D\u8D28\u8F83\u9AD8\uFF0C\u80BE\u75C5\u7528\u6237\u4E0D\u4F1A\u56E0\u4E3A\u86CB\u767D\u8D28\u7F3A\u53E3\u88AB\u63A8\u8350\u5B83\u3002</p>' : ""}</div>`, "\u98DF\u8C31");
+    ctx.openDetail(`<div class="detail-body">${chosen.example ? '<span class="example-mark example-inline">\u793A\u4F8B\u98DF\u8C31</span>' : '<span class="chip">\u98DF\u8C31</span>'}<h2>${ctx.esc(chosen.name)}</h2><p class="small muted">${mealNames[chosen.meal] || "\u5BB6\u5E38"}</p><p class="food-kcal"><span class="num">${chosen.nutrition.kcal}</span><small>\u7EA6\u5343\u5361</small></p>${macroPills(chosen.nutrition)}<h3>\u539F\u6599\u548C\u514B\u6570</h3><div class="ingredient-list">${chosen.ingredients.map((item) => `<span>${ctx.esc(item.name)} <span class="num">${item.grams}</span> \u514B</span>`).join("")}</div><h3>\u505A\u6CD5</h3><ol class="step-list">${chosen.steps.map((step) => `<li>${ctx.esc(step)}</li>`).join("")}</ol><p class="gentle-note">${ctx.esc(chosen.note || "")} ${ctx.esc(chosen.sourceNote || "")}</p>${chosen.avoid?.includes("kidney_high_protein") ? '<p class="boundary-note">\u8FD9\u9053\u83DC\u6807\u8BB0\u4E3A\u86CB\u767D\u8D28\u8F83\u9AD8\uFF0C\u80BE\u75C5\u7528\u6237\u4E0D\u4F1A\u56E0\u4E3A\u86CB\u767D\u8D28\u7F3A\u53E3\u88AB\u63A8\u8350\u5B83\u3002</p>' : ""}</div>`, "\u98DF\u8C31");
   }
   async function saveTargets(form) {
     const data = new FormData(form);
@@ -1145,7 +1247,7 @@ function defaultMeal() {
 }
 function heading(title, sub) {
   const now = /* @__PURE__ */ new Date();
-  return `<div class="page-heading"><div><p class="eyebrow">MEAL NOTES</p><h1>${title}</h1><p>${sub}</p></div><div class="date-stamp"><strong>${String(now.getMonth() + 1).padStart(2, "0")}<span>/${String(now.getDate()).padStart(2, "0")}</span></strong><span>\u4ECA\u5929 \xB7 \u8BB0\u5728\u672C\u673A</span></div></div>`;
+  return `<div class="page-heading diet-heading"><div><p class="eyebrow">\u77E5\u517B</p><h1>${title}</h1><p>${sub}</p></div><div class="date-stamp"><strong class="num">${String(now.getMonth() + 1).padStart(2, "0")}<span>/${String(now.getDate()).padStart(2, "0")}</span></strong><span>\u4ECA\u5929 \xB7 \u8BB0\u5728\u672C\u673A</span></div></div>`;
 }
 function privacy() {
   return '<p class="privacy-banner">\u4F60\u8F93\u5165\u7684\u6587\u5B57\u548C\u4E0A\u4F20\u7684\u7167\u7247\u4F1A\u53D1\u7ED9\u963F\u91CC\u4E91\u767E\u70BC\u7684\u5343\u95EE\uFF0C\u7528\u6765\u8BC6\u522B\u98DF\u7269\u548C\u5199\u4E00\u4E24\u53E5\u5EFA\u8BAE\u3002\u6CA1\u6709\u914D\u7F6E\u5343\u95EE\u5BC6\u94A5\u65F6\u4F7F\u7528\u672C\u673A\u6D4B\u8BD5\u66FF\u8EAB\uFF0C\u4E0D\u4F1A\u5916\u53D1\u3002\u5BF9\u4E0D\u4E0A\u672C\u5730\u98DF\u7269\u8868\u7684\u98DF\u7269\u540D\u79F0\u4F1A\u53D1\u7ED9\u8584\u8377\u5065\u5EB7\u5F00\u653E\u5E73\u53F0\u67E5\u8BE2\u8425\u517B\u6570\u636E\uFF1B\u6CA1\u6709\u914D\u7F6E\u8584\u8377\u5BC6\u94A5\u6216\u67E5\u8BE2\u5931\u8D25\u65F6\uFF0C\u8BE5\u9879\u6807\u4E3A\u65E0\u6CD5\u4F30\u7B97\u3002\u672C\u5E94\u7528\u4E0D\u5728\u670D\u52A1\u5668\u4E0A\u4FDD\u5B58\u7167\u7247\u548C\u996E\u98DF\u6B63\u6587\u3002\u8BB0\u5F55\u53EA\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u7684\u6D4F\u89C8\u5668\u91CC\u3002</p>';
@@ -1166,6 +1268,40 @@ function blank(value) {
   const text = String(value ?? "").trim();
   return text === "" ? null : Number(text);
 }
+function macroShares(nutrition) {
+  const protein = Number(nutrition?.protein) || 0;
+  const fat = Number(nutrition?.fat) || 0;
+  const carb = Number(nutrition?.carb) || 0;
+  const total = protein + fat + carb || 1;
+  return { protein: protein / total * 100, fat: fat / total * 100, carb: carb / total * 100 };
+}
+function macroPills(nutrition) {
+  const share = macroShares(nutrition);
+  return `<div class="macro-stack" aria-hidden="true"><i class="protein" style="width:${share.protein.toFixed(1)}%"></i><i class="fat" style="width:${share.fat.toFixed(1)}%"></i><i class="carb" style="width:${share.carb.toFixed(1)}%"></i></div><p class="macro-pills"><span>\u86CB\u767D\u8D28 <b class="num">${nutrition.protein}</b> \u514B</span><span>\u8102\u80AA <b class="num">${nutrition.fat}</b> \u514B</span><span>\u78B3\u6C34 <b class="num">${nutrition.carb}</b> \u514B</span></p>`;
+}
+function macroBars(totals, targets) {
+  const rows = [
+    ["\u86CB\u767D\u8D28", totals.protein, targets?.protein],
+    ["\u8102\u80AA", totals.fat, targets?.fat],
+    ["\u78B3\u6C34", totals.carb, targets?.carb]
+  ];
+  const gramSum = rows.reduce((sum, row) => sum + (Number(row[1]) || 0), 0) || 1;
+  return `<div class="macro-bars">${rows.map(([label, value, target]) => {
+    const amount = Number(value) || 0;
+    const hasTarget = target != null && Number(target) > 0;
+    const ratio = hasTarget ? amount / Number(target) : amount / gramSum;
+    const width2 = Math.max(0, Math.min(ratio, 1)) * 100;
+    const over = hasTarget && ratio > 1;
+    const note = hasTarget ? `\u76EE\u6807 ${target} \u514B` : "\u5360\u4E09\u9879\u5408\u8BA1";
+    return `<div class="macro-line"><div class="macro-line-top"><span>${label}</span><span class="num">${amount} \u514B</span></div><div class="bar${over ? " over" : ""}"><span style="width:${width2.toFixed(1)}%"></span></div><p class="small muted">${note}${over ? " \xB7 \u5DF2\u8D85\u8FC7" : ""}</p></div>`;
+  }).join("")}</div>`;
+}
+function ringSvg(ratio, tone) {
+  const dash = ratio == null ? RING_C : Math.max(0, Math.min(ratio, 1)) * RING_C;
+  const shown = dash.toFixed(2);
+  const rest = (RING_C - dash).toFixed(2);
+  return `<svg class="kcal-ring ${tone}" viewBox="0 0 140 140" aria-hidden="true"><circle cx="70" cy="70" r="${RING_R}" class="ring-track"/><circle cx="70" cy="70" r="${RING_R}" class="ring-value" stroke-dasharray="${shown} ${rest}" transform="rotate(-90 70 70)"/></svg>`;
+}
 async function compressImage(file) {
   if (!file.type.startsWith("image/")) throw new Error("\u8BF7\u9009\u62E9\u56FE\u7247");
   if (file.size > 8 * 1024 * 1024) throw new Error("\u56FE\u7247\u592A\u5927\uFF0C\u8BF7\u6362\u4E00\u5F20\u8F83\u5C0F\u7684\u7167\u7247");
@@ -1184,7 +1320,7 @@ async function compressImage(file) {
 }
 
 // src/client/app.js
-var icons = { home: '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21v-8h6v8"/>', leaf: '<path d="M20 3c-9-1-16 3-16 10a7 7 0 0 0 7 7C18 20 21 12 20 3Z"/><path d="m4 21 11-12"/>', heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/>', user: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>', spark: '<path d="m12 3 2.6 6.4L21 12l-6.4 2.6L12 21l-2.6-6.4L3 12l6.4-2.6Z"/>', arrow: '<path d="M5 12h14m-5-5 5 5-5 5"/>', close: '<path d="m6 6 12 12M18 6 6 18"/>', bookmark: '<path d="M6 3h12v18l-6-4-6 4z"/>', sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/>', moon: '<path d="M21 13A9 9 0 0 1 11 3 9 9 0 1 0 21 13Z"/>', wind: '<path d="M3 8h12a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h5"/>', scale: '<path d="M4 5h16v16H4z"/><path d="M8 9a5 5 0 0 1 8 0M12 8v3"/>', bowl: '<path d="M3 12h18c0 6-5 8-9 8s-9-2-9-8Z"/><path d="M7 5v3m5-5v5m5-3v3"/>', check: '<path d="m5 12 4 4L19 6"/>', clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', back: '<path d="m14 5-7 7 7 7"/>', book: '<path d="M3 3h6a4 4 0 0 1 3 2 4 4 0 0 1 3-2h6v17h-6a4 4 0 0 0-3 2 4 4 0 0 0-3-2H3zM12 5v17"/>', cup: '<path d="M4 7h13v8a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM17 8h2a3 3 0 0 1 0 6h-2M7 3v1m4-1v1m4-1v1"/>' };
+var icons = { home: '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21v-8h6v8"/>', leaf: '<path d="M20 3c-9-1-16 3-16 10a7 7 0 0 0 7 7C18 20 21 12 20 3Z"/><path d="m4 21 11-12"/>', heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/>', user: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>', spark: '<path d="m12 3 2.6 6.4L21 12l-6.4 2.6L12 21l-2.6-6.4L3 12l6.4-2.6Z"/>', arrow: '<path d="M5 12h14m-5-5 5 5-5 5"/>', close: '<path d="m6 6 12 12M18 6 6 18"/>', bookmark: '<path d="M6 3h12v18l-6-4-6 4z"/>', sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/>', moon: '<path d="M21 13A9 9 0 0 1 11 3 9 9 0 1 0 21 13Z"/>', wind: '<path d="M3 8h12a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h5"/>', scale: '<path d="M4 5h16v16H4z"/><path d="M8 9a5 5 0 0 1 8 0M12 8v3"/>', bowl: '<path d="M3 12h18c0 6-5 8-9 8s-9-2-9-8Z"/><path d="M7 5v3m5-5v5m5-3v3"/>', check: '<path d="m5 12 4 4L19 6"/>', clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', back: '<path d="m14 5-7 7 7 7"/>', book: '<path d="M3 3h6a4 4 0 0 1 3 2 4 4 0 0 1 3-2h6v17h-6a4 4 0 0 0-3 2 4 4 0 0 0-3-2H3zM12 5v17"/>', cup: '<path d="M4 7h13v8a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM17 8h2a3 3 0 0 1 0 6h-2M7 3v1m4-1v1m4-1v1"/>', camera: '<path d="M4 8h3l2-3h6l2 3h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z"/><circle cx="12" cy="13" r="3.2"/>', send: '<path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/>' };
 var icon = (name) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name] || icons.leaf}</svg>`;
 var esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 var dietPages = createDietPages({ getState: () => state, writeStore, toast, navigate, openDetail, icon, esc, render: () => render() });
