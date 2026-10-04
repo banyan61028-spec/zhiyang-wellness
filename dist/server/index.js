@@ -2538,20 +2538,20 @@ function scoreRecipe(recipe, { useGap, totals, targets }) {
   return score;
 }
 function programReason(recipe, { totals, targets, caution }) {
-  if (!recipe) return "\u98DF\u8C31\u5E93\u91CC\u6CA1\u6709\u66F4\u5408\u9002\u7684\u4E00\u9053\u3002\u53EF\u4EE5\u4ECE\u73B0\u6709\u98DF\u8C31\u91CC\u53E6\u9009\uFF0C\u8FD9\u91CC\u4E0D\u4F1A\u65B0\u7F16\u4E00\u9053\u83DC\u3002";
+  if (!recipe) return "\u4ECA\u5929\u5148\u4ECE\u98DF\u8C31\u91CC\u81EA\u5DF1\u6311\u4E00\u9053\u5427\u3002";
   if (caution?.eatingDisorder || caution?.pregnancy || caution?.lactation || caution?.minor) {
-    return `\u4ECE\u98DF\u8C31\u5E93\u9009\u4E86\u300C${recipe.name}\u300D\uFF0C\u53EA\u4F5C\u4E3A\u5BB6\u5E38\u642D\u914D\uFF0C\u4E0D\u662F\u6309\u70ED\u91CF\u7F3A\u53E3\u5B89\u6392\u7684\u5C11\u5403\u65B9\u6848\u3002`;
+    return `\u53EF\u4EE5\u8BD5\u8BD5\u300C${recipe.name}\u300D\u3002\u8FD9\u662F\u5BB6\u5E38\u642D\u914D\uFF0C\u4E0D\u662F\u4E3A\u4E86\u5C11\u5403\u3002`;
   }
-  if (caution?.kidney) return `\u4ECE\u98DF\u8C31\u5E93\u9009\u4E86\u300C${recipe.name}\u300D\u3002\u6CA1\u6709\u6309\u86CB\u767D\u8D28\u7F3A\u53E3\u6311\u9AD8\u86CB\u767D\u83DC\uFF0C\u80BE\u75C5\u996E\u98DF\u8BF7\u4EE5\u533B\u5631\u4E3A\u51C6\u3002`;
-  if (caution?.diabetes || caution?.hypertension) return `\u4ECE\u98DF\u8C31\u5E93\u9009\u4E86\u300C${recipe.name}\u300D\u3002\u8FD9\u662F\u5BB6\u5E38\u642D\u914D\uFF0C\u4E0D\u662F\u6CBB\u7597\u81B3\u98DF\u3002`;
-  if (!targets?.confirmed || targets.kcal == null) return `\u4ECE\u98DF\u8C31\u5E93\u9009\u4E86\u300C${recipe.name}\u300D\u3002\u6BCF\u65E5\u76EE\u6807\u8FD8\u6CA1\u586B\u5199\uFF0C\u6240\u4EE5\u6CA1\u6709\u6309\u7F3A\u53E3\u7B5B\u9009\u3002`;
+  if (caution?.kidney) return `\u53EF\u4EE5\u8BD5\u8BD5\u300C${recipe.name}\u300D\u3002\u6CA1\u6709\u7279\u610F\u9009\u9AD8\u86CB\u767D\u7684\u83DC\u3002\u80BE\u75C5\u76F8\u5173\u7684\u5403\u6CD5\u8BF7\u4EE5\u533B\u5631\u4E3A\u51C6\u3002`;
+  if (caution?.diabetes || caution?.hypertension) return `\u53EF\u4EE5\u8BD5\u8BD5\u300C${recipe.name}\u300D\u3002\u8FD9\u662F\u5BB6\u5E38\u642D\u914D\u3002`;
+  if (!targets?.confirmed || targets.kcal == null) return `\u53EF\u4EE5\u8BD5\u8BD5\u300C${recipe.name}\u300D\u3002\u6BCF\u65E5\u76EE\u6807\u8FD8\u6CA1\u586B\uFF0C\u6240\u4EE5\u5148\u6309\u5BB6\u5E38\u6765\u9009\u3002`;
   const remain = Math.round(Number(targets.kcal) - totals.kcal);
   if (Number.isFinite(Number(targets.protein)) && Number(targets.protein) - totals.protein > 10 && !caution?.kidney) {
     const gap = Math.round(Number(targets.protein) - totals.protein);
-    return `\u4ECA\u5929\u86CB\u767D\u8D28\u5927\u7EA6\u8FD8\u5C11 ${gap} \u514B\uFF0C\u6240\u4EE5\u4ECE\u98DF\u8C31\u5E93\u9009\u4E86\u300C${recipe.name}\u300D\u3002\u8FD9\u9053\u83DC\u5927\u7EA6 ${recipe.nutrition.kcal} \u5343\u5361\u3001\u86CB\u767D\u8D28 ${recipe.nutrition.protein} \u514B\u3002`;
+    return `\u4ECA\u5929\u86CB\u767D\u8D28\u5927\u7EA6\u8FD8\u5C11 ${gap} \u514B\uFF0C\u53EF\u4EE5\u8BD5\u8BD5\u300C${recipe.name}\u300D\u3002\u8FD9\u9053\u5927\u7EA6 ${recipe.nutrition.kcal} \u5343\u5361\u3001\u86CB\u767D\u8D28 ${recipe.nutrition.protein} \u514B\u3002`;
   }
-  if (remain > 0) return `\u8DDD\u79BB\u4F60\u586B\u7684\u70ED\u91CF\u76EE\u6807\u8FD8\u5C11 ${remain} \u5343\u5361\uFF0C\u6240\u4EE5\u4ECE\u98DF\u8C31\u5E93\u9009\u4E86\u300C${recipe.name}\u300D\uFF0C\u8FD9\u9053\u83DC\u5927\u7EA6 ${recipe.nutrition.kcal} \u5343\u5361\u3002`;
-  return `\u4ECA\u5929\u70ED\u91CF\u5DF2\u7ECF\u4E0D\u4F4E\uFF0C\u6240\u4EE5\u4ECE\u98DF\u8C31\u5E93\u9009\u4E86\u5206\u91CF\u66F4\u5C0F\u7684\u300C${recipe.name}\u300D\uFF0C\u5927\u7EA6 ${recipe.nutrition.kcal} \u5343\u5361\u3002`;
+  if (remain > 0) return `\u8DDD\u79BB\u4F60\u586B\u7684\u70ED\u91CF\u76EE\u6807\u8FD8\u5C11 ${remain} \u5343\u5361\uFF0C\u53EF\u4EE5\u8BD5\u8BD5\u300C${recipe.name}\u300D\uFF0C\u5927\u7EA6 ${recipe.nutrition.kcal} \u5343\u5361\u3002`;
+  return `\u4ECA\u5929\u70ED\u91CF\u5DF2\u7ECF\u4E0D\u4F4E\uFF0C\u53EF\u4EE5\u8BD5\u8BD5\u5206\u91CF\u66F4\u5C0F\u7684\u300C${recipe.name}\u300D\uFF0C\u5927\u7EA6 ${recipe.nutrition.kcal} \u5343\u5361\u3002`;
 }
 
 // src/shared/nutrition/advice.js
@@ -2603,7 +2603,7 @@ function programAdvice({ totals, targets, caution }) {
   else sentence += "\u548C\u4F60\u586B\u7684\u70ED\u91CF\u76EE\u6807\u4E00\u6837\u3002";
   if (short && allowed.includes(short.gap)) sentence += `${short.label}\u5927\u7EA6\u8FD8\u5C11 ${short.gap} \u514B\u3002`;
   const checked = sanitizeAdvice(sentence, allowed);
-  return checked.kept ? checked.text : "\u4ECA\u5929\u7684\u5408\u8BA1\u5DF2\u7ECF\u6309\u98DF\u7269\u8868\u7B97\u597D\u3002";
+  return checked.kept ? checked.text : "\u4ECA\u5929\u7684\u5408\u8BA1\u5DF2\u7ECF\u7B97\u597D\u3002";
 }
 function inferCaution(texts, flags = {}) {
   const blob = `${Array.isArray(texts) ? texts.join("\u3002") : ""}`;
@@ -2743,12 +2743,6 @@ function stubParseText(text) {
   if (!items.length) throw new Error("\u6CA1\u6709\u4ECE\u8FD9\u53E5\u8BDD\u91CC\u62C6\u51FA\u98DF\u7269");
   return items.slice(0, 12);
 }
-function stubImageItems() {
-  return [
-    { name: "\u7C73\u996D", portionLabel: "\u4E2D", grams: 150 },
-    { name: "\u9E21\u86CB", portionLabel: "\u4E00\u4E2A", grams: 50 }
-  ];
-}
 
 // src/server/diet.js
 var json = (body, status = 200) => new Response(JSON.stringify(body), {
@@ -2793,7 +2787,7 @@ async function handleDiet(request, env, url) {
     return json(result);
   } catch (error) {
     if (error.message === "size") return json({ error: "\u8BF7\u6C42\u5185\u5BB9\u8FC7\u957F" }, 413);
-    const safe = /* @__PURE__ */ new Set(["\u6CA1\u6709\u4ECE\u8FD9\u53E5\u8BDD\u91CC\u62C6\u51FA\u98DF\u7269", "\u6CA1\u6709\u8BC6\u522B\u51FA\u98DF\u7269", "\u6A21\u578B\u6CA1\u6709\u8FD4\u56DE\u53EF\u89E3\u6790\u7684\u7ED3\u679C", "\u6A21\u578B\u8FD4\u56DE\u7684\u98DF\u7269\u5217\u8868\u65E0\u6548", "\u6A21\u578B\u8FD4\u56DE\u7684\u98DF\u7269\u540D\u4E3A\u7A7A", "\u6A21\u578B\u670D\u52A1\u6682\u65F6\u4E0D\u53EF\u7528", "\u6A21\u578B\u6CA1\u6709\u8FD4\u56DE\u5185\u5BB9", "\u7167\u7247\u683C\u5F0F\u65E0\u6548", "\u7F3A\u5C11\u9910\u98DF\u5185\u5BB9", "\u98DF\u7269\u9879\u65E0\u6548", "\u76EE\u6807\u65E0\u6548", "\u8BF7\u6C42\u7F16\u53F7\u65E0\u6548", "\u8DEF\u5F84\u65E0\u6548"]);
+    const safe = /* @__PURE__ */ new Set(["\u6CA1\u6709\u4ECE\u8FD9\u53E5\u8BDD\u91CC\u62C6\u51FA\u98DF\u7269", "\u6CA1\u6709\u8BC6\u522B\u51FA\u98DF\u7269", "\u6A21\u578B\u6CA1\u6709\u8FD4\u56DE\u53EF\u89E3\u6790\u7684\u7ED3\u679C", "\u6A21\u578B\u8FD4\u56DE\u7684\u98DF\u7269\u5217\u8868\u65E0\u6548", "\u6A21\u578B\u8FD4\u56DE\u7684\u98DF\u7269\u540D\u4E3A\u7A7A", "\u6A21\u578B\u670D\u52A1\u6682\u65F6\u4E0D\u53EF\u7528", "\u6A21\u578B\u6CA1\u6709\u8FD4\u56DE\u5185\u5BB9", "\u7167\u7247\u683C\u5F0F\u65E0\u6548", "\u7F3A\u5C11\u9910\u98DF\u5185\u5BB9", "\u98DF\u7269\u9879\u65E0\u6548", "\u76EE\u6807\u65E0\u6548", "\u8BF7\u6C42\u7F16\u53F7\u65E0\u6548", "\u8DEF\u5F84\u65E0\u6548", "\u6682\u65F6\u65E0\u6CD5\u8BC6\u522B\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5\u6216\u6539\u4E3A\u6253\u5B57\u8BB0\u5F55"]);
     return json({ error: safe.has(error.message) ? error.message : "\u8BF7\u6C42\u6216\u56DE\u590D\u6821\u9A8C\u672A\u901A\u8FC7" }, 400);
   }
 }
@@ -2814,27 +2808,33 @@ async function recognizeMeal(body, env, source, requestId) {
   let parsed;
   let stub = false;
   if (!config.enabled) {
+    console.info(JSON.stringify({ component: "diet", event: "recognize_unconfigured" }));
+    if (image && !text) throw new Error("\u6682\u65F6\u65E0\u6CD5\u8BC6\u522B\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5\u6216\u6539\u4E3A\u6253\u5B57\u8BB0\u5F55");
     stub = true;
-    parsed = image && !text ? stubImageItems() : stubParseText(text || "\u7C73\u996D\u548C\u9E21\u86CB");
+    parsed = stubParseText(text);
   } else {
-    const content = await qwenChat({
-      config,
-      model: image ? config.visionModel : config.textModel,
-      messages: mealMessages({ text, image, source }),
-      fetchImpl: env.qwenFetch
-    });
+    let content;
+    try {
+      content = await qwenChat({
+        config,
+        model: image ? config.visionModel : config.textModel,
+        messages: mealMessages({ text, image, source }),
+        fetchImpl: env.qwenFetch
+      });
+    } catch (error) {
+      console.info(JSON.stringify({ component: "diet", event: "recognize_failed" }));
+      throw error;
+    }
     parsed = readModelItems(extractJson(content));
   }
   const boohee = booheeFromEnv(env);
   const items = (await Promise.all(parsed.map((item) => resolveRecordedItem(item, source, boohee, { allowSearch: true })))).filter((item) => item.inputName || item.name);
   if (!items.length) throw new Error("\u6CA1\u6709\u8BC6\u522B\u51FA\u98DF\u7269");
-  const lookedUp = items.some((item) => item.nutrition?.source === "\u8584\u8377\u5065\u5EB7" || item.candidates?.some((candidate) => String(candidate.id).startsWith("boohee:")));
-  const notice = stub ? "\u672A\u914D\u7F6E DASHSCOPE_API_KEY\uFF0C\u8FD9\u6B21\u7531\u6D4B\u8BD5\u66FF\u8EAB\u62C6\u5206\u98DF\u7269\u548C\u5206\u91CF\u3002\u8BF7\u6838\u5BF9\u540E\u518D\u4FDD\u5B58\u3002" : "\u98DF\u7269\u540D\u548C\u5206\u91CF\u6765\u81EA\u5927\u6A21\u578B\u3002\u70ED\u91CF\u6309\u5DF2\u5339\u914D\u7684\u6570\u636E\u8BA1\u7B97\uFF0C\u6A21\u578B\u7ED9\u51FA\u7684\u8425\u517B\u6570\u5B57\u4E0D\u4F1A\u88AB\u91C7\u7528\u3002";
   return {
     requestId,
     mode: "meal_draft",
     stub,
-    notice: lookedUp ? `${notice} \u672C\u5730\u8868\u6CA1\u6709\u7684\u98DF\u7269\u540D\u79F0\u5DF2\u53D1\u7ED9\u8584\u8377\u5065\u5EB7\u67E5\u8BE2\u3002` : notice,
+    notice: "\u8BF7\u6838\u5BF9\u98DF\u7269\u548C\u5206\u91CF\uFF0C\u518D\u8BB0\u4E0B\u6765\u3002",
     items
   };
 }
@@ -2901,7 +2901,7 @@ async function buildReport(body, env, source, requestId) {
     caution,
     advice,
     adviceKept,
-    adviceNote: adviceKept ? "" : "\u8FD9\u53E5\u5EFA\u8BAE\u6CA1\u6709\u901A\u8FC7\u6838\u5BF9\uFF0C\u5DF2\u9690\u85CF\u3002\u4E0A\u9762\u7684\u6570\u5B57\u6765\u81EA\u98DF\u7269\u8868\u8BA1\u7B97\u3002",
+    adviceNote: adviceKept ? "" : "\u4ECA\u5929\u5148\u770B\u4E0A\u9762\u7684\u5408\u8BA1\u3002",
     skipped: meals.flatMap((meal) => meal.items).filter((item) => !item.nutrition).map((item) => item.name)
   };
 }
@@ -2952,7 +2952,7 @@ async function buildRecommendation(body, env, source, requestId) {
     reason,
     reasonKept,
     reasonSource,
-    reasonNote: reasonKept ? "" : "\u63A8\u8350\u7406\u7531\u6CA1\u6709\u901A\u8FC7\u6838\u5BF9\uFF0C\u5DF2\u9690\u85CF\u3002\u8FD9\u9053\u83DC\u4ECD\u6765\u81EA\u98DF\u8C31\u5E93\uFF0C\u8425\u517B\u662F\u6309\u539F\u6599\u7B97\u7684\u3002"
+    reasonNote: reasonKept ? "" : "\u53EF\u4EE5\u4ECE\u8FD9\u9053\u5F00\u59CB\u3002"
   };
 }
 function mealMessages({ text, image, source }) {

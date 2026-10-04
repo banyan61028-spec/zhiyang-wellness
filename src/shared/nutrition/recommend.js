@@ -30,18 +30,18 @@ function scoreRecipe(recipe, { useGap, totals, targets }) {
 }
 
 export function programReason(recipe, { totals, targets, caution }) {
-  if (!recipe) return '食谱库里没有更合适的一道。可以从现有食谱里另选，这里不会新编一道菜。';
+  if (!recipe) return '今天先从食谱里自己挑一道吧。';
   if (caution?.eatingDisorder || caution?.pregnancy || caution?.lactation || caution?.minor) {
-    return `从食谱库选了「${recipe.name}」，只作为家常搭配，不是按热量缺口安排的少吃方案。`;
+    return `可以试试「${recipe.name}」。这是家常搭配，不是为了少吃。`;
   }
-  if (caution?.kidney) return `从食谱库选了「${recipe.name}」。没有按蛋白质缺口挑高蛋白菜，肾病饮食请以医嘱为准。`;
-  if (caution?.diabetes || caution?.hypertension) return `从食谱库选了「${recipe.name}」。这是家常搭配，不是治疗膳食。`;
-  if (!targets?.confirmed || targets.kcal == null) return `从食谱库选了「${recipe.name}」。每日目标还没填写，所以没有按缺口筛选。`;
+  if (caution?.kidney) return `可以试试「${recipe.name}」。没有特意选高蛋白的菜。肾病相关的吃法请以医嘱为准。`;
+  if (caution?.diabetes || caution?.hypertension) return `可以试试「${recipe.name}」。这是家常搭配。`;
+  if (!targets?.confirmed || targets.kcal == null) return `可以试试「${recipe.name}」。每日目标还没填，所以先按家常来选。`;
   const remain = Math.round(Number(targets.kcal) - totals.kcal);
   if (Number.isFinite(Number(targets.protein)) && Number(targets.protein) - totals.protein > 10 && !caution?.kidney) {
     const gap = Math.round(Number(targets.protein) - totals.protein);
-    return `今天蛋白质大约还少 ${gap} 克，所以从食谱库选了「${recipe.name}」。这道菜大约 ${recipe.nutrition.kcal} 千卡、蛋白质 ${recipe.nutrition.protein} 克。`;
+    return `今天蛋白质大约还少 ${gap} 克，可以试试「${recipe.name}」。这道大约 ${recipe.nutrition.kcal} 千卡、蛋白质 ${recipe.nutrition.protein} 克。`;
   }
-  if (remain > 0) return `距离你填的热量目标还少 ${remain} 千卡，所以从食谱库选了「${recipe.name}」，这道菜大约 ${recipe.nutrition.kcal} 千卡。`;
-  return `今天热量已经不低，所以从食谱库选了分量更小的「${recipe.name}」，大约 ${recipe.nutrition.kcal} 千卡。`;
+  if (remain > 0) return `距离你填的热量目标还少 ${remain} 千卡，可以试试「${recipe.name}」，大约 ${recipe.nutrition.kcal} 千卡。`;
+  return `今天热量已经不低，可以试试分量更小的「${recipe.name}」，大约 ${recipe.nutrition.kcal} 千卡。`;
 }

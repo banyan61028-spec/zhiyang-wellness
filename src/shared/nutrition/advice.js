@@ -53,7 +53,7 @@ export function programAdvice({ totals, targets, caution }) {
   else sentence += '和你填的热量目标一样。';
   if (short && allowed.includes(short.gap)) sentence += `${short.label}大约还少 ${short.gap} 克。`;
   const checked = sanitizeAdvice(sentence, allowed);
-  return checked.kept ? checked.text : '今天的合计已经按食物表算好。';
+  return checked.kept ? checked.text : '今天的合计已经算好。';
 }
 
 export function inferCaution(texts, flags = {}) {

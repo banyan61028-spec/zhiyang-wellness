@@ -61,7 +61,7 @@ test('boohee lookup succeeds from search, ignores invented calories, and does no
     { kcal: item.nutrition.kcal, protein: item.nutrition.protein, fat: item.nutrition.fat, carb: item.nutrition.carb },
     { kcal: 126, protein: 7, fat: 9, carb: 5 },
   );
-  assert.match(draft.notice, /薄荷健康/);
+  assert.equal(draft.notice, '请核对食物和分量，再记下来。');
   const again = await dispatchDiet('/api/diet/recognize', { requestId: crypto.randomUUID(), text: '番茄炒蛋' }, env, source);
   assert.equal(again.items[0].nutrition.kcal, 126);
   assert.equal(calls, 1);

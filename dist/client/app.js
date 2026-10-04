@@ -855,8 +855,8 @@ function createDietPages(ctx) {
       composeMeal = el.value;
       return;
     }
-    if (el.dataset.dietFood != null) void changeFood(el.dataset.dietFood, el.value).catch((error) => ctx.toast(error.message));
-    if (el.dataset.dietGrams != null) void changeGrams(el.dataset.dietGrams, el.value).catch((error) => ctx.toast(error.message));
+    if (el.dataset.dietFood != null) void changeFood(el.dataset.dietFood, el.value).catch((error) => ctx.toast(friendlyMessage(error.message, "\u8FD9\u6B21\u6CA1\u6709\u6539\u6210\uFF0C\u8BF7\u518D\u8BD5\u4E00\u6B21")));
+    if (el.dataset.dietGrams != null) void changeGrams(el.dataset.dietGrams, el.value).catch((error) => ctx.toast(friendlyMessage(error.message, "\u8FD9\u6B21\u6CA1\u6709\u6539\u6210\uFF0C\u8BF7\u518D\u8BD5\u4E00\u6B21")));
   });
   async function loadCatalog() {
     try {
@@ -864,16 +864,16 @@ function createDietPages(ctx) {
       catalogError = "";
     } catch (error) {
       catalog = null;
-      catalogError = error.message || "\u98DF\u7269\u8868\u6682\u65F6\u8BFB\u4E0D\u51FA\u6765";
+      catalogError = friendlyMessage(error.message, "\u98DF\u8C31\u6682\u65F6\u6253\u4E0D\u5F00\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5");
     }
   }
   function record() {
     const state2 = ctx.getState();
     const todayMeals = mealsOn(state2, localDateString());
     const meal = composeMeal || defaultMeal();
-    const status = busy ? "\u6B63\u5728\u8BC6\u522B\u98DF\u7269\u548C\u5206\u91CF" : photoName ? `\u5DF2\u9009 ${photoName}` : "\u5199\u597D\u540E\u70B9\u53D1\u9001\uFF0C\u6216\u5148\u62CD\u4E00\u5F20";
-    return `${heading("\u8BB0\u4E0B\u8FD9\u4E00\u9910", "\u5199\u4E00\u53E5\u8BDD\uFF0C\u6216\u62CD\u4E00\u5F20\u3002\u70ED\u91CF\u6309\u98DF\u7269\u8868\u8BA1\u7B97\uFF0C\u754C\u9762\u5199\u300C\u7EA6\u300D\u3002")}
-      <div class="diet-page">${privacy()}${catalogError ? `<div class="storage-error" role="alert">${ctx.esc(catalogError)}</div>` : ""}${urgent ? urgentBanner(urgent) : ""}
+    const status = busy ? "\u6B63\u5728\u770B\u8FD9\u4E00\u9910" : photoName ? `\u5DF2\u9009 ${photoName}` : "\u5199\u597D\u540E\u53D1\u9001\uFF0C\u6216\u62CD\u4E00\u5F20";
+    return `${heading("\u8BB0\u4E0B\u8FD9\u4E00\u9910", "\u62CD\u4E00\u5F20\uFF0C\u6216\u5199\u4E00\u53E5\u8BDD\u3002")}
+      <div class="diet-page">${catalogError ? `<div class="storage-error" role="alert">${ctx.esc(catalogError)}</div>` : ""}${urgent ? urgentBanner(urgent) : ""}
       <div class="diet-layout">
         <section>
           <form id="meal-form" class="composer ${busy ? "is-busy" : ""}">
@@ -898,8 +898,8 @@ function createDietPages(ctx) {
         </section>
         <aside class="diet-card today-side">
           <h2>\u4ECA\u5929\u5DF2\u7ECF\u8BB0\u4E0B</h2>
-          ${todayMeals.length ? todayMeals.map(mealCard).join("") : '<p class="empty-copy">\u8FD8\u6CA1\u6709\u8BB0\u5F55\u3002\u8BB0\u4E0B\u4E00\u9910\u540E\uFF0C\u8FD9\u91CC\u548C\u300C\u4ECA\u65E5\u300D\u90FD\u4F1A\u66F4\u65B0\u3002</p>'}
-          <button class="text-button diet-link" data-page="today">\u770B\u4ECA\u65E5\u62A5\u544A ${ctx.icon("arrow")}</button>
+          ${todayMeals.length ? todayMeals.map(mealCard).join("") : '<p class="empty-copy">\u4ECA\u5929\u8FD8\u6CA1\u8BB0\u3002\u5199\u4E00\u53E5\u8BDD\uFF0C\u6216\u62CD\u4E00\u5F20\u3002</p>'}
+          <button class="text-button diet-link" data-page="today">\u770B\u4ECA\u5929 ${ctx.icon("arrow")}</button>
         </aside>
       </div></div>`;
   }
@@ -907,18 +907,18 @@ function createDietPages(ctx) {
     scheduleToday();
     const state2 = ctx.getState();
     const meals = mealsOn(state2, localDateString());
-    const body = meals.length ? `${reportBlock()}${recommendBlock()}<section class="diet-section"><h2>\u4ECA\u5929\u8BB0\u4E0B\u7684</h2>${meals.map(mealCard).join("")}</section>` : '<div class="empty-state"><div><h3>\u4ECA\u5929\u8FD8\u662F\u7A7A\u7684</h3><p>\u5148\u8BB0\u4E0B\u5403\u4E86\u4EC0\u4E48\u3002\u6CA1\u6709\u8BB0\u5F55\u65F6\uFF0C\u4E0D\u4F1A\u7F16\u4E00\u4EFD\u62A5\u544A\u3002</p><button class="primary-button" data-page="home">\u53BB\u8BB0\u4E00\u9910</button></div></div>';
-    return `${heading("\u4ECA\u5929", "\u5408\u8BA1\u6765\u81EA\u98DF\u7269\u8868\u3002\u5EFA\u8BAE\u53EA\u6709\u4E00\u4E24\u53E5\uFF0C\u6570\u5B57\u5BF9\u4E0D\u4E0A\u5C31\u4F1A\u88AB\u62FF\u6389\u3002")}<div class="diet-page">${privacy()}${urgent ? urgentBanner(urgent) : ""}${body}</div>`;
+    const body = meals.length ? `${reportBlock()}${recommendBlock()}<section class="diet-section"><h2>\u4ECA\u5929\u8BB0\u4E0B\u7684</h2>${meals.map(mealCard).join("")}</section>` : '<div class="empty-state"><div><h3>\u4ECA\u5929\u8FD8\u6CA1\u8BB0\u4E0B\u4E00\u9910</h3><p>\u8BB0\u4E0B\u6765\u4E4B\u540E\uFF0C\u8FD9\u91CC\u624D\u4F1A\u51FA\u73B0\u5408\u8BA1\u3002</p><button class="primary-button" data-page="home">\u53BB\u8BB0\u4E00\u9910</button></div></div>';
+    return `${heading("\u4ECA\u5929", "\u770B\u770B\u4ECA\u5929\u5927\u7EA6\u5403\u4E86\u591A\u5C11\u3002")}<div class="diet-page">${urgent ? urgentBanner(urgent) : ""}${body}</div>`;
   }
   function library2() {
-    if (!catalog) return `${heading("\u98DF\u8C31", "\u4E0B\u4E00\u9910\u53EA\u4ECE\u8FD9\u91CC\u9009\u3002")}<div class="diet-page">${catalogError ? `<div class="storage-error">${ctx.esc(catalogError)}</div>` : '<p class="empty-copy">\u6B63\u5728\u8BFB\u53D6\u98DF\u8C31\u3002</p>'}</div>`;
-    return `${heading("\u98DF\u8C31", "\u6BCF\u9053\u83DC\u7684\u70ED\u91CF\u90FD\u7531\u539F\u6599\u514B\u6570\u8BA1\u7B97\uFF0C\u4E0D\u662F\u624B\u5199\u7684\u5927\u7EA6\u503C\u3002")}<div class="diet-page"><p class="library-note">\u8FD9\u4E9B\u662F\u5F85\u5BA1\u6838\u7684\u5BB6\u5E38\u98DF\u8C31\u8349\u7A3F\u3002\u70ED\u91CF\u6309\u98DF\u7269\u8868\u91CC\u7684\u539F\u6599\u8BA1\u7B97\uFF0C\u6B63\u5F0F\u91C7\u7528\u524D\u8FD8\u4F1A\u518D\u6539\u3002</p><div class="food-grid diet-library">${catalog.recipes.map((recipe) => `<button class="recipe-tile diet-recipe" data-diet-action="recipe" data-diet-id="${ctx.esc(recipe.id)}"><div class="recipe-type-art"><span>${mealNames[recipe.meal] || "\u5BB6\u5E38"}</span></div><div class="recipe-tile-body">${recipe.example ? '<span class="example-mark">\u5F85\u5BA1\u6838</span>' : ""}<h3>${ctx.esc(recipe.name)}</h3><p class="num">\u7EA6 ${recipe.nutrition.kcal} \u5343\u5361</p>${recipe.blockedByHerbs ? '<span class="chip chip-quiet">\u6682\u4E0D\u4E3B\u52A8\u63A8\u8350</span>' : ""}</div></button>`).join("")}</div></div>`;
+    if (!catalog) return `${heading("\u98DF\u8C31", "\u9009\u4E00\u9053\uFF0C\u5F53\u4F5C\u4E0B\u4E00\u9910\u3002")}<div class="diet-page">${catalogError ? `<div class="storage-error">${ctx.esc(catalogError)}</div>` : '<p class="empty-copy">\u6B63\u5728\u51C6\u5907\u98DF\u8C31\u3002</p>'}</div>`;
+    return `${heading("\u98DF\u8C31", "\u9009\u4E00\u9053\uFF0C\u5F53\u4F5C\u4E0B\u4E00\u9910\u3002")}<div class="diet-page"><div class="food-grid diet-library">${catalog.recipes.map((recipe) => `<button class="recipe-tile diet-recipe" data-diet-action="recipe" data-diet-id="${ctx.esc(recipe.id)}"><div class="recipe-type-art"><span>${mealNames[recipe.meal] || "\u5BB6\u5E38"}</span></div><div class="recipe-tile-body"><h3>${ctx.esc(recipe.name)}</h3><p class="num">\u7EA6 ${recipe.nutrition.kcal} \u5343\u5361</p>${recipe.blockedByHerbs ? '<span class="chip chip-quiet">\u5148\u4E0D\u4E3B\u52A8\u63A8\u8350</span>' : ""}</div></button>`).join("")}</div></div>`;
   }
   function settings() {
     const settingsState = ctx.getState().dietSettings;
     const targets = settingsState.targets;
     const flags = settingsState.flags;
-    return `${heading("\u6211\u7684", "\u6CA1\u6709\u8D26\u53F7\u3002\u6362\u6D4F\u89C8\u5668\u6216\u6E05\u9664\u6570\u636E\u540E\uFF0C\u8BB0\u5F55\u4E0D\u4F1A\u8DDF\u7740\u8D70\u3002")}<div class="diet-page">${privacy()}<section class="diet-card"><h2>\u6BCF\u65E5\u76EE\u6807</h2><p class="small muted">\u8FD9\u662F\u4F60\u81EA\u5DF1\u586B\u7684\u53C2\u8003\uFF0C\u4E0D\u662F\u81B3\u98DF\u5904\u65B9\u3002\u7559\u7A7A\u7684\u9879\u76EE\u4E0D\u53C2\u4E0E\u5BF9\u6BD4\u3002</p><form id="target-form"><div class="target-grid"><label class="form-label">\u70ED\u91CF\uFF08\u5343\u5361\uFF09<input name="kcal" inputmode="numeric" min="0" max="10000" value="${targets.kcal ?? ""}"></label><label class="form-label">\u86CB\u767D\u8D28\uFF08\u514B\uFF09<input name="protein" inputmode="numeric" min="0" max="500" value="${targets.protein ?? ""}"></label><label class="form-label">\u8102\u80AA\uFF08\u514B\uFF09<input name="fat" inputmode="numeric" min="0" max="500" value="${targets.fat ?? ""}"></label><label class="form-label">\u78B3\u6C34\uFF08\u514B\uFF09<input name="carb" inputmode="numeric" min="0" max="500" value="${targets.carb ?? ""}"></label></div><label class="check-line"><input type="checkbox" name="confirm" ${targets.confirmed ? "checked" : ""}> \u6211\u786E\u8BA4\u628A\u8FD9\u4E9B\u6570\u5B57\u5F53\u4F5C\u81EA\u5DF1\u7684\u6BCF\u65E5\u76EE\u6807</label><button class="primary-button" type="submit">\u4FDD\u5B58\u76EE\u6807</button></form></section><section class="diet-card"><h2>\u9700\u8981\u653E\u5BBD\u5EFA\u8BAE\u7684\u60C5\u51B5</h2><p class="small muted">\u52FE\u9009\u540E\uFF0C\u62A5\u544A\u4E0D\u518D\u6309\u70ED\u91CF\u7F3A\u53E3\u9F13\u52B1\u5C11\u5403\uFF1B\u80BE\u75C5\u4E0D\u4F1A\u6309\u86CB\u767D\u8D28\u7F3A\u53E3\u63A8\u8350\u9AD8\u86CB\u767D\u83DC\u3002\u8FD9\u4E0D\u662F\u8BCA\u65AD\u3002</p><form id="flags-form">${flagBox("pregnancy", "\u5B55\u671F\u6216\u5907\u5B55", flags.pregnancy)}${flagBox("lactation", "\u54FA\u4E73", flags.lactation)}${flagBox("minor", "\u672A\u6210\u5E74", flags.minor)}${flagBox("kidney", "\u80BE\u75C5", flags.kidney)}${flagBox("diabetes", "\u7CD6\u5C3F\u75C5", flags.diabetes)}${flagBox("hypertension", "\u9AD8\u8840\u538B", flags.hypertension)}${flagBox("eatingDisorder", "\u8FDB\u98DF\u8BA9\u6211\u5F88\u75DB\u82E6\uFF0C\u6216\u51FA\u73B0\u50AC\u5410\u3001\u7EDD\u98DF", flags.eatingDisorder)}<label class="check-line"><input type="checkbox" name="confirm" ${settingsState.flagsConfirmed ? "checked" : ""}> \u6211\u786E\u8BA4\u7528\u8FD9\u4E9B\u60C5\u51B5\u8C03\u6574\u6587\u5B57\u5EFA\u8BAE\uFF0C\u4E0D\u636E\u6B64\u5F00\u996E\u98DF\u5904\u65B9</label><button class="primary-button" type="submit">\u4FDD\u5B58\u8FD9\u4E9B\u60C5\u51B5</button></form></section><section class="diet-card"><h2>\u6E05\u9664\u672C\u673A\u6570\u636E</h2><p class="small muted">\u4F1A\u540C\u65F6\u6E05\u9664\u996E\u98DF\u8BB0\u5F55\u3001\u6BCF\u65E5\u76EE\u6807\u3001\u65E7\u6863\u6848\u3001\u6536\u85CF\u3001\u65B9\u6848\u548C\u6D4B\u8BC4\u3002\u6E05\u9664\u540E\u627E\u4E0D\u56DE\u6765\u3002</p><button class="outline-button" data-action="reset">\u6E05\u9664\u672C\u673A\u8BB0\u5F55</button></section></div>`;
+    return `${heading("\u6211\u7684", "\u76EE\u6807\u548C\u8BB0\u5F55\u90FD\u5728\u8FD9\u53F0\u624B\u673A\u4E0A\u3002")}<div class="diet-page"><section class="diet-card"><h2>\u6BCF\u65E5\u76EE\u6807</h2><p class="small muted">\u6309\u81EA\u5DF1\u7684\u4E60\u60EF\u586B\u3002\u7559\u7A7A\u7684\u9879\u76EE\u4E0D\u53C2\u4E0E\u5BF9\u6BD4\u3002</p><form id="target-form"><div class="target-grid"><label class="form-label">\u70ED\u91CF\uFF08\u5343\u5361\uFF09<input name="kcal" inputmode="numeric" min="0" max="10000" value="${targets.kcal ?? ""}"></label><label class="form-label">\u86CB\u767D\u8D28\uFF08\u514B\uFF09<input name="protein" inputmode="numeric" min="0" max="500" value="${targets.protein ?? ""}"></label><label class="form-label">\u8102\u80AA\uFF08\u514B\uFF09<input name="fat" inputmode="numeric" min="0" max="500" value="${targets.fat ?? ""}"></label><label class="form-label">\u78B3\u6C34\uFF08\u514B\uFF09<input name="carb" inputmode="numeric" min="0" max="500" value="${targets.carb ?? ""}"></label></div><label class="check-line"><input type="checkbox" name="confirm" ${targets.confirmed ? "checked" : ""}> \u628A\u8FD9\u4E9B\u6570\u5B57\u5F53\u4F5C\u6211\u7684\u6BCF\u65E5\u76EE\u6807</label><button class="primary-button" type="submit">\u4FDD\u5B58\u76EE\u6807</button></form></section><section class="diet-card"><h2>\u8FD9\u4E9B\u60C5\u51B5\u4E0B\uFF0C\u5EFA\u8BAE\u4F1A\u66F4\u8C28\u614E</h2><p class="small muted">\u52FE\u9009\u540E\uFF0C\u4E0D\u4F1A\u6309\u5403\u5F97\u5C11\u6765\u50AC\u4F60\uFF0C\u4E5F\u4E0D\u4F1A\u56E0\u4E3A\u86CB\u767D\u8D28\u4E0D\u591F\u5C31\u63A8\u8350\u9AD8\u86CB\u767D\u7684\u83DC\u3002</p><form id="flags-form">${flagBox("pregnancy", "\u5B55\u671F\u6216\u5907\u5B55", flags.pregnancy)}${flagBox("lactation", "\u54FA\u4E73", flags.lactation)}${flagBox("minor", "\u672A\u6210\u5E74", flags.minor)}${flagBox("kidney", "\u80BE\u75C5", flags.kidney)}${flagBox("diabetes", "\u7CD6\u5C3F\u75C5", flags.diabetes)}${flagBox("hypertension", "\u9AD8\u8840\u538B", flags.hypertension)}${flagBox("eatingDisorder", "\u5403\u996D\u8BA9\u6211\u5F88\u75DB\u82E6\uFF0C\u6216\u51FA\u73B0\u50AC\u5410\u3001\u7EDD\u98DF", flags.eatingDisorder)}<label class="check-line"><input type="checkbox" name="confirm" ${settingsState.flagsConfirmed ? "checked" : ""}> \u6309\u8FD9\u4E9B\u60C5\u51B5\u8C03\u6574\u6587\u5B57\u5EFA\u8BAE</label><button class="primary-button" type="submit">\u4FDD\u5B58</button></form></section><section class="diet-card"><h2>\u9690\u79C1\u4E0E\u8BF4\u660E</h2><p class="small muted">\u8BB0\u5F55\u53EA\u7559\u5728\u8FD9\u53F0\u624B\u673A\u4E0A\u3002\u70ED\u91CF\u662F\u4F30\u7B97\u3002</p><button class="text-button" data-action="privacy">\u67E5\u770B\u9690\u79C1\u4E0E\u8BF4\u660E</button></section><section class="diet-card"><h2>\u6E05\u9664\u8FD9\u53F0\u624B\u673A\u4E0A\u7684\u8BB0\u5F55</h2><p class="small muted">\u996E\u98DF\u8BB0\u5F55\u548C\u6BCF\u65E5\u76EE\u6807\u4F1A\u4E00\u8D77\u6E05\u6389\uFF0C\u6E05\u6389\u540E\u627E\u4E0D\u56DE\u6765\u3002</p><button class="outline-button" data-action="reset">\u6E05\u9664\u8BB0\u5F55</button></section></div>`;
   }
   async function onClick(button) {
     const action = button.dataset.dietAction;
@@ -1007,7 +1007,7 @@ function createDietPages(ctx) {
       photoName = "";
       composeError = "";
     } catch (error) {
-      composeError = error.message || "\u8BC6\u522B\u6CA1\u6709\u5B8C\u6210\u3002\u5DF2\u5199\u7684\u5185\u5BB9\u8FD8\u5728\uFF0C\u53EF\u4EE5\u518D\u53D1\u4E00\u6B21\u3002";
+      composeError = friendlyMessage(error.message, "\u6682\u65F6\u65E0\u6CD5\u8BC6\u522B\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5\u6216\u6539\u4E3A\u6253\u5B57\u8BB0\u5F55");
       ctx.toast(composeError);
     } finally {
       busy = false;
@@ -1015,22 +1015,21 @@ function createDietPages(ctx) {
     }
   }
   function editor(current) {
-    return `<section class="draft-editor" aria-label="\u6838\u5BF9\u8FD9\u4E00\u9910"><div class="draft-head"><h2>\u6838\u5BF9\u8FD9\u4E00\u9910</h2><p class="small muted">${ctx.esc(current.notice)}</p></div>${current.items.map((item) => itemCard(item)).join("")}<div class="button-row"><button class="primary-button" type="button" data-diet-action="save-draft">\u8BB0\u4E0B\u6765</button><button class="outline-button" type="button" data-diet-action="discard">\u5148\u4E0D\u8BB0</button></div></section>`;
+    return `<section class="draft-editor" aria-label="\u6838\u5BF9\u8FD9\u4E00\u9910"><div class="draft-head"><h2>\u6838\u5BF9\u8FD9\u4E00\u9910</h2><p class="small muted">${ctx.esc(gentleNotice(current.notice))}</p></div>${current.items.map((item) => itemCard(item)).join("")}<div class="button-row"><button class="primary-button" type="button" data-diet-action="save-draft">\u8BB0\u4E0B\u6765</button><button class="outline-button" type="button" data-diet-action="discard">\u5148\u4E0D\u8BB0</button></div></section>`;
   }
   function itemCard(item) {
-    const food2 = catalog?.foods.find((entry) => entry.id === item.foodId);
     const nutrition = item.nutrition;
-    const sourceLabel = nutrition ? nutrition.source === "\u8584\u8377\u5065\u5EB7" ? "\u8584\u8377\u5065\u5EB7" : "\u672C\u5730\u98DF\u7269\u8868" : "";
-    const kcal = nutrition ? `<p class="food-kcal"><span class="num">${nutrition.kcal}</span><small>\u7EA6\u5343\u5361</small></p>` : '<p class="food-kcal food-kcal-soft"><span>\u65E0\u6CD5\u4F30\u7B97</span><small>\u53EF\u4EE5\u6539\u9009\uFF0C\u6216\u5148\u7559\u7740</small></p>';
+    const shown = displaySource(nutrition);
+    const kcal = nutrition ? `<p class="food-kcal"><span class="num">${nutrition.kcal}</span><small>\u7EA6\u5343\u5361</small></p>` : '<p class="food-kcal food-kcal-soft"><span>\u6682\u65F6\u7B97\u4E0D\u51FA\u6765</span><small>\u53EF\u4EE5\u6539\u9009\uFF0C\u6216\u5148\u7559\u7740</small></p>';
     return `<article class="food-card">
       <header class="food-card-head"><div><h3>${ctx.esc(item.name || item.inputName)}</h3>${item.inputName && item.inputName !== item.name ? `<p class="small muted">\u8BC6\u522B\u4E3A ${ctx.esc(item.inputName)}</p>` : ""}</div>${kcal}</header>
-      <div class="chip-row">${sourceLabel ? `<span class="chip">${sourceLabel}</span>` : '<span class="chip chip-soft">\u65E0\u6CD5\u4F30\u7B97</span>'}${item.portionLabel ? `<span class="chip chip-quiet">${ctx.esc(item.portionLabel)}</span>` : ""}</div>
+      <div class="chip-row">${shown ? `<span class="chip">${shown.label}</span>` : '<span class="chip chip-soft">\u6682\u65F6\u7B97\u4E0D\u51FA\u6765</span>'}${item.portionLabel ? `<span class="chip chip-quiet">${ctx.esc(item.portionLabel)}</span>` : ""}</div>
       ${foodSelect(item)}
       <div class="portion-row" role="group" aria-label="\u4FEE\u6B63\u5206\u91CF">
         ${portionButton(item, "small", "\u5C0F")}${portionButton(item, "medium", "\u4E2D")}${portionButton(item, "large", "\u5927")}
         <label class="grams-field">\u514B\u6570<input data-diet-grams="${ctx.esc(item.clientId)}" type="number" min="1" max="5000" inputmode="numeric" value="${item.grams ?? ""}" aria-label="\u514B\u6570"></label>
       </div>
-      ${nutrition ? `${macroPills(nutrition)}<p class="small muted">\u6765\u6E90\uFF1A${ctx.esc(nutrition.source)}\u3002${ctx.esc(nutrition.sourceNote)}</p>` : `<div class="unestimated-panel"><p>${unestimatedCopy(item.reason)}</p>${food2 ? `<p class="small">${ctx.esc(food2.sourceNote)}</p>` : ""}</div>`}
+      ${nutrition ? `${macroPills(nutrition)}${shown.detail ? `<details class="source-fold"><summary>\u6570\u636E\u6765\u6E90</summary><p>${ctx.esc(shown.label)}\u3002${ctx.esc(shown.detail)}</p></details>` : `<details class="source-fold"><summary>\u6570\u636E\u6765\u6E90</summary><p>${ctx.esc(shown.label)}</p></details>`}` : `<div class="unestimated-panel"><p>${unestimatedCopy(item.reason)}</p></div>`}
     </article>`;
   }
   function portionButton(item, size, label) {
@@ -1049,7 +1048,7 @@ function createDietPages(ctx) {
     const options2 = [...extras, ...local];
     const selected = item.nutrition ? item.foodId : "";
     const asking = item.status === "ambiguous" && !item.nutrition;
-    const prompt = asking ? "\u8BF7\u9009\u62E9" : "\u65E0\u6CD5\u4F30\u7B97";
+    const prompt = asking ? "\u8BF7\u9009\u62E9" : "\u5148\u4E0D\u7B97";
     return `<label class="form-label food-pick">${asking ? "\u8FD9\u51E0\u9879\u90FD\u53EF\u80FD\uFF0C\u9009\u4E00\u4E2A" : "\u6362\u6210\u522B\u7684"}<select data-diet-food="${ctx.esc(item.clientId)}" aria-label="${asking ? "\u9009\u62E9\u5BF9\u5E94\u7684\u98DF\u7269" : "\u6539\u98DF\u7269"}"><option value="">${prompt}</option>${options2.map((option) => `<option value="${ctx.esc(option.id)}" ${option.id === selected ? "selected" : ""}>${ctx.esc(option.branded ? `${option.name}\uFF08\u54C1\u724C\u5305\u88C5\uFF09` : option.name)}</option>`).join("")}</select></label>`;
   }
   async function changePortion(clientId, size) {
@@ -1148,7 +1147,7 @@ function createDietPages(ctx) {
       if (recommendation.mode === "urgent_help") urgent = recommendation;
     } catch (error) {
       if (cacheKey() !== key) return;
-      report = { key, mode: "error", adviceNote: error.message || "\u4ECA\u5929\u7684\u62A5\u544A\u6CA1\u6709\u751F\u6210" };
+      report = { key, mode: "error", adviceNote: friendlyMessage(error.message, "\u4ECA\u5929\u7684\u5408\u8BA1\u6682\u65F6\u51FA\u4E0D\u6765\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5") };
       recommendation = { key, empty: true, reason: "", reasonKept: false };
     } finally {
       if (inflight === key) inflight = "";
@@ -1186,31 +1185,32 @@ function createDietPages(ctx) {
     const center = totals.counted ? String(totals.kcal) : "\u2014";
     const aria = gap == null ? totals.counted ? `\u4ECA\u65E5\u7EA6 ${totals.kcal} \u5343\u5361\uFF0C\u8FD8\u6CA1\u6709\u786E\u8BA4\u6BCF\u65E5\u76EE\u6807` : "\u4ECA\u5929\u8FD8\u6CA1\u6709\u53EF\u8BA1\u7B97\u7684\u70ED\u91CF" : `\u4ECA\u65E5\u7EA6 ${totals.kcal} \u5343\u5361\uFF0C\u76EE\u6807 ${target.kcal} \u5343\u5361\uFF0C${gap >= 0 ? `\u5927\u7EA6\u8FD8\u5C11 ${gap} \u5343\u5361` : `\u5927\u7EA6\u591A\u4E86 ${Math.abs(gap)} \u5343\u5361`}`;
     const gapCopy = gap == null ? '<p class="dash-gap">\u6BCF\u65E5\u76EE\u6807\u8FD8\u6CA1\u786E\u8BA4\uFF0C\u6240\u4EE5\u8FD9\u91CC\u53EA\u663E\u793A\u5408\u8BA1\u3002</p>' : `<p class="dash-gap ${gap < 0 ? "over" : ""}">\u548C\u4F60\u786E\u8BA4\u8FC7\u7684 <span class="num">${target.kcal}</span> \u5343\u5361\u76F8\u6BD4\uFF0C${gap >= 0 ? `\u5927\u7EA6\u8FD8\u5C11 <span class="num">${gap}</span> \u5343\u5361` : `\u5927\u7EA6\u591A\u4E86 <span class="num">${Math.abs(gap)}</span> \u5343\u5361`}\u3002</p>`;
-    const advice = report.adviceKept && report.advice ? `<p>${ctx.esc(report.advice)}</p>` : `<p class="small muted">${ctx.esc(report.adviceNote || "")}</p>`;
+    const advice = report.adviceKept && report.advice ? `<p>${ctx.esc(report.advice)}</p>` : report.adviceNote ? `<p class="small muted">${ctx.esc(gentleNotice(report.adviceNote))}</p>` : "";
     return `<section class="dash" aria-label="\u4ECA\u65E5\u70ED\u91CF">
       <div class="ring-wrap" role="img" aria-label="${ctx.esc(aria)}">${ringSvg(ratio, tone)}<div class="ring-center"><strong class="num">${center}</strong><span>${totals.counted ? "\u4ECA\u65E5\u5343\u5361" : "\u6CA1\u6709\u53EF\u8BA1\u7B97\u7684\u70ED\u91CF"}</span></div></div>
-      <div class="dash-copy"><p class="eyebrow">\u6309\u5F53\u524D\u98DF\u7269\u8868\u91CD\u7B97</p>${gapCopy}${report.skipped?.length ? `<p class="small muted">\u672A\u8BA1\u5165\uFF1A${report.skipped.map((name) => ctx.esc(name)).join("\u3001")}\u3002\u8FD9\u4E9B\u98DF\u7269\u65E0\u6CD5\u4F30\u7B97\u3002</p>` : ""}</div>
+      <div class="dash-copy"><p class="eyebrow">\u4ECA\u5929\u5927\u7EA6</p>${gapCopy}${report.skipped?.length ? `<p class="small muted">\u8FD8\u6CA1\u7B97\u8FDB\u53BB\uFF1A${report.skipped.map((name) => ctx.esc(name)).join("\u3001")}\u3002</p>` : ""}</div>
     </section>
     <section class="diet-card"><h2>\u4E09\u5927\u8425\u517B\u7D20</h2>${macroBars(totals, target)}</section>
     <section class="diet-card advice-card"><h2>\u4ECA\u5929\u7684\u5EFA\u8BAE</h2>${advice}</section>`;
   }
   function recommendBlock() {
-    if (!recommendation) return '<section class="diet-card"><p class="composer-status">\u6B63\u5728\u4ECE\u98DF\u8C31\u5E93\u91CC\u9009\u4E0B\u4E00\u9910\u3002</p></section>';
-    if (!recommendation.recipe) return `<section class="diet-card"><h2>\u4E0B\u4E00\u9910</h2><p>${ctx.esc(recommendation.reason || recommendation.reasonNote || "\u98DF\u8C31\u5E93\u91CC\u6CA1\u6709\u66F4\u5408\u9002\u7684\u4E00\u9053\u3002")}</p><button class="text-button diet-link" data-page="library">\u67E5\u770B\u73B0\u6709\u98DF\u8C31 ${ctx.icon("arrow")}</button></section>`;
+    if (!recommendation) return '<section class="diet-card"><p class="composer-status">\u6B63\u5728\u9009\u4E0B\u4E00\u9910\u3002</p></section>';
+    if (!recommendation.recipe) return `<section class="diet-card"><h2>\u4E0B\u4E00\u9910</h2><p>${ctx.esc(gentleNotice(recommendation.reason || recommendation.reasonNote || "\u4ECA\u5929\u5148\u4ECE\u98DF\u8C31\u91CC\u81EA\u5DF1\u6311\u4E00\u9053\u5427\u3002"))}</p><button class="text-button diet-link" data-page="library">\u53BB\u770B\u98DF\u8C31 ${ctx.icon("arrow")}</button></section>`;
     const recipe = recommendation.recipe;
-    const reason = recommendation.reasonKept && recommendation.reason ? `<p class="advice-line">${ctx.esc(recommendation.reason)}</p>` : `<p class="small muted">${ctx.esc(recommendation.reasonNote || "\u63A8\u8350\u7406\u7531\u6CA1\u6709\u901A\u8FC7\u6838\u5BF9\uFF0C\u53EA\u4FDD\u7559\u98DF\u8C31\u5E93\u91CC\u7684\u8FD9\u9053\u83DC\u3002")}</p>`;
-    return `<article class="recipe-feature"><div class="recipe-feature-art"><span>${mealNames[recipe.meal] || "\u5BB6\u5E38"}</span>${recipe.example ? '<span class="example-mark">\u5F85\u5BA1\u6838</span>' : ""}</div><div class="recipe-feature-body"><p class="eyebrow">\u4E0B\u4E00\u9910\u53EF\u4EE5\u4ECE\u8FD9\u9053\u5F00\u59CB</p><h2>${ctx.esc(recipe.name)}</h2><p class="food-kcal"><span class="num">${recipe.nutrition.kcal}</span><small>\u7EA6\u5343\u5361</small></p>${macroPills(recipe.nutrition)}${reason}<div class="button-row"><button class="primary-button" data-diet-action="recipe" data-diet-id="${ctx.esc(recipe.id)}">\u67E5\u770B\u505A\u6CD5</button><button class="outline-button" data-diet-action="another">\u6362\u4E00\u9053\u5E93\u91CC\u7684\u83DC</button></div></div></article>`;
+    const reason = recommendation.reasonKept && recommendation.reason ? `<p class="advice-line">${ctx.esc(recommendation.reason)}</p>` : recommendation.reasonNote ? `<p class="small muted">${ctx.esc(gentleNotice(recommendation.reasonNote))}</p>` : "";
+    return `<article class="recipe-feature"><div class="recipe-feature-art"><span>${mealNames[recipe.meal] || "\u5BB6\u5E38"}</span></div><div class="recipe-feature-body"><p class="eyebrow">\u4E0B\u4E00\u9910\u53EF\u4EE5\u4ECE\u8FD9\u9053\u5F00\u59CB</p><h2>${ctx.esc(recipe.name)}</h2><p class="food-kcal"><span class="num">${recipe.nutrition.kcal}</span><small>\u7EA6\u5343\u5361</small></p>${macroPills(recipe.nutrition)}${reason}<div class="button-row"><button class="primary-button" data-diet-action="recipe" data-diet-id="${ctx.esc(recipe.id)}">\u67E5\u770B\u505A\u6CD5</button><button class="outline-button" data-diet-action="another">\u6362\u4E00\u9053</button></div></div></article>`;
   }
   function mealCard(meal) {
     const estimated = meal.items.filter((item) => item.nutrition);
     const kcal = estimated.reduce((sum, item) => sum + item.nutrition.kcal, 0);
-    return `<article class="saved-meal"><div class="section-mini"><span>${mealNames[meal.meal]} \xB7 <span class="num">${ctx.esc(meal.date)}</span></span><span class="meal-actions"><button class="text-button" data-diet-action="edit-meal" data-diet-id="${ctx.esc(meal.id)}">\u4FEE\u6539</button><button class="text-button" data-diet-action="delete-meal" data-diet-id="${ctx.esc(meal.id)}">\u5220\u9664</button></span></div><ul class="meal-lines">${meal.items.map((item) => `<li><span>${ctx.esc(item.name)}</span><span class="num">${item.grams ?? "\u2014"} \u514B</span><span class="num">${item.nutrition ? `\u7EA6 ${item.nutrition.kcal} \u5343\u5361` : "\u65E0\u6CD5\u4F30\u7B97"}</span></li>`).join("")}</ul><p class="small muted">${estimated.length ? `\u8FD9\u4E00\u9910\u53EF\u4F30\u7B97\u90E8\u5206\u7EA6 <span class="num">${kcal}</span> \u5343\u5361` : "\u8FD9\u4E00\u9910\u6CA1\u6709\u53EF\u4F30\u7B97\u7684\u70ED\u91CF"}</p></article>`;
+    return `<article class="saved-meal"><div class="section-mini"><span>${mealNames[meal.meal]} \xB7 <span class="num">${ctx.esc(meal.date)}</span></span><span class="meal-actions"><button class="text-button" data-diet-action="edit-meal" data-diet-id="${ctx.esc(meal.id)}">\u4FEE\u6539</button><button class="text-button" data-diet-action="delete-meal" data-diet-id="${ctx.esc(meal.id)}">\u5220\u9664</button></span></div><ul class="meal-lines">${meal.items.map((item) => `<li><span>${ctx.esc(item.name)}</span><span class="num">${item.grams ?? "\u2014"} \u514B</span><span class="num">${item.nutrition ? `\u7EA6 ${item.nutrition.kcal} \u5343\u5361` : "\u6682\u65F6\u7B97\u4E0D\u51FA\u6765"}</span></li>`).join("")}</ul><p class="small muted">${estimated.length ? `\u8FD9\u4E00\u9910\u5927\u7EA6 <span class="num">${kcal}</span> \u5343\u5361` : "\u8FD9\u4E00\u9910\u8FD8\u6CA1\u6709\u7B97\u51FA\u70ED\u91CF"}</p></article>`;
   }
   function openRecipe(id) {
     const recipe = catalog?.recipes.find((item) => item.id === id) || recommendation?.recipe;
     if (!recipe || recipe.id !== id && recommendation?.recipe?.id !== id) return;
     const chosen = recipe.id === id ? recipe : recommendation.recipe;
-    ctx.openDetail(`<div class="detail-body">${chosen.example ? '<span class="example-mark example-inline">\u5F85\u5BA1\u6838</span>' : '<span class="chip">\u98DF\u8C31</span>'}<h2>${ctx.esc(chosen.name)}</h2><p class="small muted">${mealNames[chosen.meal] || "\u5BB6\u5E38"}</p><p class="food-kcal"><span class="num">${chosen.nutrition.kcal}</span><small>\u7EA6\u5343\u5361</small></p>${macroPills(chosen.nutrition)}<h3>\u539F\u6599\u548C\u514B\u6570</h3><div class="ingredient-list">${chosen.ingredients.map((item) => `<span>${ctx.esc(item.name)} <span class="num">${item.grams}</span> \u514B</span>`).join("")}</div><h3>\u505A\u6CD5</h3><ol class="step-list">${chosen.steps.map((step) => `<li>${ctx.esc(step)}</li>`).join("")}</ol><p class="gentle-note">${ctx.esc(chosen.note || "")} ${ctx.esc(chosen.sourceNote || "")}</p>${chosen.avoid?.includes("kidney_high_protein") ? '<p class="boundary-note">\u8FD9\u9053\u83DC\u6807\u8BB0\u4E3A\u86CB\u767D\u8D28\u8F83\u9AD8\uFF0C\u80BE\u75C5\u7528\u6237\u4E0D\u4F1A\u56E0\u4E3A\u86CB\u767D\u8D28\u7F3A\u53E3\u88AB\u63A8\u8350\u5B83\u3002</p>' : ""}</div>`, "\u98DF\u8C31");
+    const note = visibleNote(chosen.note);
+    ctx.openDetail(`<div class="detail-body"><span class="chip">\u98DF\u8C31</span><h2>${ctx.esc(chosen.name)}</h2><p class="small muted">${mealNames[chosen.meal] || "\u5BB6\u5E38"}</p><p class="food-kcal"><span class="num">${chosen.nutrition.kcal}</span><small>\u7EA6\u5343\u5361</small></p>${macroPills(chosen.nutrition)}<h3>\u539F\u6599\u548C\u514B\u6570</h3><div class="ingredient-list">${chosen.ingredients.map((item) => `<span>${ctx.esc(item.name)} <span class="num">${item.grams}</span> \u514B</span>`).join("")}</div><h3>\u505A\u6CD5</h3><ol class="step-list">${chosen.steps.map((step) => `<li>${ctx.esc(step)}</li>`).join("")}</ol>${note ? `<p class="gentle-note">${ctx.esc(note)}</p>` : ""}${chosen.avoid?.includes("kidney_high_protein") ? '<p class="boundary-note">\u8FD9\u9053\u86CB\u767D\u8D28\u6BD4\u8F83\u9AD8\u3002\u6709\u80BE\u75C5\u60C5\u51B5\u65F6\uFF0C\u4E0D\u4F1A\u56E0\u4E3A\u86CB\u767D\u8D28\u4E0D\u591F\u5C31\u63A8\u8350\u5B83\u3002</p>' : ""}</div>`, "\u98DF\u8C31");
   }
   async function saveTargets(form) {
     const data = new FormData(form);
@@ -1261,18 +1261,32 @@ function heading(title, sub) {
   const now = /* @__PURE__ */ new Date();
   return `<div class="page-heading diet-heading"><div><p class="eyebrow">\u77E5\u517B</p><h1>${title}</h1><p>${sub}</p></div><div class="date-stamp"><strong class="num">${String(now.getMonth() + 1).padStart(2, "0")}<span>/${String(now.getDate()).padStart(2, "0")}</span></strong><span>\u4ECA\u5929 \xB7 \u8BB0\u5728\u672C\u673A</span></div></div>`;
 }
-function privacy() {
-  return '<p class="privacy-banner">\u4F60\u8F93\u5165\u7684\u6587\u5B57\u548C\u4E0A\u4F20\u7684\u7167\u7247\u4F1A\u53D1\u7ED9\u5F53\u524D\u914D\u7F6E\u7684\u5927\u6A21\u578B\u670D\u52A1\uFF0C\u7528\u6765\u8BC6\u522B\u98DF\u7269\u548C\u5199\u4E00\u4E24\u53E5\u5EFA\u8BAE\u3002\u6CA1\u6709\u914D\u7F6E\u6A21\u578B\u5BC6\u94A5\u65F6\u4F7F\u7528\u672C\u673A\u6D4B\u8BD5\u66FF\u8EAB\uFF0C\u4E0D\u4F1A\u5916\u53D1\u3002\u5BF9\u4E0D\u4E0A\u672C\u5730\u53EF\u8BA1\u7B97\u98DF\u7269\u7684\u540D\u79F0\uFF0C\u4EE5\u53CA\u725B\u8089\u9762\u3001\u9992\u5934\u3001\u997A\u5B50\u3001\u5C0F\u7C73\u7CA5\u3001\u767D\u7CA5\u3001\u9762\u6761\u8FD9\u7C7B\u672C\u5730\u6807\u4E3A\u4E0D\u53EF\u8BA1\u7B97\u7684\u5177\u4F53\u83DC\u540D\uFF0C\u4F1A\u53D1\u7ED9\u8584\u8377\u5065\u5EB7\u5F00\u653E\u5E73\u53F0\u67E5\u8BE2\u8425\u517B\u6570\u636E\u3002\u300C\u5916\u5356\u5957\u9910\u300D\u8FD9\u79CD\u592A\u7B3C\u7EDF\u7684\u8BF4\u6CD5\u4E0D\u4F1A\u53D1\u9001\u3002\u6CA1\u6709\u914D\u7F6E\u8584\u8377\u5BC6\u94A5\u6216\u67E5\u8BE2\u5931\u8D25\u65F6\uFF0C\u8BE5\u9879\u6807\u4E3A\u65E0\u6CD5\u4F30\u7B97\u3002\u672C\u5E94\u7528\u4E0D\u5728\u670D\u52A1\u5668\u4E0A\u4FDD\u5B58\u7167\u7247\u548C\u996E\u98DF\u6B63\u6587\u3002\u8BB0\u5F55\u53EA\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u7684\u6D4F\u89C8\u5668\u91CC\u3002</p>';
+function friendlyMessage(message, fallback = "\u8BF7\u7A0D\u540E\u518D\u8BD5") {
+  const text = String(message || "").trim();
+  if (!text || /模型|密钥|API|DASHSCOPE|USDA|测试替身|未配置|大模型|千问|百炼|Demo|演示|示例/.test(text)) return fallback;
+  return text;
+}
+function gentleNotice(notice) {
+  return friendlyMessage(notice, "\u8BF7\u6838\u5BF9\u98DF\u7269\u548C\u5206\u91CF\uFF0C\u518D\u8BB0\u4E0B\u6765\u3002");
+}
+function displaySource(nutrition) {
+  if (!nutrition) return null;
+  if (nutrition.source === "\u8584\u8377\u5065\u5EB7") {
+    const code = String(nutrition.sourceNote || "").match(/编码\s*(\S+)/);
+    return { label: "\u8584\u8377\u5065\u5EB7", detail: code ? `\u98DF\u7269\u7F16\u7801 ${code[1]}` : "" };
+  }
+  const fdc = String(nutrition.sourceNote || "").match(/FDC\s*(\d+)/);
+  return { label: "\u77E5\u517B\u98DF\u7269\u5E93", detail: fdc ? `\u53C2\u8003\u7F16\u53F7 FDC ${fdc[1]}` : "" };
+}
+function visibleNote(note) {
+  return String(note || "").split(/(?<=[。！？])/).map((part) => part.trim()).filter((part) => part && !/USDA|FDC|待审核|示例|Demo|大模型|API|密钥|测试/.test(part)).join("");
 }
 function urgentBanner(result) {
   return `<div class="urgent-help" role="alert"><strong>\u8BF7\u7ACB\u5373\u5BFB\u6C42\u4E13\u4E1A\u5E2E\u52A9</strong><p>${result.text}</p></div>`;
 }
 function unestimatedCopy(reason) {
-  if (reason === "too_vague") return "\u8FD9\u4E2A\u8BF4\u6CD5\u592A\u7B3C\u7EDF\uFF0C\u62C6\u6210\u5177\u4F53\u7684\u83DC\u518D\u8BB0\uFF0C\u624D\u80FD\u4F30\u7B97\u3002\u4F8B\u5982\u5199\u6210\u300C\u7C73\u996D\u3001\u9752\u83DC\u548C\u9E21\u817F\u300D\u3002";
-  if (reason === "no_key") return "\u6CA1\u6709\u53EF\u7528\u7684\u672C\u5730\u8425\u517B\u6570\u636E\uFF0C\u4E5F\u6CA1\u6709\u914D\u7F6E\u8584\u8377\u5F00\u653E\u5E73\u53F0\uFF0C\u6240\u4EE5\u65E0\u6CD5\u4F30\u7B97\u3002";
-  if (reason === "lookup_failed") return "\u8584\u8377\u67E5\u8BE2\u6CA1\u6709\u6210\u529F\uFF0C\u6240\u4EE5\u65E0\u6CD5\u4F30\u7B97\u3002\u4E0D\u4F1A\u586B\u4E00\u4E2A\u770B\u8D77\u6765\u5408\u7406\u7684\u70ED\u91CF\u3002";
-  if (reason === "not_calculable") return "\u8FD9\u9053\u5728\u672C\u5730\u98DF\u7269\u8868\u91CC\u6807\u4E3A\u4E0D\u53EF\u8BA1\u7B97\u3002\u4E0D\u4F1A\u586B\u4E00\u4E2A\u770B\u8D77\u6765\u5408\u7406\u7684\u70ED\u91CF\u3002";
-  return "\u8FD9\u9053\u6682\u65F6\u65E0\u6CD5\u4F30\u7B97\u3002\u53EF\u4EE5\u6539\u6210\u98DF\u7269\u8868\u6216\u4E0A\u9762\u5217\u51FA\u7684\u4E00\u9879\uFF0C\u6216\u4FDD\u7559\u4E3A\u65E0\u6CD5\u4F30\u7B97\u3002\u4E0D\u4F1A\u586B\u4E00\u4E2A\u770B\u8D77\u6765\u5408\u7406\u7684\u70ED\u91CF\u3002";
+  if (reason === "too_vague") return "\u8FD9\u4E2A\u8BF4\u6CD5\u6709\u70B9\u7B3C\u7EDF\u3002\u5199\u6210\u5177\u4F53\u7684\u83DC\uFF0C\u6BD4\u5982\u300C\u7C73\u996D\u3001\u9752\u83DC\u548C\u9E21\u817F\u300D\uFF0C\u624D\u80FD\u4F30\u7B97\u3002";
+  return "\u8FD9\u9053\u6682\u65F6\u7B97\u4E0D\u51FA\u6765\u3002\u53EF\u4EE5\u6362\u6210\u4E0A\u9762\u7684\u98DF\u7269\uFF0C\u6216\u5148\u7559\u7740\u3002\u4E0D\u4F1A\u968F\u4FBF\u586B\u4E00\u4E2A\u70ED\u91CF\u3002";
 }
 function flagBox(name, label, checked) {
   return `<label class="check-line"><input type="checkbox" name="${name}" ${checked ? "checked" : ""}> ${label}</label>`;
@@ -1437,19 +1451,8 @@ function care() {
   const groups = ["\u5168\u90E8", "\u65E5\u5E38\u72B6\u6001", "\u547C\u5438\u4E0E\u54BD\u5589", "\u813E\u80C3\u4E0E\u6D88\u5316", "\u4F5C\u606F\u4E0E\u60C5\u7EEA"];
   return `${heading2("\u8EAB\u4F53\u7684\u5C0F\u4FE1\u53F7\uFF0C\u8BA4\u771F\u542C\u3002", "\u4ECE\u4F60\u7684\u611F\u53D7\u51FA\u53D1\uFF0C\u770B\u770B\u65E5\u5E38\u751F\u6D3B\u53EF\u4EE5\u600E\u6837\u8C03\u6574\u3002", "CARE & DAILY WELLBEING")}<div class="care-intro"><span class="care-intro-icon">${icon("heart")}</span><div><h2>\u65E5\u5E38\u8C03\u517B\uFF0C\u4E5F\u8981\u6709\u5206\u5BF8\u3002</h2><p>\u4EE5\u4E0B\u4E3A\u4E00\u822C\u751F\u6D3B\u3001\u996E\u98DF\u4E0E\u4F11\u606F\u53C2\u8003\uFF0C\u4E0D\u7528\u4E8E\u8BCA\u65AD\u6216\u6CBB\u7597\u3002<br>\u6D89\u53CA\u533B\u7597\u7528\u9014\uFF0C\u8BF7\u54A8\u8BE2\u533B\u751F\uFF1B\u6301\u7EED\u6216\u660E\u663E\u4E0D\u9002\u65F6\uFF0C\u4F18\u5148\u5BFB\u6C42\u4E13\u4E1A\u5E2E\u52A9\u3002</p></div><button class="outline-button" data-chat="\u6211\u60F3\u804A\u804A\u6700\u8FD1\u7684\u8EAB\u4F53\u611F\u53D7">${icon("spark")} \u548C\u52A9\u624B\u804A\u804A</button></div><section class="section">${sectionHead("\u5F53\u4E0B\u70ED\u95E8", "COMMON CONCERNS")}<div class="filter-row">${groups.map((x) => `<button class="filter-chip ${careTab === x ? "active" : ""}" data-care-tab="${x}" aria-pressed="${careTab === x}">${x}</button>`).join("")}</div><div class="care-grid">${topics.filter((t) => careTab === "\u5168\u90E8" || t.group === careTab).map((t) => `<button class="care-tile" data-topic="${t.id}"><span class="topic-symbol ${t.accent}">${icon(t.icon)}</span><span class="small muted">${t.group}</span><h3>${t.title}</h3><p>${t.subtitle}</p><span class="meal-link">\u751F\u6D3B\u5EFA\u8BAE \xB7 \u98DF\u517B\u53C2\u8003 ${icon("arrow")}</span></button>`).join("")}</div></section><div class="feature-line"><div><span class="eyebrow">KNOW YOURSELF</span><h3>\u6E7F\u6C14\u91CD\uFF0C\u5C31\u662F\u75F0\u6E7F\u8D28\u5417\uFF1F</h3><p>\u65E5\u5E38\u611F\u53D7\u4E0E\u6B63\u5F0F\u4F53\u8D28\u5224\u5B9A\u6709\u533A\u522B\u3002\u5148\u4E86\u89E3\u4E5D\u79CD\u57FA\u672C\u7C7B\u578B\u3002</p></div><button class="outline-button" data-action="constitutions">\u4E86\u89E3\u4E5D\u79CD\u4F53\u8D28 ${icon("arrow")}</button></div>`;
 }
-function planCard(p) {
-  return `<article class="saved-plan"><div class="section-mini"><span>${esc(p.goal)} \xB7 \u793A\u4F8B \xB7 \u4FEE\u8BA2 ${p.revision}</span><button class="icon-button" data-remove-plan="${esc(p.id)}" aria-label="\u79FB\u9664${esc(p.title)}">${icon("close")}</button></div><h3>${esc(p.title)}</h3><dl>${p.meals.map((m) => `<div><dt>${esc(m.label)}</dt><dd>${esc(m.value)}</dd></div>`).join("")}</dl><p class="small muted">${esc(p.note)}</p><button class="text-button" data-adjust-plan="${esc(p.id)}">\u548C\u52A9\u624B\u4E00\u8D77\u8C03\u6574 ${icon("arrow")}</button></article>`;
-}
-function legacyProfile() {
-  const p = state.profile;
-  return `${heading2("\u66F4\u4E86\u89E3\u4F60\uFF0C\u624D\u80FD\u66F4\u8D34\u8FD1\u4F60\u3002", "\u4F60\u7684\u6863\u6848\u3001\u6536\u85CF\u548C\u65B9\u6848\uFF0C\u653E\u5728\u4E00\u8D77\u3002", "MY WELLNESS SPACE")}<section class="profile-overview"><span class="big-avatar">${esc((p.name || "\u517B").slice(0, 1))}</span><div><span class="subtle-label">\u4E2A\u4EBA\u6863\u6848 \xB7 \u4EC5\u5728\u672C\u673A</span><h2>${esc(p.name)}</h2><p>${esc(p.goal)} \xB7 ${esc(p.habit)}</p></div><button class="outline-button" data-action="edit-profile">\u7F16\u8F91\u6863\u6848</button></section><div class="profile-sections"><section class="constitution-panel"><div class="section-mini"><span>\u4F53\u8D28\u4E0E\u65E5\u5E38\u611F\u53D7</span><span class="tag">\u65B0\u95EE\u5377 \xB7 \u8BD5\u6D4B\u9636\u6BB5</span></div><h2>\u8BA4\u8BC6\u81EA\u5DF1\uFF0C\u6162\u6162\u6765\u3002</h2><p>32 \u9053\u5019\u9009\u9898\uFF0C\u8BB0\u5F55\u8FC7\u53BB\u4E00\u5E74\u7684\u65E5\u5E38\u611F\u53D7\u3002\u652F\u6301\u672C\u673A\u8349\u7A3F\u548C\u591A\u6B21\u8BB0\u5F55\uFF1B\u5F53\u524D\u4E0D\u4F5C\u6B63\u5F0F\u4F53\u8D28\u5224\u5B9A\u3002</p><div class="button-row"><button class="primary-button" data-action="quiz">${state.draft ? "\u7EE7\u7EED\u6216\u5F00\u59CB\u8BD5\u6D4B" : "\u5F00\u59CB\u65E5\u5E38\u611F\u53D7\u8BD5\u6D4B"} ${icon("arrow")}</button><button class="text-button" data-action="constitutions">\u4E5D\u79CD\u4F53\u8D28\u79D1\u666E</button></div><span class="small muted">\u9898\u76EE\u4E0E\u5224\u5B9A\u89C4\u5219\u4ECD\u9700\u4E13\u4E1A\u5BA1\u6838\u548C\u9A8C\u8BC1\u3002</span></section><section class="preferences-panel"><span class="subtle-label">\u6211\u5E0C\u671B\uFF0C\u517B\u6210\u8FD9\u6837\u7684\u751F\u6D3B</span><h3>${esc(p.goal)}</h3><div class="preference-row"><span>\u7528\u9910\u4E60\u60EF</span><strong>${esc(p.habit)}</strong></div><div class="preference-row"><span>\u996E\u98DF\u504F\u597D</span><strong>${esc(p.preference)}</strong></div><button class="text-button" data-action="edit-profile">\u8C03\u6574\u6211\u7684\u504F\u597D ${icon("arrow")}</button></section></div><section class="section">${assessmentHistory()}${sectionHead("\u6211\u7684\u65B9\u6848", "MY PLANS", `<span class="count-label">${state.plans.length} \u4EFD</span>`)}${state.plans.length ? `<div class="plans-grid">${state.plans.map(planCard).join("")}</div>` : `<div class="empty-state">${icon("spark")}<div><h3>\u4ECE\u4E00\u6B21\u54A8\u8BE2\u5F00\u59CB</h3><p>\u8BA9\u52A9\u624B\u7ED9\u51FA\u65B9\u6848\uFF0C\u70B9\u51FB\u4FDD\u5B58\uFF0C\u5C31\u80FD\u5728\u8FD9\u91CC\u7EE7\u7EED\u67E5\u770B\u3002</p></div><button class="outline-button" data-chat="\u6211\u60F3\u5065\u5EB7\u51CF\u91CD">\u4F53\u9A8C\u4E00\u6B21\u54A8\u8BE2</button></div>`}</section><section class="section">${sectionHead("\u6211\u7684\u6536\u85CF", "SAVED FOR LATER", `<span class="count-label">${state.saved.length} \u9879</span>`)}${state.saved.length ? `<div class="saved-grid">${state.saved.map((key) => {
-    const [type, id] = key.split(":");
-    const item = (type === "recipe" ? recipes : articles).find((x) => x.id === id);
-    return item ? `<button class="saved-item" data-${type}="${id}">${icon(type === "recipe" ? "bowl" : "book")}<span>${esc(item.title)}</span>${icon("arrow")}</button>` : "";
-  }).join("")}</div>` : `<p class="empty-copy">\u559C\u6B22\u7684\u98DF\u8C31\u3001\u8336\u996E\u548C\u6587\u7AE0\uFF0C\u53EF\u4EE5\u5148\u6536\u85CF\uFF0C\u6162\u6162\u770B\u3002</p>`}</section><div class="privacy-line"><p>\u6863\u6848\u3001\u6536\u85CF\u3001\u65B9\u6848\u548C\u6D4B\u8BC4\u53EA\u5B58\u5728\u5F53\u524D\u6D4F\u89C8\u5668\uFF0C\u6362\u8BBE\u5907\u4E0D\u4F1A\u540C\u6B65\u3002\u53D1\u9001\u54A8\u8BE2\u4F1A\u628A\u672C\u6B21\u95EE\u9898\u4E0E\u5F53\u524D\u5BF9\u8BDD\u53D1\u7ED9\u670D\u52A1\u7AEF\uFF1B\u52FE\u9009\u540E\u624D\u9644\u5E26\u996E\u98DF\u504F\u597D\u3002\u8BF7\u4F7F\u7528\u865A\u6784\u4FE1\u606F\u4F53\u9A8C\u3002</p><button class="text-button" data-action="reset">\u6E05\u9664\u672C\u5730\u6F14\u793A\u6570\u636E</button></div>`;
-}
 function profile() {
-  return `${dietPages.settings()}<details class="frozen-block"><summary>\u5DF2\u51BB\u7ED3\u7684\u5185\u5BB9\uFF1A\u4F53\u8D28\u6D4B\u8BC4\u3001\u8336\u996E\u3001\u4E13\u9898\u548C\u65E7\u65B9\u6848</summary><div class="button-row"><button class="outline-button" data-page="food">\u98DF\u517B\u3001\u8336\u996E\u548C\u6587\u7AE0</button><button class="outline-button" data-page="care">\u8C03\u517B\u4E13\u9898</button><button class="outline-button" data-chat="">\u65E7\u7684\u517B\u751F\u54A8\u8BE2</button></div>${legacyProfile()}</details>`;
+  return dietPages.settings();
 }
 function render() {
   document.querySelectorAll("[data-page]").forEach((b) => {
@@ -1457,11 +1460,11 @@ function render() {
     if (b.classList.contains("nav-item")) b.setAttribute("aria-current", b.dataset.page === page ? "page" : "false");
   });
   main.innerHTML = (storageError ? `<div class="storage-error" role="alert">${esc(storageError)} <button class="text-button" data-action="retry-storage">\u91CD\u8BD5\u5B58\u50A8</button></div>` : "") + ({ home, today, library, food, care, profile }[page] || home)();
-  document.querySelector(".topbar-label").textContent = matchMedia("(max-width:760px)").matches ? "\u77E5\u517B" : "\u8BB0\u4E0B\u5403\u4E86\u4EC0\u4E48";
+  document.querySelector(".topbar-label").textContent = "\u77E5\u517B";
   paintIcons();
 }
 function navigate(next, replace = false) {
-  if (!["home", "today", "library", "food", "care", "profile"].includes(next)) return;
+  if (!["home", "today", "library", "profile"].includes(next)) return;
   page = next;
   render();
   historyAPI(replace);
@@ -1472,7 +1475,7 @@ function historyAPI(replace) {
 }
 window.addEventListener("popstate", () => {
   page = location.hash.slice(1) || "home";
-  if (!["home", "today", "library", "food", "care", "profile"].includes(page)) page = "home";
+  if (!["home", "today", "library", "profile"].includes(page)) page = "home";
   render();
 });
 function detailHeader(label) {
@@ -1511,11 +1514,8 @@ function editProfile() {
 function constitutionList() {
   openDetail(`<div class="detail-body"><span class="tag">\u4F53\u8D28\u79D1\u666E</span><h2>\u8BA4\u8BC6\u4E2D\u533B\u4E5D\u79CD\u4F53\u8D28</h2><p class="detail-lead">\u4EE5\u4E0B\u662F\u4E5D\u79CD\u57FA\u672C\u7C7B\u578B\u3002\u4E0B\u9762\u7684\u63D0\u793A\u8BCD\u4EC5\u5E2E\u52A9\u6D4F\u89C8\uFF0C\u4E0D\u662F\u8BCA\u65AD\u4F9D\u636E\uFF0C\u4E5F\u4E0D\u80FD\u9760\u5355\u4E2A\u611F\u53D7\u7ED9\u81EA\u5DF1\u5B9A\u578B\u3002</p><div class="constitution-grid">${constitutions.map(([n, d], i) => `<div class="constitution-type"><span>${String(i + 1).padStart(2, "0")}</span><h3>${n}</h3><p>${d}</p></div>`).join("")}</div><p class="gentle-note">\u201C\u6E7F\u6C14\u91CD\u201D\u662F\u65E5\u5E38\u63CF\u8FF0\uFF0C\u4E0D\u7B49\u4E8E\u5DF2\u7ECF\u5224\u5B9A\u4E3A\u201C\u75F0\u6E7F\u8D28\u201D\u3002\u6B63\u5F0F\u5224\u5B9A\u5E94\u4F7F\u7528\u5B8C\u6574\u6807\u51C6\u91CF\u8868\u53CA\u76F8\u5E94\u8BA1\u5206\u65B9\u6CD5\u3002</p>${sourceHtml("constitution")}<button class="primary-button full-button" data-action="quiz">\u5F00\u59CB\u65E5\u5E38\u611F\u53D7\u8BD5\u6D4B ${icon("arrow")}</button></div>`, "\u4E2D\u533B\u4E5D\u79CD\u4F53\u8D28");
 }
-function assessmentHistory() {
-  return `<div class="assessment-history">${sectionHead("\u6211\u7684\u611F\u53D7\u8BB0\u5F55", "MY RECORDS", `<span class="count-label">${state.assessments.length} \u4EFD</span>`)}${state.assessments.length ? state.assessments.map((r) => `<div class="record-row"><button class="text-button" data-view-assessment="${esc(r.id)}">${esc(new Date(r.createdAt).toLocaleString("zh-CN"))} \xB7 \u8BD5\u6D4B\u53C2\u8003 \u2192</button><button class="text-button" data-delete-assessment="${esc(r.id)}">\u5220\u9664</button></div>`).join("") : '<p class="empty-copy">\u5B8C\u6210\u8BD5\u6D4B\u5E76\u81EA\u613F\u4FDD\u5B58\u540E\uFF0C\u53EF\u4EE5\u5728\u8FD9\u91CC\u56DE\u770B\u3002\u4E0D\u4F1A\u81EA\u52A8\u5224\u5B9A\u4F53\u8D28\u3002</p>'}</div>`;
-}
 function about() {
-  openDetail(`<div class="detail-body"><span class="tag">\u77E5\u517B \xB7 \u53EF\u4EA4\u4E92\u539F\u578B</span><h2>\u5148\u4F53\u9A8C\uFF0C\u518D\u6162\u6162\u517B\u6210\u3002</h2><p class="detail-lead">\u5F53\u524D\u4E3B\u6D41\u7A0B\u662F\u8BB0\u4E0B\u5403\u4E86\u4EC0\u4E48\u3001\u770B\u4ECA\u5929\u7684\u5408\u8BA1\uFF0C\u5E76\u4ECE\u98DF\u8C31\u5E93\u9009\u4E0B\u4E00\u9910\u3002\u4F53\u8D28\u6D4B\u8BC4\u3001\u8336\u996E\u548C\u4E13\u9898\u4ECD\u53EF\u4ECE\u300C\u6211\u7684\u300D\u91CC\u7684\u5DF2\u51BB\u7ED3\u5185\u5BB9\u6253\u5F00\u3002</p><div class="about-list"><p><strong>\u54A8\u8BE2\u52A9\u624B\uFF1A</strong>\u771F\u5B9E\u6A21\u578B\u5C1A\u672A\u63A5\u5165\u3002\u5F53\u524D\u901A\u8FC7\u670D\u52A1\u7AEF\u9884\u8BBE\u573A\u666F\u6F14\u793A\u8FFD\u95EE\u3001\u65B9\u6848\u548C\u98CE\u9669\u89C4\u5219\uFF1B\u81EA\u7531\u95EE\u7B54\u80FD\u529B\u4ECD\u5F85\u63A5\u5165\u3002</p><p><strong>\u4F53\u8D28\u6D4B\u8BC4\uFF1A</strong>32 \u9053\u91CD\u65B0\u8BBE\u8BA1\u7684\u5019\u9009\u9898\uFF0C\u53EF\u7EE7\u7EED\u8349\u7A3F\u3001\u8BB0\u5F55\u56DE\u7B54\u3002\u672A\u5B8C\u6210\u6D4B\u91CF\u9A8C\u8BC1\uFF0C\u4E0D\u7ED9\u51FA\u4E2A\u4EBA\u4F53\u8D28\u5224\u5B9A\u3002</p><p><strong>\u672C\u673A\u8BB0\u5F55\uFF1A</strong>\u6863\u6848\u3001\u6536\u85CF\u3001\u65B9\u6848\u3001\u8349\u7A3F\u548C\u6D4B\u8BC4\u4EC5\u5728\u5F53\u524D\u6D4F\u89C8\u5668\u3002\u804A\u5929\u53EA\u4FDD\u7559\u4E8E\u672C\u6B21\u9875\u9762\uFF0C\u5237\u65B0\u540E\u6E05\u7A7A\u3002\u53EF\u5728\u201C\u6211\u7684\u201D\u6E05\u9664\u8BB0\u5F55\u3002</p><p><strong>\u8425\u517B\u67E5\u8BE2\uFF1A</strong>\u6587\u5B57\u548C\u7167\u7247\u53D1\u7ED9\u5F53\u524D\u914D\u7F6E\u7684\u5927\u6A21\u578B\u670D\u52A1\u505A\u8BC6\u522B\u3002\u5BF9\u4E0D\u4E0A\u672C\u5730\u53EF\u8BA1\u7B97\u98DF\u7269\u7684\u540D\u79F0\uFF0C\u4EE5\u53CA\u725B\u8089\u9762\u3001\u9992\u5934\u3001\u997A\u5B50\u3001\u5C0F\u7C73\u7CA5\u3001\u767D\u7CA5\u3001\u9762\u6761\u8FD9\u7C7B\u672C\u5730\u4E0D\u53EF\u8BA1\u7B97\u7684\u5177\u4F53\u83DC\u540D\uFF0C\u4F1A\u53D1\u7ED9\u8584\u8377\u5065\u5EB7\u67E5\u8BE2\u8425\u517B\u3002\u300C\u5916\u5356\u5957\u9910\u300D\u4E0D\u4F1A\u53D1\u9001\u3002\u6CA1\u6709\u5BF9\u5E94\u5BC6\u94A5\u6216\u67E5\u8BE2\u5931\u8D25\u65F6\uFF0C\u8BE5\u9879\u6807\u4E3A\u65E0\u6CD5\u4F30\u7B97\u3002</p><p><strong>\u53D1\u9001\u54A8\u8BE2\uFF1A</strong>\u95EE\u9898\u4E0E\u5F53\u524D\u5BF9\u8BDD\u4F1A\u53D1\u9001\u7ED9\u672C\u7F51\u7AD9\u670D\u52A1\u7AEF\uFF1B\u4F60\u53EF\u4EE5\u9009\u62E9\u662F\u5426\u9644\u5E26\u996E\u98DF\u504F\u597D\u3002\u539F\u59CB\u6D4B\u8BC4\u7B54\u6848\u4E0D\u4F1A\u81EA\u52A8\u53D1\u9001\u3002</p><p><strong>\u5065\u5EB7\u5185\u5BB9\uFF1A</strong>\u5F85\u4E13\u4E1A\u5BA1\u6838\u7684\u793A\u4F8B\uFF1B\u4E0D\u63D0\u4F9B\u533B\u5B66\u8BCA\u65AD\u3001\u6CBB\u7597\u6216\u81EA\u884C\u914D\u836F\u5EFA\u8BAE\u3002\u56FE\u7247\u4E3A AI \u751F\u6210\u793A\u610F\u3002</p></div><button class="primary-button full-button" data-close="detail">\u5F00\u59CB\u4F53\u9A8C</button></div>`, "\u5173\u4E8E\u77E5\u517B");
+  openDetail(`<div class="detail-body"><div class="about-list"><p>\u8BB0\u5F55\u53EA\u5B58\u5728\u8FD9\u53F0\u624B\u673A\u7684\u6D4F\u89C8\u5668\u91CC\u3002\u6362\u4E00\u53F0\u8BBE\u5907\uFF0C\u6216\u6E05\u9664\u6D4F\u89C8\u5668\u6570\u636E\u540E\uFF0C\u5C31\u627E\u4E0D\u5230\u4E86\u3002</p><p>\u4F60\u5199\u4E0B\u7684\u6587\u5B57\u548C\u62CD\u7684\u7167\u7247\uFF0C\u4F1A\u53D1\u9001\u7ED9\u7B2C\u4E09\u65B9\u670D\u52A1\uFF0C\u7528\u6765\u8BC6\u522B\u5403\u4E86\u4EC0\u4E48\u3001\u5927\u7EA6\u591A\u5C11\u514B\u3002</p><p>\u98DF\u7269\u540D\u79F0\u4F1A\u7528\u4E8E\u5728\u8584\u8377\u5065\u5EB7\u67E5\u8BE2\u8425\u517B\u3002\u67E5\u4E0D\u5230\u7684\uFF0C\u5C31\u6807\u6210\u6682\u65F6\u7B97\u4E0D\u51FA\u6765\uFF0C\u4E0D\u4F1A\u7F16\u4E00\u4E2A\u6570\u5B57\u3002</p><p>\u9875\u9762\u4E0A\u7684\u300C\u7EA6 X \u5343\u5361\u300D\u662F\u4F30\u7B97\u3002</p><p>\u8FD9\u4E9B\u5185\u5BB9\u4E0D\u7528\u4E8E\u8BCA\u65AD\u6216\u6CBB\u7597\u3002\u8EAB\u4F53\u4E0D\u8212\u670D\u65F6\uFF0C\u8BF7\u5BFB\u6C42\u4E13\u4E1A\u5E2E\u52A9\u3002</p><p>\u70B9\u5F00\u98DF\u7269\u4E0A\u7684\u300C\u6570\u636E\u6765\u6E90\u300D\uFF0C\u53EF\u4EE5\u770B\u5230\u5B83\u6765\u81EA\u77E5\u517B\u98DF\u7269\u5E93\u8FD8\u662F\u8584\u8377\u5065\u5EB7\uFF0C\u4EE5\u53CA\u66F4\u7EC6\u7684\u7F16\u53F7\u3002</p></div><button class="primary-button full-button" data-close="detail">\u77E5\u9053\u4E86</button></div>`, "\u9690\u79C1\u4E0E\u8BF4\u660E");
 }
 async function toggleSave(key) {
   const was = state.saved.includes(key);
@@ -1702,7 +1702,15 @@ document.addEventListener("click", async (e) => {
     } else if (d.action) {
       switch (d.action) {
         case "about":
+        case "privacy":
           about();
+          break;
+        case "ack-privacy":
+          try {
+            localStorage.setItem("zhiyang-privacy-ack", "1");
+          } catch {
+          }
+          document.getElementById("first-run").hidden = true;
           break;
         case "edit-profile":
           editProfile();
@@ -1725,7 +1733,7 @@ document.addEventListener("click", async (e) => {
           await bootStorage();
           break;
         case "reset":
-          openDetail('<div class="detail-body"><h2>\u6E05\u9664\u672C\u673A\u8BB0\u5F55\uFF1F</h2><p class="detail-lead">\u5C06\u6E05\u9664\u5F53\u524D\u6D4F\u89C8\u5668\u4E2D\u7684\u996E\u98DF\u8BB0\u5F55\u3001\u6BCF\u65E5\u76EE\u6807\u3001\u6863\u6848\u3001\u6536\u85CF\u3001\u65B9\u6848\u3001\u6D4B\u8BC4\u3001\u8349\u7A3F\u53CA\u65E7\u7248\u6F14\u793A\u6570\u636E\uFF0C\u5E76\u7ED3\u675F\u5F53\u524D\u5BF9\u8BDD\u3002\u6E05\u9664\u540E\u65E0\u6CD5\u6062\u590D\u3002</p><div class="button-row"><button class="outline-button" data-close="detail">\u5148\u4FDD\u7559</button><button class="primary-button" data-action="confirm-reset">\u786E\u8BA4\u6E05\u9664</button></div></div>', "\u6E05\u9664\u672C\u673A\u8BB0\u5F55");
+          openDetail('<div class="detail-body"><h2>\u6E05\u9664\u672C\u673A\u8BB0\u5F55\uFF1F</h2><p class="detail-lead">\u5C06\u6E05\u9664\u8FD9\u53F0\u624B\u673A\u4E0A\u7684\u996E\u98DF\u8BB0\u5F55\u548C\u6BCF\u65E5\u76EE\u6807\u3002\u6E05\u9664\u540E\u627E\u4E0D\u56DE\u6765\u3002</p><div class="button-row"><button class="outline-button" data-close="detail">\u5148\u4FDD\u7559</button><button class="primary-button" data-action="confirm-reset">\u786E\u8BA4\u6E05\u9664</button></div></div>', "\u6E05\u9664\u672C\u673A\u8BB0\u5F55");
           break;
         case "confirm-reset": {
           if (!storage) throw new Error("\u672C\u673A\u5B58\u50A8\u4E0D\u53EF\u7528\uFF0C\u65E0\u6CD5\u786E\u8BA4\u5DF2\u6E05\u9664");
@@ -1741,7 +1749,7 @@ document.addEventListener("click", async (e) => {
             state = emptyState();
             detail.close();
             navigate("profile");
-            toast("\u672C\u673A\u8BB0\u5F55\u548C\u5F53\u524D\u5BF9\u8BDD\u5DF2\u6E05\u9664");
+            toast("\u8FD9\u53F0\u624B\u673A\u4E0A\u7684\u8BB0\u5F55\u5DF2\u6E05\u9664");
           } finally {
             clearing = false;
             b.disabled = false;
@@ -1751,7 +1759,7 @@ document.addEventListener("click", async (e) => {
       }
     }
   } catch (error) {
-    toast(error.message || "\u672C\u6B21\u64CD\u4F5C\u672A\u5B8C\u6210\uFF0C\u8BF7\u91CD\u8BD5");
+    toast(friendlyMessage(error.message, "\u8FD9\u6B21\u6CA1\u6709\u5B8C\u6210\uFF0C\u8BF7\u518D\u8BD5\u4E00\u6B21"));
   }
 });
 document.addEventListener("submit", async (e) => {
@@ -1794,21 +1802,25 @@ for (const dialog of [detail, chat]) dialog.addEventListener("click", (e) => {
 var width = innerWidth;
 window.addEventListener("resize", () => {
   if (width <= 760 !== innerWidth <= 760) {
-    document.querySelector(".topbar-label").textContent = innerWidth <= 760 ? "\u77E5\u517B" : "\u8BB0\u4E0B\u5403\u4E86\u4EC0\u4E48";
+    document.querySelector(".topbar-label").textContent = "\u77E5\u517B";
   }
   width = innerWidth;
 });
-page = ["home", "today", "library", "food", "care", "profile"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "home";
+page = ["home", "today", "library", "profile"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "home";
 render();
+try {
+  if (!localStorage.getItem("zhiyang-privacy-ack")) document.getElementById("first-run").hidden = false;
+} catch {
+}
 historyAPI(true);
 await bootStorage();
 var context = document.modelContext;
 if (context?.registerTool) {
   const life = new AbortController();
-  const tools = [{ name: "get_wellness_demo_overview", title: "\u8BFB\u53D6\u77E5\u517B\u6F14\u793A\u6982\u89C8", description: "Read the current demo page and counts of saved plans and content. Does not expose chat or personal profile data.", inputSchema: { type: "object", properties: {}, additionalProperties: false }, annotations: { readOnlyHint: true, untrustedContentHint: false }, execute(input) {
+  const tools = [{ name: "get_wellness_demo_overview", title: "\u8BFB\u53D6\u5F53\u524D\u9875\u9762\u6982\u89C8", description: "Read the current page and counts of saved plans and content. Does not expose chat or personal profile data.", inputSchema: { type: "object", properties: {}, additionalProperties: false }, annotations: { readOnlyHint: true, untrustedContentHint: false }, execute(input) {
     if (!input || typeof input !== "object" || Object.keys(input).length) throw new Error("Expected an empty object");
     return { page, mode: "mock", savedPlans: state.plans.length, savedItems: state.saved.length };
-  } }, { name: "navigate_wellness_demo", title: "\u5207\u6362\u77E5\u517B\u6F14\u793A\u9875\u9762", description: "Navigate to an existing demo page. Does not send a message, assess health, or save a plan.", inputSchema: { type: "object", properties: { page: { type: "string", enum: ["home", "today", "library", "food", "care", "profile"] } }, required: ["page"], additionalProperties: false }, annotations: { readOnlyHint: false, untrustedContentHint: false }, execute(input) {
+  } }, { name: "navigate_wellness_demo", title: "\u5207\u6362\u9875\u9762", description: "Navigate to an existing page. Does not send a message, assess health, or save a plan.", inputSchema: { type: "object", properties: { page: { type: "string", enum: ["home", "today", "library", "food", "care", "profile"] } }, required: ["page"], additionalProperties: false }, annotations: { readOnlyHint: false, untrustedContentHint: false }, execute(input) {
     if (!input || Object.keys(input).length !== 1 || !["home", "today", "library", "food", "care", "profile"].includes(input.page)) throw new Error("Invalid page");
     navigate(input.page);
     return { page };

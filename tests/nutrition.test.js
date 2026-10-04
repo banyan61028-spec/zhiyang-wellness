@@ -155,6 +155,10 @@ test('advice keeps only numbers from the calculation and recommendation stays in
   assert.equal(dropped.kept, false);
 });
 
+test('a photo without a configured model asks the person to type instead of inventing foods', async () => {
+  await assert.rejects(() => dispatchDiet('/api/diet/recognize', { requestId: requestId(), imageDataUrl: 'data:image/jpeg;base64,aaaa' }, {}, source), /暂时无法识别/);
+});
+
 test('diet API urgent path has no meal, and a normal sentence can be logged', async () => {
   const urgent = await dispatchDiet('/api/diet/recognize', { requestId: requestId(), text: '我现在呼吸困难' }, {}, source);
   assert.equal(urgent.mode, 'urgent_help');

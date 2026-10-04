@@ -9,7 +9,7 @@ import { chooseRecipes, programReason } from '../shared/nutrition/recommend.js';
 import { collectAllowedNumbers, inferCaution, programAdvice, sanitizeAdvice, sanitizeReason } from '../shared/nutrition/advice.js';
 import { cleanDietSettings } from '../shared/meals.js';
 import { isExplicitUrgent, urgentResponse, urgentText } from '../shared/safety.js';
-import { extractJson, qwenChat, qwenConfig, readModelItems, stubImageItems, stubParseText } from './qwen.js';
+import { extractJson, qwenChat, qwenConfig, readModelItems, stubParseText } from './qwen.js';
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
   status,
@@ -49,7 +49,7 @@ export async function handleDiet(request, env, url) {
     return json(result);
   } catch (error) {
     if (error.message === 'size') return json({ error: '请求内容过长' }, 413);
-    const safe = new Set(['没有从这句话里拆出食物', '没有识别出食物', '模型没有返回可解析的结果', '模型返回的食物列表无效', '模型返回的食物名为空', '模型服务暂时不可用', '模型没有返回内容', '照片格式无效', '缺少餐食内容', '食物项无效', '目标无效', '请求编号无效', '路径无效']);
+    const safe = new Set(['没有从这句话里拆出食物', '没有识别出食物', '模型没有返回可解析的结果', '模型返回的食物列表无效', '模型返回的食物名为空', '模型服务暂时不可用', '模型没有返回内容', '照片格式无效', '缺少餐食内容', '食物项无效', '目标无效', '请求编号无效', '路径无效', '暂时无法识别，请稍后再试或改为打字记录']);
     return json({ error: safe.has(error.message) ? error.message : '请求或回复校验未通过' }, 400);
   }
 }
@@ -72,29 +72,33 @@ export async function recognizeMeal(body, env, source, requestId) {
   let parsed;
   let stub = false;
   if (!config.enabled) {
+    console.info(JSON.stringify({ component: 'diet', event: 'recognize_unconfigured' }));
+    if (image && !text) throw new Error('暂时无法识别，请稍后再试或改为打字记录');
     stub = true;
-    parsed = image && !text ? stubImageItems() : stubParseText(text || '米饭和鸡蛋');
+    parsed = stubParseText(text);
   } else {
-    const content = await qwenChat({
-      config,
-      model: image ? config.visionModel : config.textModel,
-      messages: mealMessages({ text, image, source }),
-      fetchImpl: env.qwenFetch,
-    });
+    let content;
+    try {
+      content = await qwenChat({
+        config,
+        model: image ? config.visionModel : config.textModel,
+        messages: mealMessages({ text, image, source }),
+        fetchImpl: env.qwenFetch,
+      });
+    } catch (error) {
+      console.info(JSON.stringify({ component: 'diet', event: 'recognize_failed' }));
+      throw error;
+    }
     parsed = readModelItems(extractJson(content));
   }
   const boohee = booheeFromEnv(env);
   const items = (await Promise.all(parsed.map(item => resolveRecordedItem(item, source, boohee, { allowSearch: true })))).filter(item => item.inputName || item.name);
   if (!items.length) throw new Error('没有识别出食物');
-  const lookedUp = items.some(item => item.nutrition?.source === '薄荷健康' || item.candidates?.some(candidate => String(candidate.id).startsWith('boohee:')));
-  const notice = stub
-    ? '未配置 DASHSCOPE_API_KEY，这次由测试替身拆分食物和分量。请核对后再保存。'
-    : '食物名和分量来自大模型。热量按已匹配的数据计算，模型给出的营养数字不会被采用。';
   return {
     requestId,
     mode: 'meal_draft',
     stub,
-    notice: lookedUp ? `${notice} 本地表没有的食物名称已发给薄荷健康查询。` : notice,
+    notice: '请核对食物和分量，再记下来。',
     items,
   };
 }
@@ -163,7 +167,7 @@ export async function buildReport(body, env, source, requestId) {
     caution,
     advice,
     adviceKept,
-    adviceNote: adviceKept ? '' : '这句建议没有通过核对，已隐藏。上面的数字来自食物表计算。',
+    adviceNote: adviceKept ? '' : '今天先看上面的合计。',
     skipped: meals.flatMap(meal => meal.items).filter(item => !item.nutrition).map(item => item.name),
   };
 }
@@ -215,7 +219,7 @@ export async function buildRecommendation(body, env, source, requestId) {
     reason,
     reasonKept,
     reasonSource,
-    reasonNote: reasonKept ? '' : '推荐理由没有通过核对，已隐藏。这道菜仍来自食谱库，营养是按原料算的。',
+    reasonNote: reasonKept ? '' : '可以从这道开始。',
   };
 }
 

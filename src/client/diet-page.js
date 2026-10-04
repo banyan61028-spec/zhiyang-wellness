@@ -40,22 +40,22 @@ export function createDietPages(ctx) {
       return;
     }
     if (el.name === 'meal' && el.closest('#meal-form')) { composeMeal = el.value; return; }
-    if (el.dataset.dietFood != null) void changeFood(el.dataset.dietFood, el.value).catch(error => ctx.toast(error.message));
-    if (el.dataset.dietGrams != null) void changeGrams(el.dataset.dietGrams, el.value).catch(error => ctx.toast(error.message));
+    if (el.dataset.dietFood != null) void changeFood(el.dataset.dietFood, el.value).catch(error => ctx.toast(friendlyMessage(error.message, '这次没有改成，请再试一次')));
+    if (el.dataset.dietGrams != null) void changeGrams(el.dataset.dietGrams, el.value).catch(error => ctx.toast(friendlyMessage(error.message, '这次没有改成，请再试一次')));
   });
 
   async function loadCatalog() {
     try { catalog = await fetchCatalog(); catalogError = ''; }
-    catch (error) { catalog = null; catalogError = error.message || '食物表暂时读不出来'; }
+    catch (error) { catalog = null; catalogError = friendlyMessage(error.message, '食谱暂时打不开，请稍后再试'); }
   }
 
   function record() {
     const state = ctx.getState();
     const todayMeals = mealsOn(state, localDateString());
     const meal = composeMeal || defaultMeal();
-    const status = busy ? '正在识别食物和分量' : (photoName ? `已选 ${photoName}` : '写好后点发送，或先拍一张');
-    return `${heading('记下这一餐', '写一句话，或拍一张。热量按食物表计算，界面写「约」。')}
-      <div class="diet-page">${privacy()}${catalogError ? `<div class="storage-error" role="alert">${ctx.esc(catalogError)}</div>` : ''}${urgent ? urgentBanner(urgent) : ''}
+    const status = busy ? '正在看这一餐' : (photoName ? `已选 ${photoName}` : '写好后发送，或拍一张');
+    return `${heading('记下这一餐', '拍一张，或写一句话。')}
+      <div class="diet-page">${catalogError ? `<div class="storage-error" role="alert">${ctx.esc(catalogError)}</div>` : ''}${urgent ? urgentBanner(urgent) : ''}
       <div class="diet-layout">
         <section>
           <form id="meal-form" class="composer ${busy ? 'is-busy' : ''}">
@@ -80,8 +80,8 @@ export function createDietPages(ctx) {
         </section>
         <aside class="diet-card today-side">
           <h2>今天已经记下</h2>
-          ${todayMeals.length ? todayMeals.map(mealCard).join('') : '<p class="empty-copy">还没有记录。记下一餐后，这里和「今日」都会更新。</p>'}
-          <button class="text-button diet-link" data-page="today">看今日报告 ${ctx.icon('arrow')}</button>
+          ${todayMeals.length ? todayMeals.map(mealCard).join('') : '<p class="empty-copy">今天还没记。写一句话，或拍一张。</p>'}
+          <button class="text-button diet-link" data-page="today">看今天 ${ctx.icon('arrow')}</button>
         </aside>
       </div></div>`;
   }
@@ -92,20 +92,20 @@ export function createDietPages(ctx) {
     const meals = mealsOn(state, localDateString());
     const body = meals.length
       ? `${reportBlock()}${recommendBlock()}<section class="diet-section"><h2>今天记下的</h2>${meals.map(mealCard).join('')}</section>`
-      : '<div class="empty-state"><div><h3>今天还是空的</h3><p>先记下吃了什么。没有记录时，不会编一份报告。</p><button class="primary-button" data-page="home">去记一餐</button></div></div>';
-    return `${heading('今天', '合计来自食物表。建议只有一两句，数字对不上就会被拿掉。')}<div class="diet-page">${privacy()}${urgent ? urgentBanner(urgent) : ''}${body}</div>`;
+      : '<div class="empty-state"><div><h3>今天还没记下一餐</h3><p>记下来之后，这里才会出现合计。</p><button class="primary-button" data-page="home">去记一餐</button></div></div>';
+    return `${heading('今天', '看看今天大约吃了多少。')}<div class="diet-page">${urgent ? urgentBanner(urgent) : ''}${body}</div>`;
   }
 
   function library() {
-    if (!catalog) return `${heading('食谱', '下一餐只从这里选。')}<div class="diet-page">${catalogError ? `<div class="storage-error">${ctx.esc(catalogError)}</div>` : '<p class="empty-copy">正在读取食谱。</p>'}</div>`;
-    return `${heading('食谱', '每道菜的热量都由原料克数计算，不是手写的大约值。')}<div class="diet-page"><p class="library-note">这些是待审核的家常食谱草稿。热量按食物表里的原料计算，正式采用前还会再改。</p><div class="food-grid diet-library">${catalog.recipes.map(recipe => `<button class="recipe-tile diet-recipe" data-diet-action="recipe" data-diet-id="${ctx.esc(recipe.id)}"><div class="recipe-type-art"><span>${mealNames[recipe.meal] || '家常'}</span></div><div class="recipe-tile-body">${recipe.example ? '<span class="example-mark">待审核</span>' : ''}<h3>${ctx.esc(recipe.name)}</h3><p class="num">约 ${recipe.nutrition.kcal} 千卡</p>${recipe.blockedByHerbs ? '<span class="chip chip-quiet">暂不主动推荐</span>' : ''}</div></button>`).join('')}</div></div>`;
+    if (!catalog) return `${heading('食谱', '选一道，当作下一餐。')}<div class="diet-page">${catalogError ? `<div class="storage-error">${ctx.esc(catalogError)}</div>` : '<p class="empty-copy">正在准备食谱。</p>'}</div>`;
+    return `${heading('食谱', '选一道，当作下一餐。')}<div class="diet-page"><div class="food-grid diet-library">${catalog.recipes.map(recipe => `<button class="recipe-tile diet-recipe" data-diet-action="recipe" data-diet-id="${ctx.esc(recipe.id)}"><div class="recipe-type-art"><span>${mealNames[recipe.meal] || '家常'}</span></div><div class="recipe-tile-body"><h3>${ctx.esc(recipe.name)}</h3><p class="num">约 ${recipe.nutrition.kcal} 千卡</p>${recipe.blockedByHerbs ? '<span class="chip chip-quiet">先不主动推荐</span>' : ''}</div></button>`).join('')}</div></div>`;
   }
 
   function settings() {
     const settingsState = ctx.getState().dietSettings;
     const targets = settingsState.targets;
     const flags = settingsState.flags;
-    return `${heading('我的', '没有账号。换浏览器或清除数据后，记录不会跟着走。')}<div class="diet-page">${privacy()}<section class="diet-card"><h2>每日目标</h2><p class="small muted">这是你自己填的参考，不是膳食处方。留空的项目不参与对比。</p><form id="target-form"><div class="target-grid"><label class="form-label">热量（千卡）<input name="kcal" inputmode="numeric" min="0" max="10000" value="${targets.kcal ?? ''}"></label><label class="form-label">蛋白质（克）<input name="protein" inputmode="numeric" min="0" max="500" value="${targets.protein ?? ''}"></label><label class="form-label">脂肪（克）<input name="fat" inputmode="numeric" min="0" max="500" value="${targets.fat ?? ''}"></label><label class="form-label">碳水（克）<input name="carb" inputmode="numeric" min="0" max="500" value="${targets.carb ?? ''}"></label></div><label class="check-line"><input type="checkbox" name="confirm" ${targets.confirmed ? 'checked' : ''}> 我确认把这些数字当作自己的每日目标</label><button class="primary-button" type="submit">保存目标</button></form></section><section class="diet-card"><h2>需要放宽建议的情况</h2><p class="small muted">勾选后，报告不再按热量缺口鼓励少吃；肾病不会按蛋白质缺口推荐高蛋白菜。这不是诊断。</p><form id="flags-form">${flagBox('pregnancy', '孕期或备孕', flags.pregnancy)}${flagBox('lactation', '哺乳', flags.lactation)}${flagBox('minor', '未成年', flags.minor)}${flagBox('kidney', '肾病', flags.kidney)}${flagBox('diabetes', '糖尿病', flags.diabetes)}${flagBox('hypertension', '高血压', flags.hypertension)}${flagBox('eatingDisorder', '进食让我很痛苦，或出现催吐、绝食', flags.eatingDisorder)}<label class="check-line"><input type="checkbox" name="confirm" ${settingsState.flagsConfirmed ? 'checked' : ''}> 我确认用这些情况调整文字建议，不据此开饮食处方</label><button class="primary-button" type="submit">保存这些情况</button></form></section><section class="diet-card"><h2>清除本机数据</h2><p class="small muted">会同时清除饮食记录、每日目标、旧档案、收藏、方案和测评。清除后找不回来。</p><button class="outline-button" data-action="reset">清除本机记录</button></section></div>`;
+    return `${heading('我的', '目标和记录都在这台手机上。')}<div class="diet-page"><section class="diet-card"><h2>每日目标</h2><p class="small muted">按自己的习惯填。留空的项目不参与对比。</p><form id="target-form"><div class="target-grid"><label class="form-label">热量（千卡）<input name="kcal" inputmode="numeric" min="0" max="10000" value="${targets.kcal ?? ''}"></label><label class="form-label">蛋白质（克）<input name="protein" inputmode="numeric" min="0" max="500" value="${targets.protein ?? ''}"></label><label class="form-label">脂肪（克）<input name="fat" inputmode="numeric" min="0" max="500" value="${targets.fat ?? ''}"></label><label class="form-label">碳水（克）<input name="carb" inputmode="numeric" min="0" max="500" value="${targets.carb ?? ''}"></label></div><label class="check-line"><input type="checkbox" name="confirm" ${targets.confirmed ? 'checked' : ''}> 把这些数字当作我的每日目标</label><button class="primary-button" type="submit">保存目标</button></form></section><section class="diet-card"><h2>这些情况下，建议会更谨慎</h2><p class="small muted">勾选后，不会按吃得少来催你，也不会因为蛋白质不够就推荐高蛋白的菜。</p><form id="flags-form">${flagBox('pregnancy', '孕期或备孕', flags.pregnancy)}${flagBox('lactation', '哺乳', flags.lactation)}${flagBox('minor', '未成年', flags.minor)}${flagBox('kidney', '肾病', flags.kidney)}${flagBox('diabetes', '糖尿病', flags.diabetes)}${flagBox('hypertension', '高血压', flags.hypertension)}${flagBox('eatingDisorder', '吃饭让我很痛苦，或出现催吐、绝食', flags.eatingDisorder)}<label class="check-line"><input type="checkbox" name="confirm" ${settingsState.flagsConfirmed ? 'checked' : ''}> 按这些情况调整文字建议</label><button class="primary-button" type="submit">保存</button></form></section><section class="diet-card"><h2>隐私与说明</h2><p class="small muted">记录只留在这台手机上。热量是估算。</p><button class="text-button" data-action="privacy">查看隐私与说明</button></section><section class="diet-card"><h2>清除这台手机上的记录</h2><p class="small muted">饮食记录和每日目标会一起清掉，清掉后找不回来。</p><button class="outline-button" data-action="reset">清除记录</button></section></div>`;
   }
 
   async function onClick(button) {
@@ -164,31 +164,30 @@ export function createDietPages(ctx) {
       photoName = '';
       composeError = '';
     } catch (error) {
-      composeError = error.message || '识别没有完成。已写的内容还在，可以再发一次。';
+      composeError = friendlyMessage(error.message, '暂时无法识别，请稍后再试或改为打字记录');
       ctx.toast(composeError);
     } finally { busy = false; ctx.render(); }
   }
 
   function editor(current) {
-    return `<section class="draft-editor" aria-label="核对这一餐"><div class="draft-head"><h2>核对这一餐</h2><p class="small muted">${ctx.esc(current.notice)}</p></div>${current.items.map(item => itemCard(item)).join('')}<div class="button-row"><button class="primary-button" type="button" data-diet-action="save-draft">记下来</button><button class="outline-button" type="button" data-diet-action="discard">先不记</button></div></section>`;
+    return `<section class="draft-editor" aria-label="核对这一餐"><div class="draft-head"><h2>核对这一餐</h2><p class="small muted">${ctx.esc(gentleNotice(current.notice))}</p></div>${current.items.map(item => itemCard(item)).join('')}<div class="button-row"><button class="primary-button" type="button" data-diet-action="save-draft">记下来</button><button class="outline-button" type="button" data-diet-action="discard">先不记</button></div></section>`;
   }
 
   function itemCard(item) {
-    const food = catalog?.foods.find(entry => entry.id === item.foodId);
     const nutrition = item.nutrition;
-    const sourceLabel = nutrition ? (nutrition.source === '薄荷健康' ? '薄荷健康' : '本地食物表') : '';
+    const shown = displaySource(nutrition);
     const kcal = nutrition
       ? `<p class="food-kcal"><span class="num">${nutrition.kcal}</span><small>约千卡</small></p>`
-      : '<p class="food-kcal food-kcal-soft"><span>无法估算</span><small>可以改选，或先留着</small></p>';
+      : '<p class="food-kcal food-kcal-soft"><span>暂时算不出来</span><small>可以改选，或先留着</small></p>';
     return `<article class="food-card">
       <header class="food-card-head"><div><h3>${ctx.esc(item.name || item.inputName)}</h3>${item.inputName && item.inputName !== item.name ? `<p class="small muted">识别为 ${ctx.esc(item.inputName)}</p>` : ''}</div>${kcal}</header>
-      <div class="chip-row">${sourceLabel ? `<span class="chip">${sourceLabel}</span>` : '<span class="chip chip-soft">无法估算</span>'}${item.portionLabel ? `<span class="chip chip-quiet">${ctx.esc(item.portionLabel)}</span>` : ''}</div>
+      <div class="chip-row">${shown ? `<span class="chip">${shown.label}</span>` : '<span class="chip chip-soft">暂时算不出来</span>'}${item.portionLabel ? `<span class="chip chip-quiet">${ctx.esc(item.portionLabel)}</span>` : ''}</div>
       ${foodSelect(item)}
       <div class="portion-row" role="group" aria-label="修正分量">
         ${portionButton(item, 'small', '小')}${portionButton(item, 'medium', '中')}${portionButton(item, 'large', '大')}
         <label class="grams-field">克数<input data-diet-grams="${ctx.esc(item.clientId)}" type="number" min="1" max="5000" inputmode="numeric" value="${item.grams ?? ''}" aria-label="克数"></label>
       </div>
-      ${nutrition ? `${macroPills(nutrition)}<p class="small muted">来源：${ctx.esc(nutrition.source)}。${ctx.esc(nutrition.sourceNote)}</p>` : `<div class="unestimated-panel"><p>${unestimatedCopy(item.reason)}</p>${food ? `<p class="small">${ctx.esc(food.sourceNote)}</p>` : ''}</div>`}
+      ${nutrition ? `${macroPills(nutrition)}${shown.detail ? `<details class="source-fold"><summary>数据来源</summary><p>${ctx.esc(shown.label)}。${ctx.esc(shown.detail)}</p></details>` : `<details class="source-fold"><summary>数据来源</summary><p>${ctx.esc(shown.label)}</p></details>`}` : `<div class="unestimated-panel"><p>${unestimatedCopy(item.reason)}</p></div>`}
     </article>`;
   }
 
@@ -207,7 +206,7 @@ export function createDietPages(ctx) {
     const options = [...extras, ...local];
     const selected = item.nutrition ? item.foodId : '';
     const asking = item.status === 'ambiguous' && !item.nutrition;
-    const prompt = asking ? '请选择' : '无法估算';
+    const prompt = asking ? '请选择' : '先不算';
     return `<label class="form-label food-pick">${asking ? '这几项都可能，选一个' : '换成别的'}<select data-diet-food="${ctx.esc(item.clientId)}" aria-label="${asking ? '选择对应的食物' : '改食物'}"><option value="">${prompt}</option>${options.map(option => `<option value="${ctx.esc(option.id)}" ${option.id === selected ? 'selected' : ''}>${ctx.esc(option.branded ? `${option.name}（品牌包装）` : option.name)}</option>`).join('')}</select></label>`;
   }
 
@@ -298,7 +297,7 @@ export function createDietPages(ctx) {
       if (recommendation.mode === 'urgent_help') urgent = recommendation;
     } catch (error) {
       if (cacheKey() !== key) return;
-      report = { key, mode: 'error', adviceNote: error.message || '今天的报告没有生成' };
+      report = { key, mode: 'error', adviceNote: friendlyMessage(error.message, '今天的合计暂时出不来，请稍后再试') };
       recommendation = { key, empty: true, reason: '', reasonKept: false };
     } finally {
       if (inflight === key) inflight = '';
@@ -345,36 +344,37 @@ export function createDietPages(ctx) {
       : `<p class="dash-gap ${gap < 0 ? 'over' : ''}">和你确认过的 <span class="num">${target.kcal}</span> 千卡相比，${gap >= 0 ? `大约还少 <span class="num">${gap}</span> 千卡` : `大约多了 <span class="num">${Math.abs(gap)}</span> 千卡`}。</p>`;
     const advice = report.adviceKept && report.advice
       ? `<p>${ctx.esc(report.advice)}</p>`
-      : `<p class="small muted">${ctx.esc(report.adviceNote || '')}</p>`;
+      : (report.adviceNote ? `<p class="small muted">${ctx.esc(gentleNotice(report.adviceNote))}</p>` : '');
     return `<section class="dash" aria-label="今日热量">
       <div class="ring-wrap" role="img" aria-label="${ctx.esc(aria)}">${ringSvg(ratio, tone)}<div class="ring-center"><strong class="num">${center}</strong><span>${totals.counted ? '今日千卡' : '没有可计算的热量'}</span></div></div>
-      <div class="dash-copy"><p class="eyebrow">按当前食物表重算</p>${gapCopy}${report.skipped?.length ? `<p class="small muted">未计入：${report.skipped.map(name => ctx.esc(name)).join('、')}。这些食物无法估算。</p>` : ''}</div>
+      <div class="dash-copy"><p class="eyebrow">今天大约</p>${gapCopy}${report.skipped?.length ? `<p class="small muted">还没算进去：${report.skipped.map(name => ctx.esc(name)).join('、')}。</p>` : ''}</div>
     </section>
     <section class="diet-card"><h2>三大营养素</h2>${macroBars(totals, target)}</section>
     <section class="diet-card advice-card"><h2>今天的建议</h2>${advice}</section>`;
   }
 
   function recommendBlock() {
-    if (!recommendation) return '<section class="diet-card"><p class="composer-status">正在从食谱库里选下一餐。</p></section>';
-    if (!recommendation.recipe) return `<section class="diet-card"><h2>下一餐</h2><p>${ctx.esc(recommendation.reason || recommendation.reasonNote || '食谱库里没有更合适的一道。')}</p><button class="text-button diet-link" data-page="library">查看现有食谱 ${ctx.icon('arrow')}</button></section>`;
+    if (!recommendation) return '<section class="diet-card"><p class="composer-status">正在选下一餐。</p></section>';
+    if (!recommendation.recipe) return `<section class="diet-card"><h2>下一餐</h2><p>${ctx.esc(gentleNotice(recommendation.reason || recommendation.reasonNote || '今天先从食谱里自己挑一道吧。'))}</p><button class="text-button diet-link" data-page="library">去看食谱 ${ctx.icon('arrow')}</button></section>`;
     const recipe = recommendation.recipe;
     const reason = recommendation.reasonKept && recommendation.reason
       ? `<p class="advice-line">${ctx.esc(recommendation.reason)}</p>`
-      : `<p class="small muted">${ctx.esc(recommendation.reasonNote || '推荐理由没有通过核对，只保留食谱库里的这道菜。')}</p>`;
-    return `<article class="recipe-feature"><div class="recipe-feature-art"><span>${mealNames[recipe.meal] || '家常'}</span>${recipe.example ? '<span class="example-mark">待审核</span>' : ''}</div><div class="recipe-feature-body"><p class="eyebrow">下一餐可以从这道开始</p><h2>${ctx.esc(recipe.name)}</h2><p class="food-kcal"><span class="num">${recipe.nutrition.kcal}</span><small>约千卡</small></p>${macroPills(recipe.nutrition)}${reason}<div class="button-row"><button class="primary-button" data-diet-action="recipe" data-diet-id="${ctx.esc(recipe.id)}">查看做法</button><button class="outline-button" data-diet-action="another">换一道库里的菜</button></div></div></article>`;
+      : (recommendation.reasonNote ? `<p class="small muted">${ctx.esc(gentleNotice(recommendation.reasonNote))}</p>` : '');
+    return `<article class="recipe-feature"><div class="recipe-feature-art"><span>${mealNames[recipe.meal] || '家常'}</span></div><div class="recipe-feature-body"><p class="eyebrow">下一餐可以从这道开始</p><h2>${ctx.esc(recipe.name)}</h2><p class="food-kcal"><span class="num">${recipe.nutrition.kcal}</span><small>约千卡</small></p>${macroPills(recipe.nutrition)}${reason}<div class="button-row"><button class="primary-button" data-diet-action="recipe" data-diet-id="${ctx.esc(recipe.id)}">查看做法</button><button class="outline-button" data-diet-action="another">换一道</button></div></div></article>`;
   }
 
   function mealCard(meal) {
     const estimated = meal.items.filter(item => item.nutrition);
     const kcal = estimated.reduce((sum, item) => sum + item.nutrition.kcal, 0);
-    return `<article class="saved-meal"><div class="section-mini"><span>${mealNames[meal.meal]} · <span class="num">${ctx.esc(meal.date)}</span></span><span class="meal-actions"><button class="text-button" data-diet-action="edit-meal" data-diet-id="${ctx.esc(meal.id)}">修改</button><button class="text-button" data-diet-action="delete-meal" data-diet-id="${ctx.esc(meal.id)}">删除</button></span></div><ul class="meal-lines">${meal.items.map(item => `<li><span>${ctx.esc(item.name)}</span><span class="num">${item.grams ?? '—'} 克</span><span class="num">${item.nutrition ? `约 ${item.nutrition.kcal} 千卡` : '无法估算'}</span></li>`).join('')}</ul><p class="small muted">${estimated.length ? `这一餐可估算部分约 <span class="num">${kcal}</span> 千卡` : '这一餐没有可估算的热量'}</p></article>`;
+    return `<article class="saved-meal"><div class="section-mini"><span>${mealNames[meal.meal]} · <span class="num">${ctx.esc(meal.date)}</span></span><span class="meal-actions"><button class="text-button" data-diet-action="edit-meal" data-diet-id="${ctx.esc(meal.id)}">修改</button><button class="text-button" data-diet-action="delete-meal" data-diet-id="${ctx.esc(meal.id)}">删除</button></span></div><ul class="meal-lines">${meal.items.map(item => `<li><span>${ctx.esc(item.name)}</span><span class="num">${item.grams ?? '—'} 克</span><span class="num">${item.nutrition ? `约 ${item.nutrition.kcal} 千卡` : '暂时算不出来'}</span></li>`).join('')}</ul><p class="small muted">${estimated.length ? `这一餐大约 <span class="num">${kcal}</span> 千卡` : '这一餐还没有算出热量'}</p></article>`;
   }
 
   function openRecipe(id) {
     const recipe = catalog?.recipes.find(item => item.id === id) || recommendation?.recipe;
     if (!recipe || recipe.id !== id && recommendation?.recipe?.id !== id) return;
     const chosen = recipe.id === id ? recipe : recommendation.recipe;
-    ctx.openDetail(`<div class="detail-body">${chosen.example ? '<span class="example-mark example-inline">待审核</span>' : '<span class="chip">食谱</span>'}<h2>${ctx.esc(chosen.name)}</h2><p class="small muted">${mealNames[chosen.meal] || '家常'}</p><p class="food-kcal"><span class="num">${chosen.nutrition.kcal}</span><small>约千卡</small></p>${macroPills(chosen.nutrition)}<h3>原料和克数</h3><div class="ingredient-list">${chosen.ingredients.map(item => `<span>${ctx.esc(item.name)} <span class="num">${item.grams}</span> 克</span>`).join('')}</div><h3>做法</h3><ol class="step-list">${chosen.steps.map(step => `<li>${ctx.esc(step)}</li>`).join('')}</ol><p class="gentle-note">${ctx.esc(chosen.note || '')} ${ctx.esc(chosen.sourceNote || '')}</p>${chosen.avoid?.includes('kidney_high_protein') ? '<p class="boundary-note">这道菜标记为蛋白质较高，肾病用户不会因为蛋白质缺口被推荐它。</p>' : ''}</div>`, '食谱');
+    const note = visibleNote(chosen.note);
+    ctx.openDetail(`<div class="detail-body"><span class="chip">食谱</span><h2>${ctx.esc(chosen.name)}</h2><p class="small muted">${mealNames[chosen.meal] || '家常'}</p><p class="food-kcal"><span class="num">${chosen.nutrition.kcal}</span><small>约千卡</small></p>${macroPills(chosen.nutrition)}<h3>原料和克数</h3><div class="ingredient-list">${chosen.ingredients.map(item => `<span>${ctx.esc(item.name)} <span class="num">${item.grams}</span> 克</span>`).join('')}</div><h3>做法</h3><ol class="step-list">${chosen.steps.map(step => `<li>${ctx.esc(step)}</li>`).join('')}</ol>${note ? `<p class="gentle-note">${ctx.esc(note)}</p>` : ''}${chosen.avoid?.includes('kidney_high_protein') ? '<p class="boundary-note">这道蛋白质比较高。有肾病情况时，不会因为蛋白质不够就推荐它。</p>' : ''}</div>`, '食谱');
   }
 
   async function saveTargets(form) {
@@ -419,18 +419,32 @@ function heading(title, sub) {
   const now = new Date();
   return `<div class="page-heading diet-heading"><div><p class="eyebrow">知养</p><h1>${title}</h1><p>${sub}</p></div><div class="date-stamp"><strong class="num">${String(now.getMonth() + 1).padStart(2, '0')}<span>/${String(now.getDate()).padStart(2, '0')}</span></strong><span>今天 · 记在本机</span></div></div>`;
 }
-function privacy() {
-  return '<p class="privacy-banner">你输入的文字和上传的照片会发给当前配置的大模型服务，用来识别食物和写一两句建议。没有配置模型密钥时使用本机测试替身，不会外发。对不上本地可计算食物的名称，以及牛肉面、馒头、饺子、小米粥、白粥、面条这类本地标为不可计算的具体菜名，会发给薄荷健康开放平台查询营养数据。「外卖套餐」这种太笼统的说法不会发送。没有配置薄荷密钥或查询失败时，该项标为无法估算。本应用不在服务器上保存照片和饮食正文。记录只留在这台设备的浏览器里。</p>';
+export function friendlyMessage(message, fallback = '请稍后再试') {
+  const text = String(message || '').trim();
+  if (!text || /模型|密钥|API|DASHSCOPE|USDA|测试替身|未配置|大模型|千问|百炼|Demo|演示|示例/.test(text)) return fallback;
+  return text;
+}
+function gentleNotice(notice) {
+  return friendlyMessage(notice, '请核对食物和分量，再记下来。');
+}
+function displaySource(nutrition) {
+  if (!nutrition) return null;
+  if (nutrition.source === '薄荷健康') {
+    const code = String(nutrition.sourceNote || '').match(/编码\s*(\S+)/);
+    return { label: '薄荷健康', detail: code ? `食物编码 ${code[1]}` : '' };
+  }
+  const fdc = String(nutrition.sourceNote || '').match(/FDC\s*(\d+)/);
+  return { label: '知养食物库', detail: fdc ? `参考编号 FDC ${fdc[1]}` : '' };
+}
+function visibleNote(note) {
+  return String(note || '').split(/(?<=[。！？])/).map(part => part.trim()).filter(part => part && !/USDA|FDC|待审核|示例|Demo|大模型|API|密钥|测试/.test(part)).join('');
 }
 function urgentBanner(result) {
   return `<div class="urgent-help" role="alert"><strong>请立即寻求专业帮助</strong><p>${result.text}</p></div>`;
 }
 function unestimatedCopy(reason) {
-  if (reason === 'too_vague') return '这个说法太笼统，拆成具体的菜再记，才能估算。例如写成「米饭、青菜和鸡腿」。';
-  if (reason === 'no_key') return '没有可用的本地营养数据，也没有配置薄荷开放平台，所以无法估算。';
-  if (reason === 'lookup_failed') return '薄荷查询没有成功，所以无法估算。不会填一个看起来合理的热量。';
-  if (reason === 'not_calculable') return '这道在本地食物表里标为不可计算。不会填一个看起来合理的热量。';
-  return '这道暂时无法估算。可以改成食物表或上面列出的一项，或保留为无法估算。不会填一个看起来合理的热量。';
+  if (reason === 'too_vague') return '这个说法有点笼统。写成具体的菜，比如「米饭、青菜和鸡腿」，才能估算。';
+  return '这道暂时算不出来。可以换成上面的食物，或先留着。不会随便填一个热量。';
 }
 function flagBox(name, label, checked) {
   return `<label class="check-line"><input type="checkbox" name="${name}" ${checked ? 'checked' : ''}> ${label}</label>`;
