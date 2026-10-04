@@ -419,7 +419,7 @@ function heading(title, sub) {
   return `<div class="page-heading diet-heading"><div><p class="eyebrow">知养</p><h1>${title}</h1><p>${sub}</p></div><div class="date-stamp"><strong class="num">${String(now.getMonth() + 1).padStart(2, '0')}<span>/${String(now.getDate()).padStart(2, '0')}</span></strong><span>今天 · 记在本机</span></div></div>`;
 }
 function privacy() {
-  return '<p class="privacy-banner">你输入的文字和上传的照片会发给阿里云百炼的千问，用来识别食物和写一两句建议。没有配置千问密钥时使用本机测试替身，不会外发。对不上本地可计算食物的名称，以及牛肉面、馒头、饺子、小米粥、白粥、面条这类本地标为不可计算的具体菜名，会发给薄荷健康开放平台查询营养数据。「外卖套餐」这种太笼统的说法不会发送。没有配置薄荷密钥或查询失败时，该项标为无法估算。本应用不在服务器上保存照片和饮食正文。记录只留在这台设备的浏览器里。</p>';
+  return '<p class="privacy-banner">你输入的文字和上传的照片会发给当前配置的大模型服务，用来识别食物和写一两句建议。没有配置模型密钥时使用本机测试替身，不会外发。对不上本地可计算食物的名称，以及牛肉面、馒头、饺子、小米粥、白粥、面条这类本地标为不可计算的具体菜名，会发给薄荷健康开放平台查询营养数据。「外卖套餐」这种太笼统的说法不会发送。没有配置薄荷密钥或查询失败时，该项标为无法估算。本应用不在服务器上保存照片和饮食正文。记录只留在这台设备的浏览器里。</p>';
 }
 function urgentBanner(result) {
   return `<div class="urgent-help" role="alert"><strong>请立即寻求专业帮助</strong><p>${result.text}</p></div>`;

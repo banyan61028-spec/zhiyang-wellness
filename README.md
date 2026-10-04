@@ -2,7 +2,7 @@
 
 记下吃了什么，看今天大约吃了多少，再从自己的食谱库里选下一餐。
 
-这一版给身边少数人试用。热量和蛋白质、脂肪、碳水由食物表按「每 100 克 × 克数」计算，界面写成「约」。千问只负责识别食物、估计克数，以及写一两句建议。对不上食物表的，标成「无法估算」，不由模型编一个热量。
+这一版给身边少数人试用。热量和蛋白质、脂肪、碳水由食物表按「每 100 克 × 克数」计算，界面写成「约」。大模型只负责识别食物、估计克数，以及写一两句建议。对不上食物表的，标成「无法估算」，不由模型编一个热量。
 
 体质测评、茶饮、专题和旧的养生咨询还留在仓库里，入口收在「我的」里的「已冻结的内容」，不在主流程上。
 
@@ -28,23 +28,46 @@ npm run dev
 
 构建也会先跑同一套校验。格式不对时会逐行报错，不会悄悄跳过。
 
-## 配置千问
+## 配置大模型
 
-模型走阿里云百炼的 OpenAI 兼容接口。密钥只放在环境变量里，不要写进仓库。
+模型走 OpenAI 兼容接口，用 Bearer Key。变量名仍是 `DASHSCOPE_*`，密钥只放在环境变量里，不要写进仓库。请求默认带 `enable_thinking: false`，避免思考模式把一句话拖到几十秒。需要打开思考时设置 `DASHSCOPE_ENABLE_THINKING=true`。超时用 `DASHSCOPE_TIMEOUT_MS`，默认 40000 毫秒。如果服务把 `enable_thinking` 当成未知参数并返回 400，会去掉这个字段再请求一次。
+
+### 阿里云百炼
+
+不设置 `DASHSCOPE_BASE_URL` 时，默认就是百炼兼容模式。识图默认 `qwen3-vl-flash`，文本默认 `qwen-plus`。
 
 ```sh
 export DASHSCOPE_API_KEY=你的密钥
-export DASHSCOPE_VISION_MODEL=qwen3-vl-flash   # 可选，默认识图
-export DASHSCOPE_TEXT_MODEL=qwen-plus          # 可选，默认文本
+export DASHSCOPE_VISION_MODEL=qwen3-vl-flash   # 可选
+export DASHSCOPE_TEXT_MODEL=qwen-plus          # 可选
 export DASHSCOPE_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
 npm run dev
 ```
 
-也可以把这些变量写在项目根目录的 `.env`，预览服务会读取。`.env` 已被忽略，不要提交。
+### 使用蚂蚁数科大模型平台
+
+图文都用 `qwen3.8-flash`。Key 填在 `DASHSCOPE_API_KEY`。
+
+```sh
+export DASHSCOPE_API_KEY=你的密钥
+export DASHSCOPE_BASE_URL=https://maas-api.antdigital.com/v1
+export DASHSCOPE_VISION_MODEL=qwen3.8-flash
+export DASHSCOPE_TEXT_MODEL=qwen3.8-flash
+npm run dev
+```
+
+写在项目根目录的 `.env` 时同样是这四项，预览服务会读取。`.env` 已被忽略，不要提交。
+
+```
+DASHSCOPE_API_KEY=你的密钥
+DASHSCOPE_BASE_URL=https://maas-api.antdigital.com/v1
+DASHSCOPE_VISION_MODEL=qwen3.8-flash
+DASHSCOPE_TEXT_MODEL=qwen3.8-flash
+```
 
 没有 `DASHSCOPE_API_KEY` 时，识别、报告和推荐理由使用测试替身，不访问模型服务。文字会按「加、和、逗号」拆开，再拿食物表做精确匹配。例如「中午一碗牛肉面加个蛋」：鸡蛋按本地表计算。牛肉面在本地表里标为不可计算，会按这个名字再问薄荷；没有薄荷密钥时标为无法估算。上传照片在没有密钥时，会返回一份固定的米饭和鸡蛋，方便把后面的计算走通。界面会写明这次是测试替身。
 
-有密钥时，照片和文字会发给阿里云百炼。服务端不把照片和饮食正文写入日志，也不在服务器上保存它们。拍照识别仍走千问，不调用薄荷的图片识别接口。
+有密钥时，照片和文字会发给当前配置的大模型服务。服务端不把照片和饮食正文写入日志，也不在服务器上保存它们。拍照识别仍走这个大模型，不调用薄荷的图片识别接口。用户说出一道菜时，识别会保留菜名整体，例如「番茄炒蛋」，再按这个名字查营养；只有用户明确列出的食材才拆开。
 
 ## 配置薄荷健康
 
@@ -115,7 +138,7 @@ npm test
 - [家常食谱草稿](docs/14-家常食谱草稿.md)
 - [食物与食谱导入](data/nutrition/README.md)
 
-本试用版已经按 linden 的决定接上：模型用阿里云百炼千问，食物数据由自己导入，每日目标自己填写，不做账号。示例数据只为了把闭环跑通。
+本试用版已经按 linden 的决定接上：模型用 OpenAI 兼容的大模型服务，当前可用蚂蚁数科大模型平台或阿里云百炼。食物数据由自己导入，每日目标自己填写，不做账号。示例数据只为了把闭环跑通。
 
 调整定位之前的方案仍留在 `docs/01` 至 `docs/08`，不再作为当前范围。
 

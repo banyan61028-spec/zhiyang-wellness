@@ -8,7 +8,20 @@ export function qwenConfig(env = {}) {
     baseUrl: (env.DASHSCOPE_BASE_URL || DEFAULT_BASE).replace(/\/$/, ''),
     visionModel: env.DASHSCOPE_VISION_MODEL || 'qwen3-vl-flash',
     textModel: env.DASHSCOPE_TEXT_MODEL || 'qwen-plus',
+    enableThinking: readEnableThinking(env.DASHSCOPE_ENABLE_THINKING),
+    timeoutMs: readTimeoutMs(env.DASHSCOPE_TIMEOUT_MS),
   };
+}
+
+function readEnableThinking(value) {
+  return ['true', '1', 'yes'].includes(String(value ?? '').trim().toLowerCase());
+}
+
+function readTimeoutMs(value) {
+  if (value == null || value === '') return 40000;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 1000) return 40000;
+  return Math.round(parsed);
 }
 
 export function extractJson(text) {
@@ -35,18 +48,45 @@ export function readModelItems(payload) {
   });
 }
 
-export async function qwenChat({ config, model, messages }) {
-  const response = await fetch(`${config.baseUrl}/chat/completions`, {
-    method: 'POST',
-    headers: { authorization: `Bearer ${config.apiKey}`, 'content-type': 'application/json' },
-    body: JSON.stringify({ model, messages, temperature: 0.2 }),
-    signal: AbortSignal.timeout(25000),
-  });
-  if (!response.ok) throw new Error('模型服务暂时不可用');
-  const body = await response.json();
-  const text = body?.choices?.[0]?.message?.content;
-  if (typeof text !== 'string' || !text.trim()) throw new Error('模型没有返回内容');
-  return text;
+export async function qwenChat({ config, model, messages, fetchImpl = fetch }) {
+  const timeoutMs = config.timeoutMs || 40000;
+  const payload = { model, messages, temperature: 0.2, enable_thinking: config.enableThinking === true };
+  try {
+    return await completeChat(config, payload, fetchImpl, timeoutMs);
+  } catch (error) {
+    if (error.status !== 400) throw error;
+    const { enable_thinking, ...plain } = payload;
+    return await completeChat(config, plain, fetchImpl, timeoutMs);
+  }
+}
+
+async function completeChat(config, payload, fetchImpl, timeoutMs) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetchImpl(`${config.baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${config.apiKey}`, 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    if (response.status === 400) {
+      const error = new Error('模型服务暂时不可用');
+      error.status = 400;
+      throw error;
+    }
+    if (!response.ok) throw new Error('模型服务暂时不可用');
+    const body = await response.json();
+    const text = body?.choices?.[0]?.message?.content;
+    if (typeof text !== 'string' || !text.trim()) throw new Error('模型没有返回内容');
+    return text;
+  } catch (error) {
+    if (error.status === 400) throw error;
+    if (error?.name === 'AbortError' || error?.name === 'TimeoutError') throw new Error('模型服务暂时不可用');
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export function stubParseText(text) {

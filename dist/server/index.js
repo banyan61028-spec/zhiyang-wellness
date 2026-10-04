@@ -2635,8 +2635,19 @@ function qwenConfig(env = {}) {
     enabled: Boolean(key),
     baseUrl: (env.DASHSCOPE_BASE_URL || DEFAULT_BASE2).replace(/\/$/, ""),
     visionModel: env.DASHSCOPE_VISION_MODEL || "qwen3-vl-flash",
-    textModel: env.DASHSCOPE_TEXT_MODEL || "qwen-plus"
+    textModel: env.DASHSCOPE_TEXT_MODEL || "qwen-plus",
+    enableThinking: readEnableThinking(env.DASHSCOPE_ENABLE_THINKING),
+    timeoutMs: readTimeoutMs(env.DASHSCOPE_TIMEOUT_MS)
   };
+}
+function readEnableThinking(value) {
+  return ["true", "1", "yes"].includes(String(value ?? "").trim().toLowerCase());
+}
+function readTimeoutMs(value) {
+  if (value == null || value === "") return 4e4;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 1e3) return 4e4;
+  return Math.round(parsed);
 }
 function extractJson(text) {
   const fenced = String(text ?? "").match(/```(?:json)?\s*([\s\S]*?)```/);
@@ -2660,18 +2671,44 @@ function readModelItems(payload) {
     };
   });
 }
-async function qwenChat({ config, model, messages }) {
-  const response = await fetch(`${config.baseUrl}/chat/completions`, {
-    method: "POST",
-    headers: { authorization: `Bearer ${config.apiKey}`, "content-type": "application/json" },
-    body: JSON.stringify({ model, messages, temperature: 0.2 }),
-    signal: AbortSignal.timeout(25e3)
-  });
-  if (!response.ok) throw new Error("\u6A21\u578B\u670D\u52A1\u6682\u65F6\u4E0D\u53EF\u7528");
-  const body = await response.json();
-  const text = body?.choices?.[0]?.message?.content;
-  if (typeof text !== "string" || !text.trim()) throw new Error("\u6A21\u578B\u6CA1\u6709\u8FD4\u56DE\u5185\u5BB9");
-  return text;
+async function qwenChat({ config, model, messages, fetchImpl = fetch }) {
+  const timeoutMs = config.timeoutMs || 4e4;
+  const payload = { model, messages, temperature: 0.2, enable_thinking: config.enableThinking === true };
+  try {
+    return await completeChat(config, payload, fetchImpl, timeoutMs);
+  } catch (error) {
+    if (error.status !== 400) throw error;
+    const { enable_thinking, ...plain } = payload;
+    return await completeChat(config, plain, fetchImpl, timeoutMs);
+  }
+}
+async function completeChat(config, payload, fetchImpl, timeoutMs) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetchImpl(`${config.baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${config.apiKey}`, "content-type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+    if (response.status === 400) {
+      const error = new Error("\u6A21\u578B\u670D\u52A1\u6682\u65F6\u4E0D\u53EF\u7528");
+      error.status = 400;
+      throw error;
+    }
+    if (!response.ok) throw new Error("\u6A21\u578B\u670D\u52A1\u6682\u65F6\u4E0D\u53EF\u7528");
+    const body = await response.json();
+    const text = body?.choices?.[0]?.message?.content;
+    if (typeof text !== "string" || !text.trim()) throw new Error("\u6A21\u578B\u6CA1\u6709\u8FD4\u56DE\u5185\u5BB9");
+    return text;
+  } catch (error) {
+    if (error.status === 400) throw error;
+    if (error?.name === "AbortError" || error?.name === "TimeoutError") throw new Error("\u6A21\u578B\u670D\u52A1\u6682\u65F6\u4E0D\u53EF\u7528");
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 function stubParseText(text) {
   const normalized = String(text).replace(/加个/g, "\uFF0C\u4E00\u4E2A").replace(/加一/g, "\uFF0C\u4E00").replace(/加/g, "\uFF0C");
@@ -2774,7 +2811,8 @@ async function recognizeMeal(body, env, source, requestId) {
     const content = await qwenChat({
       config,
       model: image ? config.visionModel : config.textModel,
-      messages: mealMessages({ text, image, source })
+      messages: mealMessages({ text, image, source }),
+      fetchImpl: env.qwenFetch
     });
     parsed = readModelItems(extractJson(content));
   }
@@ -2782,7 +2820,7 @@ async function recognizeMeal(body, env, source, requestId) {
   const items = (await Promise.all(parsed.map((item) => resolveRecordedItem(item, source, boohee, { allowSearch: true })))).filter((item) => item.inputName || item.name);
   if (!items.length) throw new Error("\u6CA1\u6709\u8BC6\u522B\u51FA\u98DF\u7269");
   const lookedUp = items.some((item) => item.nutrition?.source === "\u8584\u8377\u5065\u5EB7" || item.candidates?.some((candidate) => String(candidate.id).startsWith("boohee:")));
-  const notice = stub ? "\u672A\u914D\u7F6E DASHSCOPE_API_KEY\uFF0C\u8FD9\u6B21\u7531\u6D4B\u8BD5\u66FF\u8EAB\u62C6\u5206\u98DF\u7269\u548C\u5206\u91CF\u3002\u8BF7\u6838\u5BF9\u540E\u518D\u4FDD\u5B58\u3002" : "\u98DF\u7269\u540D\u548C\u5206\u91CF\u6765\u81EA\u5343\u95EE\u3002\u70ED\u91CF\u6309\u5DF2\u5339\u914D\u7684\u6570\u636E\u8BA1\u7B97\uFF0C\u6A21\u578B\u7ED9\u51FA\u7684\u8425\u517B\u6570\u5B57\u4E0D\u4F1A\u88AB\u91C7\u7528\u3002";
+  const notice = stub ? "\u672A\u914D\u7F6E DASHSCOPE_API_KEY\uFF0C\u8FD9\u6B21\u7531\u6D4B\u8BD5\u66FF\u8EAB\u62C6\u5206\u98DF\u7269\u548C\u5206\u91CF\u3002\u8BF7\u6838\u5BF9\u540E\u518D\u4FDD\u5B58\u3002" : "\u98DF\u7269\u540D\u548C\u5206\u91CF\u6765\u81EA\u5927\u6A21\u578B\u3002\u70ED\u91CF\u6309\u5DF2\u5339\u914D\u7684\u6570\u636E\u8BA1\u7B97\uFF0C\u6A21\u578B\u7ED9\u51FA\u7684\u8425\u517B\u6570\u5B57\u4E0D\u4F1A\u88AB\u91C7\u7528\u3002";
   return {
     requestId,
     mode: "meal_draft",
@@ -2833,7 +2871,8 @@ async function buildReport(body, env, source, requestId) {
       const content = await qwenChat({
         config,
         model: config.textModel,
-        messages: [{ role: "system", content: '\u4F60\u53EA\u6839\u636E\u7ED9\u5B9A\u7684\u5408\u8BA1\u5199\u4E00\u4E24\u53E5\u4E2D\u6587\u5EFA\u8BAE\u3002\u4E0D\u8981\u65B0\u589E\u6570\u5B57\u3001\u98DF\u7269\u6216\u83DC\u8C31\u3002\u4E0D\u8981\u9F13\u52B1\u6781\u7AEF\u5C11\u5403\uFF0C\u4E0D\u8981\u63D0\u4F9B\u6CBB\u7597\u65B9\u6848\u3002\u53EA\u8FD4\u56DE JSON\uFF1A{"advice":"..."}' }, { role: "user", content: JSON.stringify({ totals, targets: targets.confirmed ? targets : null, caution }) }]
+        messages: [{ role: "system", content: '\u4F60\u53EA\u6839\u636E\u7ED9\u5B9A\u7684\u5408\u8BA1\u5199\u4E00\u4E24\u53E5\u4E2D\u6587\u5EFA\u8BAE\u3002\u4E0D\u8981\u65B0\u589E\u6570\u5B57\u3001\u98DF\u7269\u6216\u83DC\u8C31\u3002\u4E0D\u8981\u9F13\u52B1\u6781\u7AEF\u5C11\u5403\uFF0C\u4E0D\u8981\u63D0\u4F9B\u6CBB\u7597\u65B9\u6848\u3002\u53EA\u8FD4\u56DE JSON\uFF1A{"advice":"..."}' }, { role: "user", content: JSON.stringify({ totals, targets: targets.confirmed ? targets : null, caution }) }],
+        fetchImpl: env.qwenFetch
       });
       const checked = sanitizeAdvice(extractJson(content).advice, allowed);
       advice = checked.text;
@@ -2884,7 +2923,8 @@ async function buildRecommendation(body, env, source, requestId) {
       const content = await qwenChat({
         config,
         model: config.textModel,
-        messages: [{ role: "system", content: '\u98DF\u8C31\u5DF2\u7ECF\u9009\u5B9A\u3002\u53EA\u7528\u4E00\u4E24\u53E5\u8BDD\u89E3\u91CA\u4E3A\u4EC0\u4E48\u662F\u8FD9\u9053\u3002\u4E0D\u8981\u63D0\u5230\u5176\u4ED6\u83DC\u540D\uFF0C\u4E0D\u8981\u7F16\u9020\u505A\u6CD5\u6216\u8425\u517B\u6570\u5B57\u3002\u53EA\u8FD4\u56DE JSON\uFF1A{"reason":"..."}' }, { role: "user", content: JSON.stringify({ recipe: { id: recipe.id, name: recipe.name, nutrition: recipe.nutrition }, totals, targets: targets.confirmed ? targets : null, caution }) }]
+        messages: [{ role: "system", content: '\u98DF\u8C31\u5DF2\u7ECF\u9009\u5B9A\u3002\u53EA\u7528\u4E00\u4E24\u53E5\u8BDD\u89E3\u91CA\u4E3A\u4EC0\u4E48\u662F\u8FD9\u9053\u3002\u4E0D\u8981\u63D0\u5230\u5176\u4ED6\u83DC\u540D\uFF0C\u4E0D\u8981\u7F16\u9020\u505A\u6CD5\u6216\u8425\u517B\u6570\u5B57\u3002\u53EA\u8FD4\u56DE JSON\uFF1A{"reason":"..."}' }, { role: "user", content: JSON.stringify({ recipe: { id: recipe.id, name: recipe.name, nutrition: recipe.nutrition }, totals, targets: targets.confirmed ? targets : null, caution }) }],
+        fetchImpl: env.qwenFetch
       });
       const checked = sanitizeReason(extractJson(content).reason, recipe, source.recipes, allowed);
       reason = checked.text;
@@ -2908,7 +2948,14 @@ async function buildRecommendation(body, env, source, requestId) {
 }
 function mealMessages({ text, image, source }) {
   const names = source.foods.map((food) => food.aliases.length ? `${food.name}\uFF08${food.aliases.join("\u3001")}\uFF09` : food.name).join("\u3001");
-  const instruction = `\u53EA\u628A\u9910\u98DF\u62C6\u6210\u98DF\u7269\u540D\u79F0\u3001\u5206\u91CF\u8BF4\u6CD5\u548C\u4F30\u8BA1\u514B\u6570\u3002\u4E0D\u8981\u8F93\u51FA\u70ED\u91CF\u6216\u8425\u517B\u7D20\u3002\u540D\u79F0\u5C3D\u91CF\u6CBF\u7528\u8FD9\u4E9B\u98DF\u7269\uFF1A${names}\u3002\u5BF9\u4E0D\u4E0A\u5C31\u4FDD\u7559\u770B\u5230\u7684\u540D\u5B57\u3002\u53EA\u8FD4\u56DE JSON\uFF1A{"items":[{"name":"","portionLabel":"","grams":0}]}`;
+  const instruction = [
+    "\u628A\u8FD9\u4E00\u9910\u5206\u6210\u82E5\u5E72\u9879\uFF0C\u6BCF\u9879\u53EA\u8981\u540D\u79F0\u3001\u5206\u91CF\u8BF4\u6CD5\u548C\u4F30\u8BA1\u514B\u6570\u3002\u4E0D\u8981\u8F93\u51FA\u70ED\u91CF\u6216\u8425\u517B\u7D20\u3002",
+    "\u7528\u6237\u8BF4\u7684\u662F\u4E00\u9053\u83DC\u65F6\uFF0C\u4FDD\u7559\u8FD9\u9053\u83DC\u7684\u6574\u4F53\u540D\u79F0\uFF0C\u4E0D\u8981\u62C6\u6210\u539F\u6599\u3002\u4F8B\u5982\u300C\u756A\u8304\u7092\u86CB\u300D\u300C\u7EA2\u70E7\u8089\u300D\u300C\u725B\u8089\u9762\u300D\u5404\u7B97\u4E00\u9879\uFF0C\u4E0D\u8981\u62C6\u6210\u756A\u8304\u3001\u9E21\u86CB\u3001\u6CB9\u6216\u9762\u6761\u3002",
+    "\u53EA\u6709\u7528\u6237\u660E\u786E\u5206\u5F00\u5217\u51FA\u7684\u98DF\u6750\uFF0C\u624D\u5404\u81EA\u6210\u9879\u3002\u4F8B\u5982\u300C\u7C73\u996D\u3001\u9752\u83DC\u548C\u9E21\u817F\u300D\u662F\u4E09\u9879\u3002",
+    "\u7167\u7247\u91CC\u786E\u5B9E\u5206\u5F00\u7684\u98DF\u7269\u5404\u81EA\u6210\u9879\u3002\u5DF2\u7ECF\u7528\u6574\u9053\u83DC\u8868\u793A\u7684\uFF0C\u4E0D\u8981\u518D\u628A\u8FD9\u9053\u83DC\u7684\u539F\u6599\u91CD\u590D\u5217\u51FA\u6765\uFF0C\u4E5F\u4E0D\u8981\u53C8\u5199\u83DC\u540D\u53C8\u5199\u539F\u6599\u3002",
+    `\u80FD\u5BF9\u4E0A\u8FD9\u4E9B\u540D\u5B57\u5C31\u7528\u8868\u91CC\u7684\u53EB\u6CD5\uFF1A${names}\u3002\u5BF9\u4E0D\u4E0A\u5C31\u4FDD\u7559\u7528\u6237\u8BF4\u7684\u6216\u7167\u7247\u91CC\u770B\u5230\u7684\u540D\u5B57\u3002\u4E0D\u8981\u4E3A\u4E86\u51D1\u8868\u91CC\u7684\u539F\u6599\u628A\u4E00\u9053\u83DC\u62C6\u5F00\u3002`,
+    '\u53EA\u8FD4\u56DE JSON\uFF1A{"items":[{"name":"","portionLabel":"","grams":0}]}'
+  ].join("");
   if (!image) return [{ role: "system", content: instruction }, { role: "user", content: text }];
   return [{ role: "system", content: instruction }, { role: "user", content: [{ type: "image_url", image_url: { url: image } }, { type: "text", text: text || "\u8BF7\u8BC6\u522B\u8FD9\u5F20\u9910\u98DF\u7167\u7247\u91CC\u7684\u98DF\u7269\u548C\u5927\u81F4\u514B\u6570\u3002" }] }];
 }

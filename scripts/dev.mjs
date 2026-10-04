@@ -26,6 +26,8 @@ const env = {
   DASHSCOPE_BASE_URL: process.env.DASHSCOPE_BASE_URL || '',
   DASHSCOPE_VISION_MODEL: process.env.DASHSCOPE_VISION_MODEL || '',
   DASHSCOPE_TEXT_MODEL: process.env.DASHSCOPE_TEXT_MODEL || '',
+  DASHSCOPE_ENABLE_THINKING: process.env.DASHSCOPE_ENABLE_THINKING || '',
+  DASHSCOPE_TIMEOUT_MS: process.env.DASHSCOPE_TIMEOUT_MS || '',
   BOOHEE_API_KEY: process.env.BOOHEE_API_KEY || '',
   BOOHEE_BASE_URL: process.env.BOOHEE_BASE_URL || '',
   NUTRITION_FOODS_CSV: await readFile('data/nutrition/foods.csv', 'utf8'),

@@ -79,6 +79,7 @@ export async function recognizeMeal(body, env, source, requestId) {
       config,
       model: image ? config.visionModel : config.textModel,
       messages: mealMessages({ text, image, source }),
+      fetchImpl: env.qwenFetch,
     });
     parsed = readModelItems(extractJson(content));
   }
@@ -88,7 +89,7 @@ export async function recognizeMeal(body, env, source, requestId) {
   const lookedUp = items.some(item => item.nutrition?.source === '薄荷健康' || item.candidates?.some(candidate => String(candidate.id).startsWith('boohee:')));
   const notice = stub
     ? '未配置 DASHSCOPE_API_KEY，这次由测试替身拆分食物和分量。请核对后再保存。'
-    : '食物名和分量来自千问。热量按已匹配的数据计算，模型给出的营养数字不会被采用。';
+    : '食物名和分量来自大模型。热量按已匹配的数据计算，模型给出的营养数字不会被采用。';
   return {
     requestId,
     mode: 'meal_draft',
@@ -142,6 +143,7 @@ export async function buildReport(body, env, source, requestId) {
         config,
         model: config.textModel,
         messages: [{ role: 'system', content: '你只根据给定的合计写一两句中文建议。不要新增数字、食物或菜谱。不要鼓励极端少吃，不要提供治疗方案。只返回 JSON：{"advice":"..."}' }, { role: 'user', content: JSON.stringify({ totals, targets: targets.confirmed ? targets : null, caution }) }],
+        fetchImpl: env.qwenFetch,
       });
       const checked = sanitizeAdvice(extractJson(content).advice, allowed);
       advice = checked.text;
@@ -194,6 +196,7 @@ export async function buildRecommendation(body, env, source, requestId) {
         config,
         model: config.textModel,
         messages: [{ role: 'system', content: '食谱已经选定。只用一两句话解释为什么是这道。不要提到其他菜名，不要编造做法或营养数字。只返回 JSON：{"reason":"..."}' }, { role: 'user', content: JSON.stringify({ recipe: { id: recipe.id, name: recipe.name, nutrition: recipe.nutrition }, totals, targets: targets.confirmed ? targets : null, caution }) }],
+        fetchImpl: env.qwenFetch,
       });
       const checked = sanitizeReason(extractJson(content).reason, recipe, source.recipes, allowed);
       reason = checked.text;
@@ -216,9 +219,16 @@ export async function buildRecommendation(body, env, source, requestId) {
   };
 }
 
-function mealMessages({ text, image, source }) {
+export function mealMessages({ text, image, source }) {
   const names = source.foods.map(food => food.aliases.length ? `${food.name}（${food.aliases.join('、')}）` : food.name).join('、');
-  const instruction = `只把餐食拆成食物名称、分量说法和估计克数。不要输出热量或营养素。名称尽量沿用这些食物：${names}。对不上就保留看到的名字。只返回 JSON：{"items":[{"name":"","portionLabel":"","grams":0}]}`;
+  const instruction = [
+    '把这一餐分成若干项，每项只要名称、分量说法和估计克数。不要输出热量或营养素。',
+    '用户说的是一道菜时，保留这道菜的整体名称，不要拆成原料。例如「番茄炒蛋」「红烧肉」「牛肉面」各算一项，不要拆成番茄、鸡蛋、油或面条。',
+    '只有用户明确分开列出的食材，才各自成项。例如「米饭、青菜和鸡腿」是三项。',
+    '照片里确实分开的食物各自成项。已经用整道菜表示的，不要再把这道菜的原料重复列出来，也不要又写菜名又写原料。',
+    `能对上这些名字就用表里的叫法：${names}。对不上就保留用户说的或照片里看到的名字。不要为了凑表里的原料把一道菜拆开。`,
+    '只返回 JSON：{"items":[{"name":"","portionLabel":"","grams":0}]}',
+  ].join('');
   if (!image) return [{ role: 'system', content: instruction }, { role: 'user', content: text }];
   return [{ role: 'system', content: instruction }, { role: 'user', content: [{ type: 'image_url', image_url: { url: image } }, { type: 'text', text: text || '请识别这张餐食照片里的食物和大致克数。' }] }];
 }
