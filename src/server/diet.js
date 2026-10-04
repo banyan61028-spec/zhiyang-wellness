@@ -1,7 +1,7 @@
 import fallbackCatalog from '../shared/nutrition/catalog.json' with { type: 'json' };
 import { parseNutritionFiles } from '../shared/nutrition/parse.js';
 import { createNutritionSource, publicCatalog } from '../shared/nutrition/source.js';
-import { resolveMealItem } from '../shared/nutrition/match.js';
+import { isVagueDishName, resolveMealItem } from '../shared/nutrition/match.js';
 import { calculateNutrition, sumNutrition } from '../shared/nutrition/calculate.js';
 import { booheeCodeFromId } from '../shared/nutrition/boohee.js';
 import { booheeFromEnv } from './boohee.js';
@@ -244,13 +244,17 @@ async function resolveRecordedItem(raw, source, boohee, options = {}) {
   const code = booheeCodeFromId(raw?.foodId);
   if (options.trustFoodId && code) return resolveBooheeCode(raw, boohee, code);
   const local = resolveMealItem(raw, source, options);
-  if (!(options.allowSearch && local.status === 'unestimated' && local.reason === 'no_match')) return local;
+  if (isVagueDishName(local.inputName) || isVagueDishName(local.name)) {
+    return { ...local, status: 'unestimated', reason: 'too_vague', foodId: local.foodId || null, nutrition: null, candidates: [] };
+  }
+  const canSearch = options.allowSearch && local.status === 'unestimated' && (local.reason === 'no_match' || local.reason === 'not_calculable');
+  if (!canSearch) return local;
   const outcome = await boohee.matchName(local.inputName);
   if (outcome.status === 'matched') return withBooheeFood(local, outcome.food, outcome.candidates);
   if (outcome.status === 'ambiguous') return { ...local, status: 'ambiguous', reason: 'ambiguous', foodId: null, nutrition: null, candidates: outcome.candidates };
-  if (outcome.status === 'no_key') return { ...local, reason: 'no_key' };
-  if (outcome.status === 'failed') return { ...local, reason: 'lookup_failed' };
-  return local;
+  if (outcome.status === 'no_key') return { ...local, reason: 'no_key', nutrition: null };
+  if (outcome.status === 'failed') return { ...local, reason: 'lookup_failed', nutrition: null };
+  return { ...local, reason: 'no_match', nutrition: null };
 }
 
 async function resolveBooheeCode(raw, boohee, code) {

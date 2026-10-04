@@ -96,10 +96,11 @@ test('local foods are not sent to boohee, and missing key, empty result, http fa
     fetch: async () => { calls += 1; return Response.json({ code: 0, data: { foods: fanqie } }); },
   });
   const local = await dispatchDiet('/api/diet/recognize', { requestId: crypto.randomUUID(), text: '一个鸡蛋加牛肉面' }, { booheeClient: noisy }, source);
-  assert.equal(calls, 0);
+  assert.equal(calls, 1);
   assert.equal(local.items.find(item => item.foodId === 'egg-whole').nutrition.kcal, 72);
-  assert.equal(local.items.find(item => item.name === '牛肉面').nutrition, null);
-  assert.equal(local.items.find(item => item.name === '牛肉面').reason, 'not_calculable');
+  const noodle = local.items.find(item => item.inputName === '牛肉面');
+  assert.equal(noodle.nutrition, null);
+  assert.equal(noodle.reason, 'no_match');
 
   const logs = [];
   const missingKey = createBooheeClient({ apiKey: '', log: entry => logs.push(entry), fetch: async () => { throw new Error('should not call'); } });
@@ -182,4 +183,57 @@ test('local foods are not sent to boohee, and missing key, empty result, http fa
   assert.equal(checked.items[0].nutrition.protein, 5);
   assert.equal(checked.items[0].nutrition.source, '薄荷健康');
   assert.equal(JSON.stringify(detailLogs).includes('番茄炒蛋'), false);
+});
+
+test('non-calculable dishes are looked up live, and vague names are not sent', async () => {
+  const keywords = [];
+  const client = createBooheeClient({
+    apiKey: 'test-key',
+    fetch: async (url) => {
+      const keyword = new URL(String(url)).searchParams.get('keyword');
+      keywords.push(keyword);
+      if (keyword === '牛肉面') {
+        return Response.json({ code: 0, data: { foods: [
+          { code: 'niuroumian', name: '牛肉面', calories: 140, protein: 7, fat: 4, carbohydrate: 18 },
+          { code: 'branded-noodle', name: '某店 牛肉面', calories: 180, protein: 6, fat: 6, carbohydrate: 20 },
+        ] } });
+      }
+      if (keyword === '馒头') return Response.json({ code: 0, data: { foods: [] } });
+      if (keyword === '饺子') return new Response('no', { status: 500 });
+      throw new Error(`unexpected keyword ${keyword}`);
+    },
+  });
+  const env = { booheeClient: client };
+  const noodle = await dispatchDiet('/api/diet/recognize', { requestId: crypto.randomUUID(), text: '中午一碗牛肉面' }, env, source);
+  const item = noodle.items[0];
+  assert.equal(item.foodId, 'boohee:niuroumian');
+  assert.equal(item.grams, 450);
+  assert.equal(item.nutrition.kcal, 630);
+  assert.equal(item.nutrition.protein, 32);
+  assert.equal(item.nutrition.source, '薄荷健康');
+
+  const bun = await dispatchDiet('/api/diet/recognize', { requestId: crypto.randomUUID(), text: '一个馒头' }, env, source);
+  assert.equal(bun.items[0].name, '馒头');
+  assert.equal(bun.items[0].nutrition, null);
+  assert.equal(bun.items[0].reason, 'no_match');
+
+  const dumpling = await dispatchDiet('/api/diet/recognize', { requestId: crypto.randomUUID(), text: '饺子' }, env, source);
+  assert.equal(dumpling.items[0].nutrition, null);
+  assert.equal(dumpling.items[0].reason, 'lookup_failed');
+
+  for (const text of ['外卖套餐', '套餐', '外卖']) {
+    const vague = await dispatchDiet('/api/diet/recognize', { requestId: crypto.randomUUID(), text }, env, source);
+    assert.equal(vague.items[0].reason, 'too_vague');
+    assert.equal(vague.items[0].nutrition, null);
+  }
+  assert.deepEqual(keywords, ['牛肉面', '馒头', '饺子']);
+
+  const beforeReport = keywords.length;
+  const report = await buildReport({
+    requestId: crypto.randomUUID(),
+    meals: [{ items: [{ name: '牛肉面', inputName: '牛肉面', foodId: 'beef-noodle', grams: 450, status: 'unestimated' }] }],
+  }, env, source, crypto.randomUUID());
+  assert.equal(report.totals.kcal, 0);
+  assert.equal(report.totals.counted, 0);
+  assert.equal(keywords.length, beforeReport);
 });

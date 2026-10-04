@@ -97,7 +97,7 @@ export function createDietPages(ctx) {
 
   function library() {
     if (!catalog) return `${heading('食谱', '下一餐只从这里选。')}<div class="diet-page">${catalogError ? `<div class="storage-error">${ctx.esc(catalogError)}</div>` : '<p class="empty-copy">正在读取食谱。</p>'}</div>`;
-    return `${heading('食谱', '每道菜的热量都由原料克数计算，不是手写的大约值。')}<div class="diet-page"><p class="library-note">正式食谱整理中。</p><div class="food-grid diet-library">${catalog.recipes.map(recipe => `<button class="recipe-tile diet-recipe" data-diet-action="recipe" data-diet-id="${ctx.esc(recipe.id)}"><div class="recipe-type-art"><span>${mealNames[recipe.meal] || '家常'}</span></div><div class="recipe-tile-body">${recipe.example ? '<span class="example-mark">示例食谱</span>' : ''}<h3>${ctx.esc(recipe.name)}</h3><p class="num">约 ${recipe.nutrition.kcal} 千卡</p>${recipe.blockedByHerbs ? '<span class="chip chip-quiet">暂不主动推荐</span>' : ''}</div></button>`).join('')}</div></div>`;
+    return `${heading('食谱', '每道菜的热量都由原料克数计算，不是手写的大约值。')}<div class="diet-page"><p class="library-note">这些是待审核的家常食谱草稿。热量按食物表里的原料计算，正式采用前还会再改。</p><div class="food-grid diet-library">${catalog.recipes.map(recipe => `<button class="recipe-tile diet-recipe" data-diet-action="recipe" data-diet-id="${ctx.esc(recipe.id)}"><div class="recipe-type-art"><span>${mealNames[recipe.meal] || '家常'}</span></div><div class="recipe-tile-body">${recipe.example ? '<span class="example-mark">待审核</span>' : ''}<h3>${ctx.esc(recipe.name)}</h3><p class="num">约 ${recipe.nutrition.kcal} 千卡</p>${recipe.blockedByHerbs ? '<span class="chip chip-quiet">暂不主动推荐</span>' : ''}</div></button>`).join('')}</div></div>`;
   }
 
   function settings() {
@@ -360,7 +360,7 @@ export function createDietPages(ctx) {
     const reason = recommendation.reasonKept && recommendation.reason
       ? `<p class="advice-line">${ctx.esc(recommendation.reason)}</p>`
       : `<p class="small muted">${ctx.esc(recommendation.reasonNote || '推荐理由没有通过核对，只保留食谱库里的这道菜。')}</p>`;
-    return `<article class="recipe-feature"><div class="recipe-feature-art"><span>${mealNames[recipe.meal] || '家常'}</span>${recipe.example ? '<span class="example-mark">示例食谱</span>' : ''}</div><div class="recipe-feature-body"><p class="eyebrow">下一餐可以从这道开始</p><h2>${ctx.esc(recipe.name)}</h2><p class="food-kcal"><span class="num">${recipe.nutrition.kcal}</span><small>约千卡</small></p>${macroPills(recipe.nutrition)}${reason}<div class="button-row"><button class="primary-button" data-diet-action="recipe" data-diet-id="${ctx.esc(recipe.id)}">查看做法</button><button class="outline-button" data-diet-action="another">换一道库里的菜</button></div></div></article>`;
+    return `<article class="recipe-feature"><div class="recipe-feature-art"><span>${mealNames[recipe.meal] || '家常'}</span>${recipe.example ? '<span class="example-mark">待审核</span>' : ''}</div><div class="recipe-feature-body"><p class="eyebrow">下一餐可以从这道开始</p><h2>${ctx.esc(recipe.name)}</h2><p class="food-kcal"><span class="num">${recipe.nutrition.kcal}</span><small>约千卡</small></p>${macroPills(recipe.nutrition)}${reason}<div class="button-row"><button class="primary-button" data-diet-action="recipe" data-diet-id="${ctx.esc(recipe.id)}">查看做法</button><button class="outline-button" data-diet-action="another">换一道库里的菜</button></div></div></article>`;
   }
 
   function mealCard(meal) {
@@ -373,7 +373,7 @@ export function createDietPages(ctx) {
     const recipe = catalog?.recipes.find(item => item.id === id) || recommendation?.recipe;
     if (!recipe || recipe.id !== id && recommendation?.recipe?.id !== id) return;
     const chosen = recipe.id === id ? recipe : recommendation.recipe;
-    ctx.openDetail(`<div class="detail-body">${chosen.example ? '<span class="example-mark example-inline">示例食谱</span>' : '<span class="chip">食谱</span>'}<h2>${ctx.esc(chosen.name)}</h2><p class="small muted">${mealNames[chosen.meal] || '家常'}</p><p class="food-kcal"><span class="num">${chosen.nutrition.kcal}</span><small>约千卡</small></p>${macroPills(chosen.nutrition)}<h3>原料和克数</h3><div class="ingredient-list">${chosen.ingredients.map(item => `<span>${ctx.esc(item.name)} <span class="num">${item.grams}</span> 克</span>`).join('')}</div><h3>做法</h3><ol class="step-list">${chosen.steps.map(step => `<li>${ctx.esc(step)}</li>`).join('')}</ol><p class="gentle-note">${ctx.esc(chosen.note || '')} ${ctx.esc(chosen.sourceNote || '')}</p>${chosen.avoid?.includes('kidney_high_protein') ? '<p class="boundary-note">这道菜标记为蛋白质较高，肾病用户不会因为蛋白质缺口被推荐它。</p>' : ''}</div>`, '食谱');
+    ctx.openDetail(`<div class="detail-body">${chosen.example ? '<span class="example-mark example-inline">待审核</span>' : '<span class="chip">食谱</span>'}<h2>${ctx.esc(chosen.name)}</h2><p class="small muted">${mealNames[chosen.meal] || '家常'}</p><p class="food-kcal"><span class="num">${chosen.nutrition.kcal}</span><small>约千卡</small></p>${macroPills(chosen.nutrition)}<h3>原料和克数</h3><div class="ingredient-list">${chosen.ingredients.map(item => `<span>${ctx.esc(item.name)} <span class="num">${item.grams}</span> 克</span>`).join('')}</div><h3>做法</h3><ol class="step-list">${chosen.steps.map(step => `<li>${ctx.esc(step)}</li>`).join('')}</ol><p class="gentle-note">${ctx.esc(chosen.note || '')} ${ctx.esc(chosen.sourceNote || '')}</p>${chosen.avoid?.includes('kidney_high_protein') ? '<p class="boundary-note">这道菜标记为蛋白质较高，肾病用户不会因为蛋白质缺口被推荐它。</p>' : ''}</div>`, '食谱');
   }
 
   async function saveTargets(form) {
@@ -419,13 +419,14 @@ function heading(title, sub) {
   return `<div class="page-heading diet-heading"><div><p class="eyebrow">知养</p><h1>${title}</h1><p>${sub}</p></div><div class="date-stamp"><strong class="num">${String(now.getMonth() + 1).padStart(2, '0')}<span>/${String(now.getDate()).padStart(2, '0')}</span></strong><span>今天 · 记在本机</span></div></div>`;
 }
 function privacy() {
-  return '<p class="privacy-banner">你输入的文字和上传的照片会发给阿里云百炼的千问，用来识别食物和写一两句建议。没有配置千问密钥时使用本机测试替身，不会外发。对不上本地食物表的食物名称会发给薄荷健康开放平台查询营养数据；没有配置薄荷密钥或查询失败时，该项标为无法估算。本应用不在服务器上保存照片和饮食正文。记录只留在这台设备的浏览器里。</p>';
+  return '<p class="privacy-banner">你输入的文字和上传的照片会发给阿里云百炼的千问，用来识别食物和写一两句建议。没有配置千问密钥时使用本机测试替身，不会外发。对不上本地可计算食物的名称，以及牛肉面、馒头、饺子这类本地标为不可计算的具体菜名，会发给薄荷健康开放平台查询营养数据。「外卖套餐」这种太笼统的说法不会发送。没有配置薄荷密钥或查询失败时，该项标为无法估算。本应用不在服务器上保存照片和饮食正文。记录只留在这台设备的浏览器里。</p>';
 }
 function urgentBanner(result) {
   return `<div class="urgent-help" role="alert"><strong>请立即寻求专业帮助</strong><p>${result.text}</p></div>`;
 }
 function unestimatedCopy(reason) {
-  if (reason === 'no_key') return '本地食物表没有这项。没有配置薄荷开放平台，所以无法估算。';
+  if (reason === 'too_vague') return '这个说法太笼统，拆成具体的菜再记，才能估算。例如写成「米饭、青菜和鸡腿」。';
+  if (reason === 'no_key') return '没有可用的本地营养数据，也没有配置薄荷开放平台，所以无法估算。';
   if (reason === 'lookup_failed') return '薄荷查询没有成功，所以无法估算。不会填一个看起来合理的热量。';
   if (reason === 'not_calculable') return '这道在本地食物表里标为不可计算。不会填一个看起来合理的热量。';
   return '这道暂时无法估算。可以改成食物表或上面列出的一项，或保留为无法估算。不会填一个看起来合理的热量。';

@@ -26,6 +26,9 @@ const requestId = () => crypto.randomUUID();
 test('example tables parse, keep sources, and do not invent recipe calories', () => {
   assert.deepEqual(parsed.errors, []);
   assert.ok(parsed.catalog.foods.length >= 30);
+  assert.equal(source.recipes.length, 20);
+  assert.equal(source.getRecipe('egg-rice'), null);
+  assert.ok(source.recipes.every(recipe => recipe.example === true && recipe.sourceNote.includes('待审核')));
   assert.ok(parsed.catalog.foods.every(food => food.example === true && food.sourceNote));
   assert.ok(parsed.catalog.foods.filter(food => food.calculable).every(food => food.source && food.per100g));
   assert.ok(parsed.catalog.foods.filter(food => !food.calculable).every(food => food.per100g == null));
@@ -128,7 +131,7 @@ test('advice keeps only numbers from the calculation and recommendation stays in
   });
   assert.equal(blocked.getRecipe('bad-soup').blockedByHerbs, true);
   assert.deepEqual(chooseRecipes({ recipes: blocked.recipes, totals, targets, caution: {}, excludeIds: [] }), []);
-  const dropped = sanitizeReason('换成番茄鸡蛋盖饭吧', source.getRecipe('egg-rice'), source.recipes, [1]);
+  const dropped = sanitizeReason('换成番茄鸡蛋盖饭吧', source.getRecipe('millet-egg'), source.recipes, [1]);
   assert.equal(dropped.kept, false);
 });
 
@@ -142,6 +145,7 @@ test('diet API urgent path has no meal, and a normal sentence can be logged', as
   const draft = await response.json();
   assert.equal(draft.stub, true);
   assert.equal(draft.items.find(item => item.name === '牛肉面').nutrition, null);
+  assert.equal(draft.items.find(item => item.name === '牛肉面').reason, 'no_key');
   assert.equal(draft.items.find(item => item.foodId === 'egg-whole').nutrition.kcal, 72);
   const empty = await buildReport({ requestId: requestId(), meals: [] }, {}, source, requestId());
   assert.equal(empty.mode, 'empty');

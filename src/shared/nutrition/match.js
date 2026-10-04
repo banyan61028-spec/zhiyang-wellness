@@ -1,7 +1,13 @@
 import { calculateNutrition } from './calculate.js';
 
+const VAGUE_DISH_NAMES = new Set(['外卖套餐', '套餐', '外卖']);
+
 export function normalizeFoodName(value) {
   return String(value ?? '').normalize('NFKC').trim().toLowerCase().replace(/\s+/g, '').replace(/[，。、,.!！?？·]/g, '');
+}
+
+export function isVagueDishName(name) {
+  return VAGUE_DISH_NAMES.has(normalizeFoodName(name));
 }
 
 export function matchFood(name, source) {
