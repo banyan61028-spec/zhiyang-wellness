@@ -2,7 +2,9 @@ import fallbackCatalog from '../shared/nutrition/catalog.json' with { type: 'jso
 import { parseNutritionFiles } from '../shared/nutrition/parse.js';
 import { createNutritionSource, publicCatalog } from '../shared/nutrition/source.js';
 import { resolveMealItem } from '../shared/nutrition/match.js';
-import { sumNutrition } from '../shared/nutrition/calculate.js';
+import { calculateNutrition, sumNutrition } from '../shared/nutrition/calculate.js';
+import { booheeCodeFromId } from '../shared/nutrition/boohee.js';
+import { booheeFromEnv } from './boohee.js';
 import { chooseRecipes, programReason } from '../shared/nutrition/recommend.js';
 import { collectAllowedNumbers, inferCaution, programAdvice, sanitizeAdvice, sanitizeReason } from '../shared/nutrition/advice.js';
 import { cleanDietSettings } from '../shared/meals.js';
@@ -43,7 +45,7 @@ export async function handleDiet(request, env, url) {
   try {
     if (loaded.errors.length) return json({ error: '食物数据未通过校验', details: loaded.errors }, 500);
     const result = await dispatchDiet(url.pathname, body, env, loaded.source);
-    assertDietResult(result, loaded.source);
+    await assertDietResult(result, loaded.source, booheeFromEnv(env));
     return json(result);
   } catch (error) {
     if (error.message === 'size') return json({ error: '请求内容过长' }, 413);
@@ -55,7 +57,7 @@ export async function handleDiet(request, env, url) {
 export async function dispatchDiet(pathname, body, env, source) {
   const requestId = cleanId(body?.requestId);
   if (pathname === '/api/diet/recognize') return recognizeMeal(body, env, source, requestId);
-  if (pathname === '/api/diet/calculate') return calculateItems(body, source, requestId);
+  if (pathname === '/api/diet/calculate') return calculateItems(body, source, requestId, env);
   if (pathname === '/api/diet/report') return buildReport(body, env, source, requestId);
   if (pathname === '/api/diet/recommend') return buildRecommendation(body, env, source, requestId);
   throw new Error('路径无效');
@@ -80,36 +82,42 @@ export async function recognizeMeal(body, env, source, requestId) {
     });
     parsed = readModelItems(extractJson(content));
   }
-  const items = parsed.map(item => resolveMealItem(item, source)).filter(item => item.inputName || item.name);
+  const boohee = booheeFromEnv(env);
+  const items = (await Promise.all(parsed.map(item => resolveRecordedItem(item, source, boohee, { allowSearch: true })))).filter(item => item.inputName || item.name);
   if (!items.length) throw new Error('没有识别出食物');
+  const lookedUp = items.some(item => item.nutrition?.source === '薄荷健康' || item.candidates?.some(candidate => String(candidate.id).startsWith('boohee:')));
+  const notice = stub
+    ? '未配置 DASHSCOPE_API_KEY，这次由测试替身拆分食物和分量。请核对后再保存。'
+    : '食物名和分量来自千问。热量按已匹配的数据计算，模型给出的营养数字不会被采用。';
   return {
     requestId,
     mode: 'meal_draft',
     stub,
-    notice: stub ? '未配置 DASHSCOPE_API_KEY，这次由测试替身拆分食物和分量。请核对后再保存。' : '食物名和分量来自千问。热量按食物表计算，模型给出的营养数字不会被采用。',
+    notice: lookedUp ? `${notice} 本地表没有的食物名称已发给薄荷健康查询。` : notice,
     items,
   };
 }
 
-export function calculateItems(body, source, requestId) {
+export async function calculateItems(body, source, requestId, env = {}) {
   const text = typeof body?.text === 'string' ? body.text : '';
   if (isExplicitUrgent(text)) return urgentOnly(requestId);
   if (!Array.isArray(body?.items) || body.items.length > 12) throw new Error('食物项无效');
-  const items = body.items.map(item => resolveMealItem({
+  const boohee = booheeFromEnv(env);
+  const items = await Promise.all(body.items.map(item => resolveRecordedItem({
     name: item?.name || item?.inputName,
     inputName: item?.inputName,
     foodId: item?.foodId,
     grams: item?.grams,
     portionLabel: item?.portionLabel,
     forceUnestimated: item?.forceUnestimated === true,
-  }, source, { trustFoodId: Boolean(item?.foodId) && item?.forceUnestimated !== true }));
+  }, source, boohee, { trustFoodId: Boolean(item?.foodId) && item?.forceUnestimated !== true, allowSearch: true })));
   return { requestId, mode: 'calculated', items };
 }
 
 export async function buildReport(body, env, source, requestId) {
   const texts = collectTexts(body);
   if (texts.some(isExplicitUrgent)) return urgentOnly(requestId);
-  const meals = recomputeMeals(body?.meals, source);
+  const meals = await recomputeMeals(body?.meals, source, booheeFromEnv(env));
   if (!meals.length) return { requestId, mode: 'empty', text: '今天还没有记录，所以不会生成一份报告。', totals: null, advice: '', adviceKept: false };
   const totals = sumNutrition(meals.flatMap(meal => meal.items));
   const targets = cleanTargets(body?.targets);
@@ -161,7 +169,7 @@ export async function buildReport(body, env, source, requestId) {
 export async function buildRecommendation(body, env, source, requestId) {
   const texts = collectTexts(body);
   if (texts.some(isExplicitUrgent)) return urgentOnly(requestId);
-  const meals = recomputeMeals(body?.meals, source);
+  const meals = await recomputeMeals(body?.meals, source, booheeFromEnv(env));
   const totals = sumNutrition(meals.flatMap(meal => meal.items));
   const targets = cleanTargets(body?.targets);
   const caution = inferCaution(texts, body?.flagsConfirmed === true ? body.flags : {});
@@ -215,18 +223,54 @@ function mealMessages({ text, image, source }) {
   return [{ role: 'system', content: instruction }, { role: 'user', content: [{ type: 'image_url', image_url: { url: image } }, { type: 'text', text: text || '请识别这张餐食照片里的食物和大致克数。' }] }];
 }
 
-function recomputeMeals(meals, source) {
+async function recomputeMeals(meals, source, boohee) {
   if (!Array.isArray(meals)) return [];
-  return meals.slice(0, 12).map(meal => {
-    const items = Array.isArray(meal?.items) ? meal.items.slice(0, 12).map(item => resolveMealItem({
+  const resolved = [];
+  for (const meal of meals.slice(0, 12)) {
+    const raws = Array.isArray(meal?.items) ? meal.items.slice(0, 12) : [];
+    const items = await Promise.all(raws.map(item => resolveRecordedItem({
       name: item?.name,
       inputName: item?.inputName,
       foodId: item?.status === 'matched' || item?.foodId ? item.foodId : '',
       grams: item?.grams,
       portionLabel: item?.portionLabel,
-    }, source, { trustFoodId: Boolean(item?.foodId) && item?.status !== 'unestimated' && item?.status !== 'ambiguous' })) : [];
-    return { items };
-  }).filter(meal => meal.items.length);
+    }, source, boohee, { trustFoodId: Boolean(item?.foodId) && item?.status !== 'unestimated' && item?.status !== 'ambiguous', allowSearch: false })));
+    if (items.length) resolved.push({ items });
+  }
+  return resolved;
+}
+
+async function resolveRecordedItem(raw, source, boohee, options = {}) {
+  const code = booheeCodeFromId(raw?.foodId);
+  if (options.trustFoodId && code) return resolveBooheeCode(raw, boohee, code);
+  const local = resolveMealItem(raw, source, options);
+  if (!(options.allowSearch && local.status === 'unestimated' && local.reason === 'no_match')) return local;
+  const outcome = await boohee.matchName(local.inputName);
+  if (outcome.status === 'matched') return withBooheeFood(local, outcome.food, outcome.candidates);
+  if (outcome.status === 'ambiguous') return { ...local, status: 'ambiguous', reason: 'ambiguous', foodId: null, nutrition: null, candidates: outcome.candidates };
+  if (outcome.status === 'no_key') return { ...local, reason: 'no_key' };
+  if (outcome.status === 'failed') return { ...local, reason: 'lookup_failed' };
+  return local;
+}
+
+async function resolveBooheeCode(raw, boohee, code) {
+  const found = await boohee.foodByCode(code);
+  const base = resolveMealItem({ ...raw, forceUnestimated: true }, { foods: [], getFood: () => null }, {});
+  if (found.status === 'ok') return withBooheeFood({ ...base, inputName: raw.inputName || raw.name || found.food.name, grams: numberGrams(raw.grams) || base.grams, portionLabel: raw.portionLabel || base.portionLabel }, found.food, []);
+  return { ...base, inputName: String(raw.inputName || raw.name || '').trim().slice(0, 40), name: String(raw.name || raw.inputName || '').trim().slice(0, 40) || base.name, reason: found.status === 'no_key' ? 'no_key' : 'lookup_failed' };
+}
+
+function withBooheeFood(local, food, candidates) {
+  let nutrition = null;
+  try { nutrition = calculateNutrition(food, local.grams); }
+  catch { nutrition = null; }
+  if (!nutrition) return { ...local, status: 'unestimated', reason: 'bad_grams', foodId: null, nutrition: null, candidates };
+  return { ...local, name: food.name, status: 'matched', reason: 'matched', foodId: food.id, nutrition, candidates };
+}
+
+function numberGrams(value) {
+  const grams = Number(value);
+  return Number.isFinite(grams) ? Math.round(grams) : null;
 }
 
 function publicRecipe(recipe, source) {
@@ -266,13 +310,13 @@ function urgentOnly(requestId) {
   return { ...urgentResponse(requestId), items: [], recipe: null, advice: '', planDraft: undefined };
 }
 
-export function assertDietResult(result, source) {
+export async function assertDietResult(result, source, boohee = booheeFromEnv({})) {
   if (!result || result.mode === 'urgent_help') {
     if (result?.text !== urgentText || result.items?.length || result.recipe || result.advice) throw new Error('紧急求助回复未通过校验');
     return result;
   }
   if (result.mode === 'meal_draft' || result.mode === 'calculated') {
-    for (const item of result.items) assertItem(item, source);
+    for (const item of result.items) await assertItem(item, source, boohee);
   }
   if (result.mode === 'recommendation' && result.recipe) {
     if (!source.getRecipe(result.recipe.id) || source.getRecipe(result.recipe.id).blockedByHerbs) throw new Error('推荐不在食谱库中');
@@ -282,10 +326,10 @@ export function assertDietResult(result, source) {
   return result;
 }
 
-function assertItem(item, source) {
+async function assertItem(item, source, boohee) {
   if (item.nutrition && item.status !== 'matched') throw new Error('无法估算的食物不能带热量');
   if (item.status !== 'matched') return;
-  const again = resolveMealItem({ name: item.name, foodId: item.foodId, grams: item.grams, portionLabel: item.portionLabel }, source, { trustFoodId: true });
+  const again = await resolveRecordedItem({ name: item.name, foodId: item.foodId, grams: item.grams, portionLabel: item.portionLabel }, source, boohee, { trustFoodId: true, allowSearch: false });
   if (!again.nutrition || again.nutrition.kcal !== item.nutrition.kcal || again.nutrition.protein !== item.nutrition.protein || again.nutrition.fat !== item.nutrition.fat || again.nutrition.carb !== item.nutrition.carb) {
     throw new Error('热量校验未通过');
   }

@@ -98,16 +98,21 @@ export function createDietPages(ctx) {
   function itemCard(item) {
     const food = catalog?.foods.find(entry => entry.id === item.foodId);
     const nutrition = item.nutrition;
-    return `<article class="food-item"><header><strong>${ctx.esc(item.name || item.inputName)}</strong>${item.inputName && item.inputName !== item.name ? `<span class="small muted">识别为 ${ctx.esc(item.inputName)}</span>` : ''}<span class="${nutrition ? 'tag' : 'unestimated'}">${nutrition ? '已匹配食物表' : '无法估算'}</span></header>${foodSelect(item)}<div class="portion-row" role="group" aria-label="修正分量"><button type="button" data-diet-action="portion" data-diet-item="${ctx.esc(item.clientId)}" data-diet-size="small" class="${item.portionLabel === '小' ? 'active' : ''}">小</button><button type="button" data-diet-action="portion" data-diet-item="${ctx.esc(item.clientId)}" data-diet-size="medium" class="${item.portionLabel === '中' ? 'active' : ''}">中</button><button type="button" data-diet-action="portion" data-diet-item="${ctx.esc(item.clientId)}" data-diet-size="large" class="${item.portionLabel === '大' ? 'active' : ''}">大</button><label>克数<input data-diet-grams="${ctx.esc(item.clientId)}" type="number" min="1" max="5000" value="${item.grams ?? ''}"></label></div>${nutrition ? `<p class="kcal-figure">约 ${nutrition.kcal} 千卡</p><p class="macro-row"><span>蛋白质 ${nutrition.protein} 克</span><span>脂肪 ${nutrition.fat} 克</span><span>碳水 ${nutrition.carb} 克</span></p><p class="small muted">来源：${ctx.esc(nutrition.source)}。${ctx.esc(nutrition.sourceNote)}</p>` : '<p class="unestimated">这道暂时无法估算。可以改成食物表里的一项，或保留为无法估算。不会填一个看起来合理的热量。</p>'}${food && !nutrition ? `<p class="small muted">${ctx.esc(food.sourceNote)}</p>` : ''}</article>`;
+    const tag = nutrition ? (nutrition.source === '薄荷健康' ? '薄荷健康' : '已匹配食物表') : '无法估算';
+    return `<article class="food-item"><header><strong>${ctx.esc(item.name || item.inputName)}</strong>${item.inputName && item.inputName !== item.name ? `<span class="small muted">识别为 ${ctx.esc(item.inputName)}</span>` : ''}<span class="${nutrition ? 'tag' : 'unestimated'}">${tag}</span></header>${foodSelect(item)}<div class="portion-row" role="group" aria-label="修正分量"><button type="button" data-diet-action="portion" data-diet-item="${ctx.esc(item.clientId)}" data-diet-size="small" class="${item.portionLabel === '小' ? 'active' : ''}">小</button><button type="button" data-diet-action="portion" data-diet-item="${ctx.esc(item.clientId)}" data-diet-size="medium" class="${item.portionLabel === '中' ? 'active' : ''}">中</button><button type="button" data-diet-action="portion" data-diet-item="${ctx.esc(item.clientId)}" data-diet-size="large" class="${item.portionLabel === '大' ? 'active' : ''}">大</button><label>克数<input data-diet-grams="${ctx.esc(item.clientId)}" type="number" min="1" max="5000" value="${item.grams ?? ''}"></label></div>${nutrition ? `<p class="kcal-figure">约 ${nutrition.kcal} 千卡</p><p class="macro-row"><span>蛋白质 ${nutrition.protein} 克</span><span>脂肪 ${nutrition.fat} 克</span><span>碳水 ${nutrition.carb} 克</span></p><p class="small muted">来源：${ctx.esc(nutrition.source)}。${ctx.esc(nutrition.sourceNote)}</p>` : `<p class="unestimated">${unestimatedCopy(item.reason)}</p>`}${food && !nutrition ? `<p class="small muted">${ctx.esc(food.sourceNote)}</p>` : ''}</article>`;
   }
 
   function foodSelect(item) {
     if (!catalog) return '';
-    const options = [{ id: '', name: '无法估算' }, ...catalog.foods.filter(food => food.calculable).map(food => ({ id: food.id, name: food.name }))];
-    if (item.status === 'ambiguous') {
-      return `<label class="form-label">请选择对应的食物<select data-diet-food="${ctx.esc(item.clientId)}"><option value="">请选择</option>${item.candidates.map(candidate => `<option value="${ctx.esc(candidate.id)}">${ctx.esc(candidate.name)}</option>`).join('')}</select></label>`;
-    }
-    return `<label class="form-label">改食物<select data-diet-food="${ctx.esc(item.clientId)}">${options.map(option => `<option value="${ctx.esc(option.id)}" ${option.id === (item.nutrition ? item.foodId : '') ? 'selected' : ''}>${ctx.esc(option.name)}</option>`).join('')}</select></label>`;
+    const extras = [];
+    const push = option => { if (option?.id && !extras.some(entry => entry.id === option.id)) extras.push(option); };
+    if (item.nutrition && item.foodId) push({ id: item.foodId, name: item.name });
+    for (const candidate of item.candidates || []) push(candidate);
+    const local = catalog.foods.filter(food => food.calculable && !extras.some(entry => entry.id === food.id));
+    const options = [...extras, ...local];
+    const selected = item.nutrition ? item.foodId : '';
+    const prompt = item.status === 'ambiguous' && !item.nutrition ? '请选择' : '无法估算';
+    return `<label class="form-label">${item.status === 'ambiguous' && !item.nutrition ? '请选择对应的食物' : '改食物'}<select data-diet-food="${ctx.esc(item.clientId)}"><option value="">${prompt}</option>${options.map(option => `<option value="${ctx.esc(option.id)}" ${option.id === selected ? 'selected' : ''}>${ctx.esc(option.branded ? `${option.name}（品牌包装）` : option.name)}</option>`).join('')}</select></label>`;
   }
 
   async function changePortion(clientId, size) {
@@ -143,7 +148,10 @@ export function createDietPages(ctx) {
     if (!draft) return;
     const result = await calculateItems({ items: draft.items.map(item => ({ name: item.inputName || item.name, inputName: item.inputName, foodId: item.forceUnestimated ? '' : item.foodId, grams: item.grams, portionLabel: item.portionLabel, forceUnestimated: item.forceUnestimated === true })) });
     if (result.mode === 'urgent_help') { urgent = result; draft = null; ctx.render(); return; }
-    draft.items = draft.items.map((item, index) => ({ ...item, ...result.items[index], clientId: item.clientId, userAdjusted: item.userAdjusted, forceUnestimated: item.forceUnestimated === true && !result.items[index].nutrition }));
+    draft.items = draft.items.map((item, index) => {
+      const next = result.items[index];
+      return { ...item, ...next, candidates: next.candidates?.length ? next.candidates : item.candidates, clientId: item.clientId, userAdjusted: item.userAdjusted, forceUnestimated: item.forceUnestimated === true && !next.nutrition };
+    });
     ctx.render();
   }
 
@@ -296,10 +304,16 @@ function heading(title, sub) {
   return `<div class="page-heading"><div><p class="eyebrow">MEAL NOTES</p><h1>${title}</h1><p>${sub}</p></div><div class="date-stamp"><strong>${String(now.getMonth() + 1).padStart(2, '0')}<span>/${String(now.getDate()).padStart(2, '0')}</span></strong><span>今天 · 记在本机</span></div></div>`;
 }
 function privacy() {
-  return '<p class="privacy-banner">你输入的文字和上传的照片会发给阿里云百炼的千问，用来识别食物和写一两句建议。没有配置密钥时使用本机测试替身，不会外发。本应用不在服务器上保存照片和饮食正文。记录只留在这台设备的浏览器里。</p>';
+  return '<p class="privacy-banner">你输入的文字和上传的照片会发给阿里云百炼的千问，用来识别食物和写一两句建议。没有配置千问密钥时使用本机测试替身，不会外发。对不上本地食物表的食物名称会发给薄荷健康开放平台查询营养数据；没有配置薄荷密钥或查询失败时，该项标为无法估算。本应用不在服务器上保存照片和饮食正文。记录只留在这台设备的浏览器里。</p>';
 }
 function urgentBanner(result) {
   return `<div class="urgent-help" role="alert"><strong>请立即寻求专业帮助</strong><p>${result.text}</p></div>`;
+}
+function unestimatedCopy(reason) {
+  if (reason === 'no_key') return '本地食物表没有这项。没有配置薄荷开放平台，所以无法估算。';
+  if (reason === 'lookup_failed') return '薄荷查询没有成功，所以无法估算。不会填一个看起来合理的热量。';
+  if (reason === 'not_calculable') return '这道在本地食物表里标为不可计算。不会填一个看起来合理的热量。';
+  return '这道暂时无法估算。可以改成食物表或上面列出的一项，或保留为无法估算。不会填一个看起来合理的热量。';
 }
 function flagBox(name, label, checked) {
   return `<label class="check-line"><input type="checkbox" name="${name}" ${checked ? 'checked' : ''}> ${label}</label>`;

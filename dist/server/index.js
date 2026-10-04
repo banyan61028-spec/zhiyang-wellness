@@ -2002,6 +2002,212 @@ function baseItem(fields) {
   };
 }
 
+// src/shared/nutrition/boohee.js
+var BOOHEE_SOURCE_NAME = "\u8584\u8377\u5065\u5EB7";
+function booheeFoodId(code) {
+  return `boohee:${code}`;
+}
+function booheeCodeFromId(id) {
+  const match = /^boohee:([A-Za-z0-9_-]{1,64})$/.exec(String(id || ""));
+  return match ? match[1] : "";
+}
+function isBrandedBooheeName(name) {
+  return /\s/.test(String(name || "").trim());
+}
+function scoreBooheeName(query, name) {
+  const key = normalizeFoodName(query);
+  const text = String(name || "").trim();
+  const normalized = normalizeFoodName(text);
+  if (!key || !normalized) return 0;
+  const branded = isBrandedBooheeName(text);
+  if (!branded && normalized === key) return 100;
+  if (!branded && normalized.includes(key)) return 50;
+  const parts = text.split(/\s+/).some((part) => normalizeFoodName(part) === key);
+  if (branded && (normalized.includes(key) || parts)) return 10;
+  return 0;
+}
+function foodFromBooheeRecord(record) {
+  const code = String(record?.code || "").trim();
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(code)) return null;
+  const name = String(record?.name || "").trim();
+  if (!name) return null;
+  const per100g = {
+    kcal: readNutrient(record?.calories),
+    protein: readNutrient(record?.protein),
+    fat: readNutrient(record?.fat),
+    carb: readNutrient(record?.carbohydrate)
+  };
+  if (Object.values(per100g).some((value) => !Number.isFinite(value) || value < 0 || value > 1e3)) return null;
+  return {
+    id: booheeFoodId(code),
+    name: [...name].slice(0, 40).join(""),
+    aliases: [],
+    calculable: true,
+    per100g,
+    source: BOOHEE_SOURCE_NAME,
+    sourceNote: `\u8584\u8377\u5065\u5EB7\u5F00\u653E\u5E73\u53F0\uFF0C\u98DF\u7269\u7F16\u7801 ${code}`,
+    version: "boohee",
+    example: false,
+    portion: { small: 100, medium: 150, large: 250 },
+    booheeCode: code
+  };
+}
+function rankBooheeFoods(query, records) {
+  const ranked = (Array.isArray(records) ? records : []).map((record) => ({ record, food: foodFromBooheeRecord(record) })).filter((item) => item.food).map((item) => ({ ...item, score: scoreBooheeName(query, item.food.name), branded: isBrandedBooheeName(item.record.name) })).filter((item) => item.score > 0).sort((a, b) => b.score - a.score || Number(a.branded) - Number(b.branded) || a.food.name.length - b.food.name.length);
+  const exact = ranked.filter((item) => item.score === 100);
+  const candidates = (chosenCode) => ranked.filter((item) => item.food.booheeCode !== chosenCode).slice(0, 8).map((item) => ({ id: item.food.id, name: item.food.name, branded: item.branded }));
+  if (exact.length === 1) return { status: "matched", food: exact[0].food, candidates: candidates(exact[0].food.booheeCode) };
+  if (!ranked.length) return { status: "empty", candidates: [] };
+  return { status: "ambiguous", candidates: candidates("") };
+}
+function readNutrient(value) {
+  if (value && typeof value === "object") return Number(value.value);
+  return Number(value);
+}
+
+// src/server/boohee.js
+var DEFAULT_BASE = "https://api.boohee.com/open-apis";
+var CACHE_LIMIT = 100;
+function createBooheeClient({
+  apiKey = "",
+  baseUrl = DEFAULT_BASE,
+  fetch: fetchImpl = globalThis.fetch,
+  timeoutMs = 8e3,
+  cacheTtlMs = 10 * 60 * 1e3,
+  now = Date.now,
+  log = defaultLog
+} = {}) {
+  const enabled = Boolean(apiKey);
+  const root = String(baseUrl || DEFAULT_BASE).replace(/\/$/, "");
+  const searchCache = /* @__PURE__ */ new Map();
+  const codeCache = /* @__PURE__ */ new Map();
+  function remember(food) {
+    codeCache.set(food.booheeCode, { at: now(), food });
+    trim(codeCache);
+  }
+  async function request(endpoint, url) {
+    const started = now();
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetchImpl(url, {
+        method: "GET",
+        headers: { "X-Api-Key": apiKey, accept: "application/json" },
+        redirect: "error",
+        signal: controller.signal
+      });
+      if (!response.ok) {
+        logCall(log, { endpoint, outcome: "http_error", durationMs: now() - started, httpStatus: response.status, resultCount: null });
+        throw failure("failed");
+      }
+      const payload = await response.json().catch(() => null);
+      if (!payload || payload.code !== 0) {
+        logCall(log, { endpoint, outcome: "bad_response", durationMs: now() - started, httpStatus: response.status, resultCount: null });
+        throw failure("failed");
+      }
+      return { payload, durationMs: now() - started, httpStatus: response.status };
+    } catch (error) {
+      if (error?.code === "failed") throw error;
+      const outcome = controller.signal.aborted || error?.name === "AbortError" || error?.name === "TimeoutError" ? "timeout" : "failed";
+      logCall(log, { endpoint, outcome, durationMs: now() - started, httpStatus: null, resultCount: null });
+      throw failure(outcome);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  return {
+    enabled,
+    async matchName(keyword) {
+      const query = [...String(keyword || "").trim()].slice(0, 30).join("");
+      if (!query) return { status: "empty", candidates: [] };
+      if (!enabled) {
+        logCall(log, { endpoint: "food/search", outcome: "no_key", durationMs: 0, httpStatus: null, resultCount: 0 });
+        return { status: "no_key", candidates: [] };
+      }
+      const cacheKey = normalizeFoodName(query);
+      const cached = searchCache.get(cacheKey);
+      if (cached && now() - cached.at < cacheTtlMs) {
+        logCall(log, { endpoint: "food/search", outcome: "cache", durationMs: 0, httpStatus: null, resultCount: cached.resultCount });
+        return cached.result;
+      }
+      const url = new URL(`${root}/v1/food/search`);
+      url.searchParams.set("keyword", query);
+      url.searchParams.set("page", "1");
+      url.searchParams.set("per_page", "20");
+      try {
+        const { payload, durationMs, httpStatus } = await request("food/search", url);
+        const records = Array.isArray(payload.data?.foods) ? payload.data.foods.slice(0, 20) : [];
+        for (const food of records.map(foodFromBooheeRecord).filter(Boolean)) remember(food);
+        const result = rankBooheeFoods(query, records);
+        searchCache.set(cacheKey, { at: now(), result, resultCount: records.length });
+        trim(searchCache);
+        logCall(log, { endpoint: "food/search", outcome: "ok", durationMs, httpStatus, resultCount: records.length });
+        return result;
+      } catch (error) {
+        return { status: "failed", reason: error.code === "timeout" ? "timeout" : "failed", candidates: [] };
+      }
+    },
+    async foodByCode(code) {
+      if (!/^[A-Za-z0-9_-]{1,64}$/.test(String(code || ""))) return { status: "empty" };
+      if (!enabled) {
+        logCall(log, { endpoint: "food/detail", outcome: "no_key", durationMs: 0, httpStatus: null, resultCount: 0 });
+        return { status: "no_key" };
+      }
+      const cached = codeCache.get(code);
+      if (cached && now() - cached.at < cacheTtlMs) {
+        logCall(log, { endpoint: "food/detail", outcome: "cache", durationMs: 0, httpStatus: null, resultCount: 1 });
+        return { status: "ok", food: cached.food };
+      }
+      const url = new URL(`${root}/v1/food/detail`);
+      url.searchParams.set("code", code);
+      try {
+        const { payload, durationMs, httpStatus } = await request("food/detail", url);
+        const food = foodFromBooheeRecord(payload.data);
+        if (!food || food.booheeCode !== code) {
+          logCall(log, { endpoint: "food/detail", outcome: "bad_response", durationMs, httpStatus, resultCount: 0 });
+          return { status: "empty" };
+        }
+        remember(food);
+        logCall(log, { endpoint: "food/detail", outcome: "ok", durationMs, httpStatus, resultCount: 1 });
+        return { status: "ok", food };
+      } catch (error) {
+        return { status: "failed", reason: error.code === "timeout" ? "timeout" : "failed" };
+      }
+    }
+  };
+}
+var clients = /* @__PURE__ */ new Map();
+function booheeFromEnv(env = {}) {
+  if (env.booheeClient) return env.booheeClient;
+  const apiKey = env.BOOHEE_API_KEY || "";
+  const baseUrl = env.BOOHEE_BASE_URL || DEFAULT_BASE;
+  const cacheKey = `${baseUrl}
+${apiKey}`;
+  if (!clients.has(cacheKey)) clients.set(cacheKey, createBooheeClient({ apiKey, baseUrl }));
+  return clients.get(cacheKey);
+}
+function logCall(log, entry) {
+  log({
+    component: "boohee",
+    endpoint: entry.endpoint,
+    outcome: entry.outcome,
+    durationMs: entry.durationMs,
+    httpStatus: entry.httpStatus,
+    resultCount: entry.resultCount
+  });
+}
+function defaultLog(entry) {
+  console.info(JSON.stringify(entry));
+}
+function failure(code) {
+  const error = new Error(code);
+  error.code = code;
+  return error;
+}
+function trim(cache) {
+  while (cache.size > CACHE_LIMIT) cache.delete(cache.keys().next().value);
+}
+
 // src/shared/nutrition/recommend.js
 function chooseRecipes({ recipes: recipes2, totals, targets, caution, excludeIds = [], limit = 3 }) {
   const excluded = new Set(excludeIds);
@@ -2118,13 +2324,13 @@ function sanitizeReason(text, recipe, recipes2, allowed) {
 }
 
 // src/server/qwen.js
-var DEFAULT_BASE = "https://dashscope.aliyuncs.com/compatible-mode/v1";
+var DEFAULT_BASE2 = "https://dashscope.aliyuncs.com/compatible-mode/v1";
 function qwenConfig(env = {}) {
   const key = env.DASHSCOPE_API_KEY || "";
   return {
     apiKey: key,
     enabled: Boolean(key),
-    baseUrl: (env.DASHSCOPE_BASE_URL || DEFAULT_BASE).replace(/\/$/, ""),
+    baseUrl: (env.DASHSCOPE_BASE_URL || DEFAULT_BASE2).replace(/\/$/, ""),
     visionModel: env.DASHSCOPE_VISION_MODEL || "qwen3-vl-flash",
     textModel: env.DASHSCOPE_TEXT_MODEL || "qwen-plus"
   };
@@ -2234,7 +2440,7 @@ async function handleDiet(request, env, url) {
   try {
     if (loaded.errors.length) return json({ error: "\u98DF\u7269\u6570\u636E\u672A\u901A\u8FC7\u6821\u9A8C", details: loaded.errors }, 500);
     const result = await dispatchDiet(url.pathname, body, env, loaded.source);
-    assertDietResult(result, loaded.source);
+    await assertDietResult(result, loaded.source, booheeFromEnv(env));
     return json(result);
   } catch (error) {
     if (error.message === "size") return json({ error: "\u8BF7\u6C42\u5185\u5BB9\u8FC7\u957F" }, 413);
@@ -2245,7 +2451,7 @@ async function handleDiet(request, env, url) {
 async function dispatchDiet(pathname, body, env, source) {
   const requestId = cleanId(body?.requestId);
   if (pathname === "/api/diet/recognize") return recognizeMeal(body, env, source, requestId);
-  if (pathname === "/api/diet/calculate") return calculateItems(body, source, requestId);
+  if (pathname === "/api/diet/calculate") return calculateItems(body, source, requestId, env);
   if (pathname === "/api/diet/report") return buildReport(body, env, source, requestId);
   if (pathname === "/api/diet/recommend") return buildRecommendation(body, env, source, requestId);
   throw new Error("\u8DEF\u5F84\u65E0\u6548");
@@ -2269,34 +2475,38 @@ async function recognizeMeal(body, env, source, requestId) {
     });
     parsed = readModelItems(extractJson(content));
   }
-  const items = parsed.map((item) => resolveMealItem(item, source)).filter((item) => item.inputName || item.name);
+  const boohee = booheeFromEnv(env);
+  const items = (await Promise.all(parsed.map((item) => resolveRecordedItem(item, source, boohee, { allowSearch: true })))).filter((item) => item.inputName || item.name);
   if (!items.length) throw new Error("\u6CA1\u6709\u8BC6\u522B\u51FA\u98DF\u7269");
+  const lookedUp = items.some((item) => item.nutrition?.source === "\u8584\u8377\u5065\u5EB7" || item.candidates?.some((candidate) => String(candidate.id).startsWith("boohee:")));
+  const notice = stub ? "\u672A\u914D\u7F6E DASHSCOPE_API_KEY\uFF0C\u8FD9\u6B21\u7531\u6D4B\u8BD5\u66FF\u8EAB\u62C6\u5206\u98DF\u7269\u548C\u5206\u91CF\u3002\u8BF7\u6838\u5BF9\u540E\u518D\u4FDD\u5B58\u3002" : "\u98DF\u7269\u540D\u548C\u5206\u91CF\u6765\u81EA\u5343\u95EE\u3002\u70ED\u91CF\u6309\u5DF2\u5339\u914D\u7684\u6570\u636E\u8BA1\u7B97\uFF0C\u6A21\u578B\u7ED9\u51FA\u7684\u8425\u517B\u6570\u5B57\u4E0D\u4F1A\u88AB\u91C7\u7528\u3002";
   return {
     requestId,
     mode: "meal_draft",
     stub,
-    notice: stub ? "\u672A\u914D\u7F6E DASHSCOPE_API_KEY\uFF0C\u8FD9\u6B21\u7531\u6D4B\u8BD5\u66FF\u8EAB\u62C6\u5206\u98DF\u7269\u548C\u5206\u91CF\u3002\u8BF7\u6838\u5BF9\u540E\u518D\u4FDD\u5B58\u3002" : "\u98DF\u7269\u540D\u548C\u5206\u91CF\u6765\u81EA\u5343\u95EE\u3002\u70ED\u91CF\u6309\u98DF\u7269\u8868\u8BA1\u7B97\uFF0C\u6A21\u578B\u7ED9\u51FA\u7684\u8425\u517B\u6570\u5B57\u4E0D\u4F1A\u88AB\u91C7\u7528\u3002",
+    notice: lookedUp ? `${notice} \u672C\u5730\u8868\u6CA1\u6709\u7684\u98DF\u7269\u540D\u79F0\u5DF2\u53D1\u7ED9\u8584\u8377\u5065\u5EB7\u67E5\u8BE2\u3002` : notice,
     items
   };
 }
-function calculateItems(body, source, requestId) {
+async function calculateItems(body, source, requestId, env = {}) {
   const text = typeof body?.text === "string" ? body.text : "";
   if (isExplicitUrgent(text)) return urgentOnly(requestId);
   if (!Array.isArray(body?.items) || body.items.length > 12) throw new Error("\u98DF\u7269\u9879\u65E0\u6548");
-  const items = body.items.map((item) => resolveMealItem({
+  const boohee = booheeFromEnv(env);
+  const items = await Promise.all(body.items.map((item) => resolveRecordedItem({
     name: item?.name || item?.inputName,
     inputName: item?.inputName,
     foodId: item?.foodId,
     grams: item?.grams,
     portionLabel: item?.portionLabel,
     forceUnestimated: item?.forceUnestimated === true
-  }, source, { trustFoodId: Boolean(item?.foodId) && item?.forceUnestimated !== true }));
+  }, source, boohee, { trustFoodId: Boolean(item?.foodId) && item?.forceUnestimated !== true, allowSearch: true })));
   return { requestId, mode: "calculated", items };
 }
 async function buildReport(body, env, source, requestId) {
   const texts = collectTexts(body);
   if (texts.some(isExplicitUrgent)) return urgentOnly(requestId);
-  const meals = recomputeMeals(body?.meals, source);
+  const meals = await recomputeMeals(body?.meals, source, booheeFromEnv(env));
   if (!meals.length) return { requestId, mode: "empty", text: "\u4ECA\u5929\u8FD8\u6CA1\u6709\u8BB0\u5F55\uFF0C\u6240\u4EE5\u4E0D\u4F1A\u751F\u6210\u4E00\u4EFD\u62A5\u544A\u3002", totals: null, advice: "", adviceKept: false };
   const totals = sumNutrition(meals.flatMap((meal) => meal.items));
   const targets = cleanTargets(body?.targets);
@@ -2347,7 +2557,7 @@ async function buildReport(body, env, source, requestId) {
 async function buildRecommendation(body, env, source, requestId) {
   const texts = collectTexts(body);
   if (texts.some(isExplicitUrgent)) return urgentOnly(requestId);
-  const meals = recomputeMeals(body?.meals, source);
+  const meals = await recomputeMeals(body?.meals, source, booheeFromEnv(env));
   const totals = sumNutrition(meals.flatMap((meal) => meal.items));
   const targets = cleanTargets(body?.targets);
   const caution = inferCaution(texts, body?.flagsConfirmed === true ? body.flags : {});
@@ -2399,18 +2609,53 @@ function mealMessages({ text, image, source }) {
   if (!image) return [{ role: "system", content: instruction }, { role: "user", content: text }];
   return [{ role: "system", content: instruction }, { role: "user", content: [{ type: "image_url", image_url: { url: image } }, { type: "text", text: text || "\u8BF7\u8BC6\u522B\u8FD9\u5F20\u9910\u98DF\u7167\u7247\u91CC\u7684\u98DF\u7269\u548C\u5927\u81F4\u514B\u6570\u3002" }] }];
 }
-function recomputeMeals(meals, source) {
+async function recomputeMeals(meals, source, boohee) {
   if (!Array.isArray(meals)) return [];
-  return meals.slice(0, 12).map((meal) => {
-    const items = Array.isArray(meal?.items) ? meal.items.slice(0, 12).map((item) => resolveMealItem({
+  const resolved = [];
+  for (const meal of meals.slice(0, 12)) {
+    const raws = Array.isArray(meal?.items) ? meal.items.slice(0, 12) : [];
+    const items = await Promise.all(raws.map((item) => resolveRecordedItem({
       name: item?.name,
       inputName: item?.inputName,
       foodId: item?.status === "matched" || item?.foodId ? item.foodId : "",
       grams: item?.grams,
       portionLabel: item?.portionLabel
-    }, source, { trustFoodId: Boolean(item?.foodId) && item?.status !== "unestimated" && item?.status !== "ambiguous" })) : [];
-    return { items };
-  }).filter((meal) => meal.items.length);
+    }, source, boohee, { trustFoodId: Boolean(item?.foodId) && item?.status !== "unestimated" && item?.status !== "ambiguous", allowSearch: false })));
+    if (items.length) resolved.push({ items });
+  }
+  return resolved;
+}
+async function resolveRecordedItem(raw, source, boohee, options = {}) {
+  const code = booheeCodeFromId(raw?.foodId);
+  if (options.trustFoodId && code) return resolveBooheeCode(raw, boohee, code);
+  const local = resolveMealItem(raw, source, options);
+  if (!(options.allowSearch && local.status === "unestimated" && local.reason === "no_match")) return local;
+  const outcome = await boohee.matchName(local.inputName);
+  if (outcome.status === "matched") return withBooheeFood(local, outcome.food, outcome.candidates);
+  if (outcome.status === "ambiguous") return { ...local, status: "ambiguous", reason: "ambiguous", foodId: null, nutrition: null, candidates: outcome.candidates };
+  if (outcome.status === "no_key") return { ...local, reason: "no_key" };
+  if (outcome.status === "failed") return { ...local, reason: "lookup_failed" };
+  return local;
+}
+async function resolveBooheeCode(raw, boohee, code) {
+  const found = await boohee.foodByCode(code);
+  const base = resolveMealItem({ ...raw, forceUnestimated: true }, { foods: [], getFood: () => null }, {});
+  if (found.status === "ok") return withBooheeFood({ ...base, inputName: raw.inputName || raw.name || found.food.name, grams: numberGrams(raw.grams) || base.grams, portionLabel: raw.portionLabel || base.portionLabel }, found.food, []);
+  return { ...base, inputName: String(raw.inputName || raw.name || "").trim().slice(0, 40), name: String(raw.name || raw.inputName || "").trim().slice(0, 40) || base.name, reason: found.status === "no_key" ? "no_key" : "lookup_failed" };
+}
+function withBooheeFood(local, food, candidates) {
+  let nutrition = null;
+  try {
+    nutrition = calculateNutrition(food, local.grams);
+  } catch {
+    nutrition = null;
+  }
+  if (!nutrition) return { ...local, status: "unestimated", reason: "bad_grams", foodId: null, nutrition: null, candidates };
+  return { ...local, name: food.name, status: "matched", reason: "matched", foodId: food.id, nutrition, candidates };
+}
+function numberGrams(value) {
+  const grams = Number(value);
+  return Number.isFinite(grams) ? Math.round(grams) : null;
 }
 function publicRecipe(recipe, source) {
   return publicCatalog({ ...source, recipes: [recipe], foods: source.foods, getFood: source.getFood }).recipes[0];
@@ -2446,13 +2691,13 @@ function normalizeImage(value) {
 function urgentOnly(requestId) {
   return { ...urgentResponse(requestId), items: [], recipe: null, advice: "", planDraft: void 0 };
 }
-function assertDietResult(result, source) {
+async function assertDietResult(result, source, boohee = booheeFromEnv({})) {
   if (!result || result.mode === "urgent_help") {
     if (result?.text !== urgentText || result.items?.length || result.recipe || result.advice) throw new Error("\u7D27\u6025\u6C42\u52A9\u56DE\u590D\u672A\u901A\u8FC7\u6821\u9A8C");
     return result;
   }
   if (result.mode === "meal_draft" || result.mode === "calculated") {
-    for (const item of result.items) assertItem(item, source);
+    for (const item of result.items) await assertItem(item, source, boohee);
   }
   if (result.mode === "recommendation" && result.recipe) {
     if (!source.getRecipe(result.recipe.id) || source.getRecipe(result.recipe.id).blockedByHerbs) throw new Error("\u63A8\u8350\u4E0D\u5728\u98DF\u8C31\u5E93\u4E2D");
@@ -2461,10 +2706,10 @@ function assertDietResult(result, source) {
   if (result.reason && result.reasonKept === false) throw new Error("\u672A\u901A\u8FC7\u6838\u5BF9\u7684\u7406\u7531\u4E0D\u80FD\u8FD4\u56DE");
   return result;
 }
-function assertItem(item, source) {
+async function assertItem(item, source, boohee) {
   if (item.nutrition && item.status !== "matched") throw new Error("\u65E0\u6CD5\u4F30\u7B97\u7684\u98DF\u7269\u4E0D\u80FD\u5E26\u70ED\u91CF");
   if (item.status !== "matched") return;
-  const again = resolveMealItem({ name: item.name, foodId: item.foodId, grams: item.grams, portionLabel: item.portionLabel }, source, { trustFoodId: true });
+  const again = await resolveRecordedItem({ name: item.name, foodId: item.foodId, grams: item.grams, portionLabel: item.portionLabel }, source, boohee, { trustFoodId: true, allowSearch: false });
   if (!again.nutrition || again.nutrition.kcal !== item.nutrition.kcal || again.nutrition.protein !== item.nutrition.protein || again.nutrition.fat !== item.nutrition.fat || again.nutrition.carb !== item.nutrition.carb) {
     throw new Error("\u70ED\u91CF\u6821\u9A8C\u672A\u901A\u8FC7");
   }
