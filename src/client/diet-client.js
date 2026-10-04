@@ -1,10 +1,11 @@
+import { createId } from '../shared/id.js';
 import { isExplicitUrgent, urgentResponse } from '../shared/safety.js';
 
 async function post(path, body, signal) {
   const response = await fetch(path, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ requestId: crypto.randomUUID(), ...body }),
+    body: JSON.stringify({ requestId: createId(), ...body }),
     signal,
     cache: 'no-store',
   });
@@ -22,7 +23,7 @@ export async function fetchCatalog() {
 }
 
 export function urgentIfNeeded(text) {
-  if (text && isExplicitUrgent(text)) return { ...urgentResponse(crypto.randomUUID()), items: [], recipe: null, advice: '' };
+  if (text && isExplicitUrgent(text)) return { ...urgentResponse(createId()), items: [], recipe: null, advice: '' };
   return null;
 }
 

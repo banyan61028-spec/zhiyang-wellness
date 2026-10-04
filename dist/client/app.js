@@ -51,6 +51,18 @@ function validateReply(reply, requestId) {
   return reply;
 }
 
+// src/shared/id.js
+function createId(cryptoImpl = globalThis.crypto) {
+  if (typeof cryptoImpl?.randomUUID === "function") return cryptoImpl.randomUUID();
+  if (typeof cryptoImpl?.getRandomValues !== "function") throw new Error("\u65E0\u6CD5\u751F\u6210\u7F16\u53F7");
+  const bytes = new Uint8Array(16);
+  cryptoImpl.getRandomValues(bytes);
+  bytes[6] = bytes[6] & 15 | 64;
+  bytes[8] = bytes[8] & 63 | 128;
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
 // src/shared/meals.js
 var defaultDietSettings = () => ({
   targets: { kcal: null, protein: null, fat: null, carb: null, source: "user", confirmed: false },
@@ -148,7 +160,7 @@ function migrateLegacy(raw) {
   state2.saved = Array.isArray(old.saved) ? [...new Set(old.saved.filter(validFavorite))] : [];
   for (const p of Array.isArray(old.plans) ? old.plans : []) {
     try {
-      state2.plans.push(validatePlan({ ...p, id: crypto.randomUUID(), revision: 1, provenance: "demo", legacy: true, note: typeof p.note === "string" ? p.note : "\u65E7\u7248\u6F14\u793A\u65B9\u6848" }));
+      state2.plans.push(validatePlan({ ...p, id: createId(), revision: 1, provenance: "demo", legacy: true, note: typeof p.note === "string" ? p.note : "\u65E7\u7248\u6F14\u793A\u65B9\u6848" }));
     } catch {
     }
   }
@@ -498,7 +510,7 @@ function scoreAssessment(answers, version = questionnaire_default.id, scoreVersi
 function assessmentRecord(answers) {
   const result = scoreAssessment(answers);
   if (result.status !== "pilot_reference") throw new Error("\u8BF7\u5148\u5B8C\u6210\u5168\u90E8\u9898\u76EE");
-  return { id: crypto.randomUUID(), answers: structuredClone(answers), result, createdAt: (/* @__PURE__ */ new Date()).toISOString(), useConditions: "\u6210\u4EBA\u53EF\u7406\u89E3\u6027\u8BD5\u6D4B\uFF1B\u672A\u7ECF\u6D4B\u91CF\u9A8C\u8BC1", questionnaireVersion: questionnaire_default.id };
+  return { id: createId(), answers: structuredClone(answers), result, createdAt: (/* @__PURE__ */ new Date()).toISOString(), useConditions: "\u6210\u4EBA\u53EF\u7406\u89E3\u6027\u8BD5\u6D4B\uFF1B\u672A\u7ECF\u6D4B\u91CF\u9A8C\u8BC1", questionnaireVersion: questionnaire_default.id };
 }
 
 // src/client/storage.js
@@ -780,7 +792,7 @@ async function post(path, body, signal) {
   const response = await fetch(path, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ requestId: crypto.randomUUID(), ...body }),
+    body: JSON.stringify({ requestId: createId(), ...body }),
     signal,
     cache: "no-store"
   });
@@ -796,7 +808,7 @@ async function fetchCatalog() {
   return payload;
 }
 function urgentIfNeeded(text) {
-  if (text && isExplicitUrgent(text)) return { ...urgentResponse(crypto.randomUUID()), items: [], recipe: null, advice: "" };
+  if (text && isExplicitUrgent(text)) return { ...urgentResponse(createId()), items: [], recipe: null, advice: "" };
   return null;
 }
 var recognizeMeal = (body, signal) => urgentIfNeeded(body.text) || post("/api/diet/recognize", body, signal);
@@ -980,7 +992,7 @@ function createDietPages(ctx) {
         return;
       }
       draft = {
-        id: crypto.randomUUID(),
+        id: createId(),
         date: localDateString(),
         meal,
         inputType: file ? "photo" : "text",
@@ -988,7 +1000,7 @@ function createDietPages(ctx) {
         stub: result.stub === true,
         notice: result.notice || "",
         createdAt: (/* @__PURE__ */ new Date()).toISOString(),
-        items: result.items.map((item) => ({ ...item, clientId: crypto.randomUUID() }))
+        items: result.items.map((item) => ({ ...item, clientId: createId() }))
       };
       composeText = "";
       pendingFile = null;
@@ -1100,7 +1112,7 @@ function createDietPages(ctx) {
   function beginEdit(id) {
     const meal = ctx.getState().meals.find((item) => item.id === id);
     if (!meal) return;
-    draft = { ...meal, items: meal.items.map((item) => ({ ...item, clientId: crypto.randomUUID(), inputName: item.inputName || item.name })), notice: "\u6B63\u5728\u4FEE\u6539\u5DF2\u4FDD\u5B58\u7684\u4E00\u9910\u3002", stub: meal.stub };
+    draft = { ...meal, items: meal.items.map((item) => ({ ...item, clientId: createId(), inputName: item.inputName || item.name })), notice: "\u6B63\u5728\u4FEE\u6539\u5DF2\u4FDD\u5B58\u7684\u4E00\u9910\u3002", stub: meal.stub };
     urgent = null;
     ctx.navigate("home");
   }
@@ -1562,7 +1574,7 @@ async function send(text) {
   document.getElementById("chat-cancel").hidden = false;
   const loading = appendMessage("assistant", '<span class="typing"><i></i><i></i><i></i></span>');
   loading.classList.add("is-loading");
-  const current = chatVersion, requestId = crypto.randomUUID();
+  const current = chatVersion, requestId = createId();
   requestController = new AbortController();
   const ownController = requestController;
   const timeout = setTimeout(() => ownController.abort(), 15e3);

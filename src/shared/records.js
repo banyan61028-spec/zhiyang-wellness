@@ -1,3 +1,4 @@
+import { createId } from './id.js';
 import { defaultDietSettings } from './meals.js';
 export const defaultProfile = { name: '体验用户', goal: '均衡饮食', habit: '自己做饭与外食都有', preference: '暂无偏好', updated: '' };
 export const emptyState = () => ({ profile: { ...defaultProfile }, saved: [], plans: [], assessments: [], draft: null, meals: [], dietSettings: defaultDietSettings() });
@@ -22,7 +23,7 @@ export function migrateLegacy(raw) {
   state.profile = cleanProfile(old.profile);
   state.saved = Array.isArray(old.saved) ? [...new Set(old.saved.filter(validFavorite))] : [];
   for (const p of Array.isArray(old.plans) ? old.plans : []) {
-    try { state.plans.push(validatePlan({ ...p, id: crypto.randomUUID(), revision: 1, provenance: 'demo', legacy: true, note: typeof p.note === 'string' ? p.note : '旧版演示方案' })); } catch { /* Invalid old records are not promoted. */ }
+    try { state.plans.push(validatePlan({ ...p, id: createId(), revision: 1, provenance: 'demo', legacy: true, note: typeof p.note === 'string' ? p.note : '旧版演示方案' })); } catch { /* Invalid old records are not promoted. */ }
   }
   return state;
 }

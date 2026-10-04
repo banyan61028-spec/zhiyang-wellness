@@ -1,4 +1,5 @@
 import { calculateItems, fetchCatalog, recognizeMeal, requestRecommendation, requestReport } from './diet-client.js';
+import { createId } from '../shared/id.js';
 import { localDateString, validateMeal } from '../shared/meals.js';
 
 const mealNames = { breakfast: '早餐', lunch: '午餐', dinner: '晚餐', snack: '加餐' };
@@ -154,9 +155,9 @@ export function createDietPages(ctx) {
         return;
       }
       draft = {
-        id: crypto.randomUUID(), date: localDateString(), meal, inputType: file ? 'photo' : 'text',
+        id: createId(), date: localDateString(), meal, inputType: file ? 'photo' : 'text',
         rawText: text, stub: result.stub === true, notice: result.notice || '', createdAt: new Date().toISOString(),
-        items: result.items.map(item => ({ ...item, clientId: crypto.randomUUID() })),
+        items: result.items.map(item => ({ ...item, clientId: createId() })),
       };
       composeText = '';
       pendingFile = null;
@@ -263,7 +264,7 @@ export function createDietPages(ctx) {
   function beginEdit(id) {
     const meal = ctx.getState().meals.find(item => item.id === id);
     if (!meal) return;
-    draft = { ...meal, items: meal.items.map(item => ({ ...item, clientId: crypto.randomUUID(), inputName: item.inputName || item.name })), notice: '正在修改已保存的一餐。', stub: meal.stub };
+    draft = { ...meal, items: meal.items.map(item => ({ ...item, clientId: createId(), inputName: item.inputName || item.name })), notice: '正在修改已保存的一餐。', stub: meal.stub };
     urgent = null;
     ctx.navigate('home');
   }
