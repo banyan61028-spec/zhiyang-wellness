@@ -836,6 +836,7 @@ function createDietPages(ctx) {
   let composeError = "";
   let photoName = "";
   let pendingFile = null;
+  let libraryFilter = "all";
   document.addEventListener("input", (event) => {
     const el = event.target;
     if (!(el instanceof HTMLTextAreaElement)) return;
@@ -871,54 +872,53 @@ function createDietPages(ctx) {
     const state2 = ctx.getState();
     const todayMeals = mealsOn(state2, localDateString());
     const meal = composeMeal || defaultMeal();
-    const status = busy ? "\u6B63\u5728\u770B\u8FD9\u4E00\u9910" : photoName ? `\u5DF2\u9009 ${photoName}` : "\u5199\u597D\u540E\u53D1\u9001\uFF0C\u6216\u62CD\u4E00\u5F20";
-    return `${heading("\u8BB0\u4E0B\u8FD9\u4E00\u9910", "\u62CD\u4E00\u5F20\uFF0C\u6216\u5199\u4E00\u53E5\u8BDD\u3002")}
-      <div class="diet-page">${catalogError ? `<div class="storage-error" role="alert">${ctx.esc(catalogError)}</div>` : ""}${urgent ? urgentBanner(urgent) : ""}
-      <div class="diet-layout">
-        <section>
-          <form id="meal-form" class="composer ${busy ? "is-busy" : ""}">
-            <label class="meal-chip">\u8FD9\u4E00\u9910
-              <select name="meal" aria-label="\u8FD9\u4E00\u9910">${mealOrder.map((key) => `<option value="${key}" ${key === meal ? "selected" : ""}>${mealNames[key]}</option>`).join("")}</select>
-            </label>
-            <div class="composer-box">
-              <textarea name="text" maxlength="1500" rows="2" placeholder="\u4E2D\u5348\u5403\u4E86\u4E00\u7897\u7C73\u996D\u548C\u756A\u8304\u7092\u86CB" aria-label="\u5199\u4E0B\u5403\u4E86\u4EC0\u4E48">${ctx.esc(composeText)}</textarea>
-              <div class="composer-actions">
-                <label class="icon-hit">
-                  <span class="sr-only">\u62CD\u7167\u6216\u4E0A\u4F20\u7167\u7247</span>
-                  <input id="meal-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" capture="environment">
-                  ${ctx.icon("camera")}
-                </label>
-                <button class="icon-hit send" type="submit" aria-label="${busy ? "\u6B63\u5728\u8BC6\u522B" : "\u8BC6\u522B\u8FD9\u4E00\u9910"}" aria-busy="${busy ? "true" : "false"}" ${busy ? "disabled" : ""}>${ctx.icon("send")}</button>
-              </div>
+    const status = busy ? "\u6B63\u5728\u770B\u8FD9\u4E00\u9910" : photoName ? `\u5DF2\u9009 ${photoName}` : "";
+    const side = todayMeals.length ? `<aside class="quiet-card today-side"><div class="quiet-copy"><h2>\u4ECA\u5929\u5DF2\u7ECF\u8BB0\u4E0B</h2><p>\u8F7B\u8F7B\u8BB0\u4E00\u7B14\uFF0C\u517B\u6210\u66F4\u597D\u7684\u8282\u594F\u3002</p></div><div class="quiet-meals">${todayMeals.map((item) => mealCard(item, true)).join("")}</div><button class="pill-link" data-page="today">\u770B\u4ECA\u5929 ${ctx.icon("arrow")}</button></aside>` : `<aside class="quiet-card today-side is-empty"><div class="quiet-art" aria-hidden="true">${bowlArt()}</div><div class="quiet-copy"><h2>\u4ECA\u5929\u8FD8\u6CA1\u8BB0</h2><p>\u8F7B\u8F7B\u8BB0\u4E00\u7B14\uFF0C\u517B\u6210\u66F4\u597D\u7684\u8282\u594F\u3002</p></div><button class="pill-link" data-page="today">\u770B\u4ECA\u5929 ${ctx.icon("arrow")}</button></aside>`;
+    return `<div class="diet-page diet-record">${catalogError ? `<div class="storage-error" role="alert">${ctx.esc(catalogError)}</div>` : ""}${urgent ? urgentBanner(urgent) : ""}
+      <section class="hero-card">
+        <div class="hero-wash" aria-hidden="true"></div>
+        <div class="hero-copy"><h1>\u8BB0\u4E0B\u8FD9\u4E00\u9910</h1><p>\u62CD\u4E00\u5F20\uFF0C\u6216\u5199\u4E00\u53E5\u8BDD</p></div>
+        <form id="meal-form" class="composer ${busy ? "is-busy" : ""}">
+          <label class="meal-chip"><span class="sr-only">\u8FD9\u4E00\u9910</span>
+            <select name="meal" aria-label="\u8FD9\u4E00\u9910">${mealOrder.map((key) => `<option value="${key}" ${key === meal ? "selected" : ""}>${mealNames[key]}</option>`).join("")}</select>
+          </label>
+          <div class="composer-box">
+            <textarea name="text" maxlength="1500" rows="2" placeholder="\u8BB0\u5F55\u98DF\u7269\u3001\u611F\u53D7\u6216\u62CD\u7167\u2026" aria-label="\u5199\u4E0B\u5403\u4E86\u4EC0\u4E48">${ctx.esc(composeText)}</textarea>
+            <div class="composer-actions">
+              <label class="icon-hit">
+                <span class="sr-only">\u62CD\u7167\u6216\u4E0A\u4F20\u7167\u7247</span>
+                <input id="meal-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" capture="environment">
+                ${ctx.icon("camera")}
+              </label>
+              <button class="icon-hit send" type="submit" aria-label="${busy ? "\u6B63\u5728\u8BC6\u522B" : "\u8BC6\u522B\u8FD9\u4E00\u9910"}" aria-busy="${busy ? "true" : "false"}" ${busy ? "disabled" : ""}>${ctx.icon("send")}</button>
             </div>
-            <p class="composer-status" role="status" data-photo-name>${ctx.esc(status)}</p>
-            ${composeError ? `<p class="composer-error" role="alert">${ctx.esc(composeError)}</p>` : ""}
-          </form>
-          ${draft ? editor(draft) : ""}
-        </section>
-        <aside class="diet-card today-side">
-          <h2>\u4ECA\u5929\u5DF2\u7ECF\u8BB0\u4E0B</h2>
-          ${todayMeals.length ? todayMeals.map(mealCard).join("") : '<p class="empty-copy">\u4ECA\u5929\u8FD8\u6CA1\u8BB0\u3002\u5199\u4E00\u53E5\u8BDD\uFF0C\u6216\u62CD\u4E00\u5F20\u3002</p>'}
-          <button class="text-button diet-link" data-page="today">\u770B\u4ECA\u5929 ${ctx.icon("arrow")}</button>
-        </aside>
-      </div></div>`;
+          </div>
+          <p class="composer-status" role="status" data-photo-name>${ctx.esc(status)}</p>
+          ${composeError ? `<p class="composer-error" role="alert">${ctx.esc(composeError)}</p>` : ""}
+        </form>
+      </section>
+      ${draft ? editor(draft) : ""}
+      ${side}
+    </div>`;
   }
   function today2() {
     scheduleToday();
     const state2 = ctx.getState();
     const meals = mealsOn(state2, localDateString());
-    const body = meals.length ? `${reportBlock()}${recommendBlock()}<section class="diet-section"><h2>\u4ECA\u5929\u8BB0\u4E0B\u7684</h2>${meals.map(mealCard).join("")}</section>` : '<div class="empty-state"><div><h3>\u4ECA\u5929\u8FD8\u6CA1\u8BB0\u4E0B\u4E00\u9910</h3><p>\u8BB0\u4E0B\u6765\u4E4B\u540E\uFF0C\u8FD9\u91CC\u624D\u4F1A\u51FA\u73B0\u5408\u8BA1\u3002</p><button class="primary-button" data-page="home">\u53BB\u8BB0\u4E00\u9910</button></div></div>';
-    return `${heading("\u4ECA\u5929", "\u770B\u770B\u4ECA\u5929\u5927\u7EA6\u5403\u4E86\u591A\u5C11\u3002")}<div class="diet-page">${urgent ? urgentBanner(urgent) : ""}${body}</div>`;
+    const body = meals.length ? `${reportBlock()}${mealStrip(meals)}${recommendBlock()}${adviceCard()}` : `<div class="empty-hero"><div class="quiet-art" aria-hidden="true">${bowlArt()}</div><div><h2>\u4ECA\u5929\u8FD8\u6CA1\u8BB0</h2><p>\u8F7B\u8F7B\u8BB0\u4E00\u7B14\uFF0C\u8FD9\u91CC\u624D\u4F1A\u51FA\u73B0\u5408\u8BA1\u3002</p><button class="primary-button" data-page="home">\u53BB\u8BB0\u4E00\u9910</button></div></div>`;
+    return `${heading("\u4ECA\u65E5", "\u770B\u770B\u4ECA\u5929\u5927\u7EA6\u5403\u4E86\u591A\u5C11\u3002")}<div class="diet-page diet-today">${urgent ? urgentBanner(urgent) : ""}${body}</div>`;
   }
   function library2() {
-    if (!catalog) return `${heading("\u98DF\u8C31", "\u9009\u4E00\u9053\uFF0C\u5F53\u4F5C\u4E0B\u4E00\u9910\u3002")}<div class="diet-page">${catalogError ? `<div class="storage-error">${ctx.esc(catalogError)}</div>` : '<p class="empty-copy">\u6B63\u5728\u51C6\u5907\u98DF\u8C31\u3002</p>'}</div>`;
-    return `${heading("\u98DF\u8C31", "\u9009\u4E00\u9053\uFF0C\u5F53\u4F5C\u4E0B\u4E00\u9910\u3002")}<div class="diet-page"><div class="food-grid diet-library">${catalog.recipes.map((recipe) => `<button class="recipe-tile diet-recipe" data-diet-action="recipe" data-diet-id="${ctx.esc(recipe.id)}"><div class="recipe-type-art"><span>${mealNames[recipe.meal] || "\u5BB6\u5E38"}</span></div><div class="recipe-tile-body"><h3>${ctx.esc(recipe.name)}</h3><p class="num">\u7EA6 ${recipe.nutrition.kcal} \u5343\u5361</p>${recipe.blockedByHerbs ? '<span class="chip chip-quiet">\u5148\u4E0D\u4E3B\u52A8\u63A8\u8350</span>' : ""}</div></button>`).join("")}</div></div>`;
+    if (!catalog) return `${heading("\u98DF\u8C31", "\u6309\u73B0\u5728\u7684\u8BB0\u5F55\uFF0C\u6311\u4E0B\u4E00\u9910")}<div class="diet-page">${catalogError ? `<div class="storage-error">${ctx.esc(catalogError)}</div>` : '<p class="empty-copy">\u6B63\u5728\u51C6\u5907\u98DF\u8C31\u3002</p>'}</div>`;
+    const filters = [["all", "\u5168\u90E8"], ["light", "\u6E05\u6DE1"], ["home", "\u5BB6\u5E38"], ["breakfast", "\u65E9\u9910"], ["lunch", "\u5348\u9910"], ["dinner", "\u665A\u9910"]];
+    const list = catalog.recipes.filter((recipe) => matchLibrary(recipe, libraryFilter));
+    return `${heading("\u98DF\u8C31", "\u6309\u73B0\u5728\u7684\u8BB0\u5F55\uFF0C\u6311\u4E0B\u4E00\u9910")}<div class="diet-page diet-library-page"><div class="filter-row" aria-label="\u98DF\u8C31\u7B5B\u9009">${filters.map(([id, label]) => `<button type="button" class="filter-chip ${libraryFilter === id ? "active" : ""}" data-diet-action="library-filter" data-diet-filter="${id}" aria-pressed="${libraryFilter === id}">${label}</button>`).join("")}</div><div class="recipe-list">${list.length ? list.map(recipeRow).join("") : '<p class="empty-copy">\u8FD9\u4E00\u7C7B\u91CC\u8FD8\u6CA1\u6709\u98DF\u8C31\u3002</p>'}</div><p class="library-foot">\u8BB0\u4E0B\u4ECA\u65E5\u996E\u98DF\uFF0C\u9047\u89C1\u66F4\u5408\u9002\u7684\u98DF\u8C31</p></div>`;
   }
   function settings() {
     const settingsState = ctx.getState().dietSettings;
     const targets = settingsState.targets;
     const flags = settingsState.flags;
-    return `${heading("\u6211\u7684", "\u76EE\u6807\u548C\u8BB0\u5F55\u90FD\u5728\u8FD9\u53F0\u624B\u673A\u4E0A\u3002")}<div class="diet-page"><section class="diet-card"><h2>\u6BCF\u65E5\u76EE\u6807</h2><p class="small muted">\u6309\u81EA\u5DF1\u7684\u4E60\u60EF\u586B\u3002\u7559\u7A7A\u7684\u9879\u76EE\u4E0D\u53C2\u4E0E\u5BF9\u6BD4\u3002</p><form id="target-form"><div class="target-grid"><label class="form-label">\u70ED\u91CF\uFF08\u5343\u5361\uFF09<input name="kcal" inputmode="numeric" min="0" max="10000" value="${targets.kcal ?? ""}"></label><label class="form-label">\u86CB\u767D\u8D28\uFF08\u514B\uFF09<input name="protein" inputmode="numeric" min="0" max="500" value="${targets.protein ?? ""}"></label><label class="form-label">\u8102\u80AA\uFF08\u514B\uFF09<input name="fat" inputmode="numeric" min="0" max="500" value="${targets.fat ?? ""}"></label><label class="form-label">\u78B3\u6C34\uFF08\u514B\uFF09<input name="carb" inputmode="numeric" min="0" max="500" value="${targets.carb ?? ""}"></label></div><label class="check-line"><input type="checkbox" name="confirm" ${targets.confirmed ? "checked" : ""}> \u628A\u8FD9\u4E9B\u6570\u5B57\u5F53\u4F5C\u6211\u7684\u6BCF\u65E5\u76EE\u6807</label><button class="primary-button" type="submit">\u4FDD\u5B58\u76EE\u6807</button></form></section><section class="diet-card"><h2>\u8FD9\u4E9B\u60C5\u51B5\u4E0B\uFF0C\u5EFA\u8BAE\u4F1A\u66F4\u8C28\u614E</h2><p class="small muted">\u52FE\u9009\u540E\uFF0C\u4E0D\u4F1A\u6309\u5403\u5F97\u5C11\u6765\u50AC\u4F60\uFF0C\u4E5F\u4E0D\u4F1A\u56E0\u4E3A\u86CB\u767D\u8D28\u4E0D\u591F\u5C31\u63A8\u8350\u9AD8\u86CB\u767D\u7684\u83DC\u3002</p><form id="flags-form">${flagBox("pregnancy", "\u5B55\u671F\u6216\u5907\u5B55", flags.pregnancy)}${flagBox("lactation", "\u54FA\u4E73", flags.lactation)}${flagBox("minor", "\u672A\u6210\u5E74", flags.minor)}${flagBox("kidney", "\u80BE\u75C5", flags.kidney)}${flagBox("diabetes", "\u7CD6\u5C3F\u75C5", flags.diabetes)}${flagBox("hypertension", "\u9AD8\u8840\u538B", flags.hypertension)}${flagBox("eatingDisorder", "\u5403\u996D\u8BA9\u6211\u5F88\u75DB\u82E6\uFF0C\u6216\u51FA\u73B0\u50AC\u5410\u3001\u7EDD\u98DF", flags.eatingDisorder)}<label class="check-line"><input type="checkbox" name="confirm" ${settingsState.flagsConfirmed ? "checked" : ""}> \u6309\u8FD9\u4E9B\u60C5\u51B5\u8C03\u6574\u6587\u5B57\u5EFA\u8BAE</label><button class="primary-button" type="submit">\u4FDD\u5B58</button></form></section><section class="diet-card"><h2>\u9690\u79C1\u4E0E\u8BF4\u660E</h2><p class="small muted">\u8BB0\u5F55\u53EA\u7559\u5728\u8FD9\u53F0\u624B\u673A\u4E0A\u3002\u70ED\u91CF\u662F\u4F30\u7B97\u3002</p><button class="text-button" data-action="privacy">\u67E5\u770B\u9690\u79C1\u4E0E\u8BF4\u660E</button></section><section class="diet-card"><h2>\u6E05\u9664\u8FD9\u53F0\u624B\u673A\u4E0A\u7684\u8BB0\u5F55</h2><p class="small muted">\u996E\u98DF\u8BB0\u5F55\u548C\u6BCF\u65E5\u76EE\u6807\u4F1A\u4E00\u8D77\u6E05\u6389\uFF0C\u6E05\u6389\u540E\u627E\u4E0D\u56DE\u6765\u3002</p><button class="outline-button" data-action="reset">\u6E05\u9664\u8BB0\u5F55</button></section></div>`;
+    return `${heading("\u6211\u7684", "\u76EE\u6807\u548C\u8BB0\u5F55\u90FD\u5728\u8FD9\u53F0\u624B\u673A\u4E0A\u3002")}<div class="diet-page diet-settings"><section class="diet-card"><h2>\u6BCF\u65E5\u76EE\u6807</h2><p class="small muted">\u6309\u81EA\u5DF1\u7684\u4E60\u60EF\u586B\u3002\u7559\u7A7A\u7684\u9879\u76EE\u4E0D\u53C2\u4E0E\u5BF9\u6BD4\u3002</p><form id="target-form"><div class="target-grid"><label class="form-label">\u70ED\u91CF\uFF08\u5343\u5361\uFF09<input name="kcal" inputmode="numeric" min="0" max="10000" value="${targets.kcal ?? ""}"></label><label class="form-label">\u86CB\u767D\u8D28\uFF08\u514B\uFF09<input name="protein" inputmode="numeric" min="0" max="500" value="${targets.protein ?? ""}"></label><label class="form-label">\u8102\u80AA\uFF08\u514B\uFF09<input name="fat" inputmode="numeric" min="0" max="500" value="${targets.fat ?? ""}"></label><label class="form-label">\u78B3\u6C34\uFF08\u514B\uFF09<input name="carb" inputmode="numeric" min="0" max="500" value="${targets.carb ?? ""}"></label></div><label class="check-line"><input type="checkbox" name="confirm" ${targets.confirmed ? "checked" : ""}> \u628A\u8FD9\u4E9B\u6570\u5B57\u5F53\u4F5C\u6211\u7684\u6BCF\u65E5\u76EE\u6807</label><button class="primary-button" type="submit">\u4FDD\u5B58\u76EE\u6807</button></form></section><section class="diet-card"><h2>\u8FD9\u4E9B\u60C5\u51B5\u4E0B\uFF0C\u5EFA\u8BAE\u4F1A\u66F4\u8C28\u614E</h2><p class="small muted">\u52FE\u9009\u540E\uFF0C\u4E0D\u4F1A\u6309\u5403\u5F97\u5C11\u6765\u50AC\u4F60\uFF0C\u4E5F\u4E0D\u4F1A\u56E0\u4E3A\u86CB\u767D\u8D28\u4E0D\u591F\u5C31\u63A8\u8350\u9AD8\u86CB\u767D\u7684\u83DC\u3002</p><form id="flags-form">${flagBox("pregnancy", "\u5B55\u671F\u6216\u5907\u5B55", flags.pregnancy)}${flagBox("lactation", "\u54FA\u4E73", flags.lactation)}${flagBox("minor", "\u672A\u6210\u5E74", flags.minor)}${flagBox("kidney", "\u80BE\u75C5", flags.kidney)}${flagBox("diabetes", "\u7CD6\u5C3F\u75C5", flags.diabetes)}${flagBox("hypertension", "\u9AD8\u8840\u538B", flags.hypertension)}${flagBox("eatingDisorder", "\u5403\u996D\u8BA9\u6211\u5F88\u75DB\u82E6\uFF0C\u6216\u51FA\u73B0\u50AC\u5410\u3001\u7EDD\u98DF", flags.eatingDisorder)}<label class="check-line"><input type="checkbox" name="confirm" ${settingsState.flagsConfirmed ? "checked" : ""}> \u6309\u8FD9\u4E9B\u60C5\u51B5\u8C03\u6574\u6587\u5B57\u5EFA\u8BAE</label><button class="primary-button" type="submit">\u4FDD\u5B58</button></form></section><section class="settings-list" aria-label="\u66F4\u591A"><button class="settings-row" type="button" data-action="privacy"><span><strong>\u9690\u79C1\u4E0E\u8BF4\u660E</strong><small>\u8BB0\u5F55\u53EA\u7559\u5728\u8FD9\u53F0\u624B\u673A\u4E0A\u3002\u70ED\u91CF\u662F\u4F30\u7B97\u3002</small></span>${ctx.icon("arrow")}</button><button class="settings-row" type="button" data-action="reset"><span><strong>\u6E05\u9664\u8FD9\u53F0\u624B\u673A\u4E0A\u7684\u8BB0\u5F55</strong><small>\u996E\u98DF\u8BB0\u5F55\u548C\u6BCF\u65E5\u76EE\u6807\u4F1A\u4E00\u8D77\u6E05\u6389\u3002</small></span>${ctx.icon("arrow")}</button></section></div>`;
   }
   async function onClick(button) {
     const action = button.dataset.dietAction;
@@ -934,7 +934,10 @@ function createDietPages(ctx) {
       invalidateToday();
       ctx.toast("\u5DF2\u5220\u9664\u8FD9\u4E00\u9910");
     } else if (action === "edit-meal") beginEdit(button.dataset.dietId);
-    else if (action === "recipe") openRecipe(button.dataset.dietId);
+    else if (action === "library-filter") {
+      libraryFilter = button.dataset.dietFilter || "all";
+      ctx.render();
+    } else if (action === "recipe") openRecipe(button.dataset.dietId);
     else if (action === "another") await anotherRecipe();
     else if (action === "retry-today") {
       invalidateToday();
@@ -1184,26 +1187,41 @@ function createDietPages(ctx) {
     const tone = ratio != null && ratio > 1 ? "over" : "under";
     const center = totals.counted ? String(totals.kcal) : "\u2014";
     const aria = gap == null ? totals.counted ? `\u4ECA\u65E5\u7EA6 ${totals.kcal} \u5343\u5361\uFF0C\u8FD8\u6CA1\u6709\u786E\u8BA4\u6BCF\u65E5\u76EE\u6807` : "\u4ECA\u5929\u8FD8\u6CA1\u6709\u53EF\u8BA1\u7B97\u7684\u70ED\u91CF" : `\u4ECA\u65E5\u7EA6 ${totals.kcal} \u5343\u5361\uFF0C\u76EE\u6807 ${target.kcal} \u5343\u5361\uFF0C${gap >= 0 ? `\u5927\u7EA6\u8FD8\u5C11 ${gap} \u5343\u5361` : `\u5927\u7EA6\u591A\u4E86 ${Math.abs(gap)} \u5343\u5361`}`;
-    const gapCopy = gap == null ? '<p class="dash-gap">\u6BCF\u65E5\u76EE\u6807\u8FD8\u6CA1\u786E\u8BA4\uFF0C\u6240\u4EE5\u8FD9\u91CC\u53EA\u663E\u793A\u5408\u8BA1\u3002</p>' : `<p class="dash-gap ${gap < 0 ? "over" : ""}">\u548C\u4F60\u786E\u8BA4\u8FC7\u7684 <span class="num">${target.kcal}</span> \u5343\u5361\u76F8\u6BD4\uFF0C${gap >= 0 ? `\u5927\u7EA6\u8FD8\u5C11 <span class="num">${gap}</span> \u5343\u5361` : `\u5927\u7EA6\u591A\u4E86 <span class="num">${Math.abs(gap)}</span> \u5343\u5361`}\u3002</p>`;
-    const advice = report.adviceKept && report.advice ? `<p>${ctx.esc(report.advice)}</p>` : report.adviceNote ? `<p class="small muted">${ctx.esc(gentleNotice(report.adviceNote))}</p>` : "";
+    const gapCopy = gap == null ? '<p class="dash-gap">\u8FD8\u6CA1\u786E\u8BA4\u6BCF\u65E5\u76EE\u6807\uFF0C\u8FD9\u91CC\u53EA\u663E\u793A\u5408\u8BA1\u3002</p>' : `<p class="dash-gap ${gap < 0 ? "over" : ""}">\u76EE\u6807 <span class="num">${target.kcal}</span> \u5343\u5361 \xB7 ${gap >= 0 ? `\u8FD8\u5DEE <span class="num">${gap}</span> \u5343\u5361` : `\u591A\u4E86 <span class="num">${Math.abs(gap)}</span> \u5343\u5361`}</p>`;
+    const ringLabel = ratio == null ? `<strong class="ring-word">\u5408\u8BA1</strong><span>${totals.counted ? "\u672A\u8BBE\u76EE\u6807" : "\u6CA1\u6709\u53EF\u8BA1\u7B97\u7684\u70ED\u91CF"}</span>` : `<span class="ring-kicker">\u4ECA\u65E5\u8FDB\u5EA6</span><strong class="num">${Math.min(999, Math.round(ratio * 100))}%</strong><span>${ratio > 1 ? "\u8D85\u8FC7\u76EE\u6807" : "\u5BF9\u7167\u76EE\u6807"}</span>`;
     return `<section class="dash" aria-label="\u4ECA\u65E5\u70ED\u91CF">
-      <div class="ring-wrap" role="img" aria-label="${ctx.esc(aria)}">${ringSvg(ratio, tone)}<div class="ring-center"><strong class="num">${center}</strong><span>${totals.counted ? "\u4ECA\u65E5\u5343\u5361" : "\u6CA1\u6709\u53EF\u8BA1\u7B97\u7684\u70ED\u91CF"}</span></div></div>
-      <div class="dash-copy"><p class="eyebrow">\u4ECA\u5929\u5927\u7EA6</p>${gapCopy}${report.skipped?.length ? `<p class="small muted">\u8FD8\u6CA1\u7B97\u8FDB\u53BB\uFF1A${report.skipped.map((name) => ctx.esc(name)).join("\u3001")}\u3002</p>` : ""}</div>
+      <div class="dash-main"><p class="eyebrow">\u4ECA\u65E5\u6444\u5165</p><p class="kcal-hero"><span class="num">${center}</span>${totals.counted ? "<small>\u5343\u5361</small>" : ""}</p>${gapCopy}${report.skipped?.length ? `<p class="small muted">\u8FD8\u6CA1\u7B97\u8FDB\u53BB\uFF1A${report.skipped.map((name) => ctx.esc(name)).join("\u3001")}\u3002</p>` : ""}</div>
+      <div class="ring-wrap" role="img" aria-label="${ctx.esc(aria)}">${ringSvg(ratio, tone)}<div class="ring-center">${ringLabel}</div></div>
     </section>
-    <section class="diet-card"><h2>\u4E09\u5927\u8425\u517B\u7D20</h2>${macroBars(totals, target)}</section>
-    <section class="diet-card advice-card"><h2>\u4ECA\u5929\u7684\u5EFA\u8BAE</h2>${advice}</section>`;
+    ${macroTiles(totals, target)}`;
+  }
+  function adviceCard() {
+    if (!report || report.mode !== "report") return "";
+    const advice = report.adviceKept && report.advice ? `<p>${ctx.esc(report.advice)}</p>` : report.adviceNote ? `<p class="small muted">${ctx.esc(gentleNotice(report.adviceNote))}</p>` : "";
+    return advice ? `<section class="diet-card advice-card"><h2>\u4ECA\u5929\u7684\u5EFA\u8BAE</h2>${advice}</section>` : "";
   }
   function recommendBlock() {
-    if (!recommendation) return '<section class="diet-card"><p class="composer-status">\u6B63\u5728\u9009\u4E0B\u4E00\u9910\u3002</p></section>';
-    if (!recommendation.recipe) return `<section class="diet-card"><h2>\u4E0B\u4E00\u9910</h2><p>${ctx.esc(gentleNotice(recommendation.reason || recommendation.reasonNote || "\u4ECA\u5929\u5148\u4ECE\u98DF\u8C31\u91CC\u81EA\u5DF1\u6311\u4E00\u9053\u5427\u3002"))}</p><button class="text-button diet-link" data-page="library">\u53BB\u770B\u98DF\u8C31 ${ctx.icon("arrow")}</button></section>`;
+    if (!recommendation) return '<section class="diet-card next-wait"><p class="composer-status">\u6B63\u5728\u9009\u4E0B\u4E00\u9910\u3002</p></section>';
+    if (!recommendation.recipe) return `<section class="diet-card next-wait"><h2>\u4E0B\u4E00\u9910\u5EFA\u8BAE</h2><p>${ctx.esc(gentleNotice(recommendation.reason || recommendation.reasonNote || "\u4ECA\u5929\u5148\u4ECE\u98DF\u8C31\u91CC\u81EA\u5DF1\u6311\u4E00\u9053\u5427\u3002"))}</p><button class="pill-link" data-page="library">\u53BB\u770B\u98DF\u8C31 ${ctx.icon("arrow")}</button></section>`;
     const recipe = recommendation.recipe;
-    const reason = recommendation.reasonKept && recommendation.reason ? `<p class="advice-line">${ctx.esc(recommendation.reason)}</p>` : recommendation.reasonNote ? `<p class="small muted">${ctx.esc(gentleNotice(recommendation.reasonNote))}</p>` : "";
-    return `<article class="recipe-feature"><div class="recipe-feature-art"><span>${mealNames[recipe.meal] || "\u5BB6\u5E38"}</span></div><div class="recipe-feature-body"><p class="eyebrow">\u4E0B\u4E00\u9910\u53EF\u4EE5\u4ECE\u8FD9\u9053\u5F00\u59CB</p><h2>${ctx.esc(recipe.name)}</h2><p class="food-kcal"><span class="num">${recipe.nutrition.kcal}</span><small>\u7EA6\u5343\u5361</small></p>${macroPills(recipe.nutrition)}${reason}<div class="button-row"><button class="primary-button" data-diet-action="recipe" data-diet-id="${ctx.esc(recipe.id)}">\u67E5\u770B\u505A\u6CD5</button><button class="outline-button" data-diet-action="another">\u6362\u4E00\u9053</button></div></div></article>`;
+    const blurb = recommendation.reasonKept && recommendation.reason ? recommendation.reason : recommendation.reasonNote ? gentleNotice(recommendation.reasonNote) : visibleNote(recipe.note) || `${mealNames[recipe.meal] || "\u5BB6\u5E38"} \xB7 \u7EA6 ${recipe.nutrition.kcal} \u5343\u5361`;
+    return `<article class="next-meal"><div class="next-meal-copy"><p class="eyebrow">\u4E0B\u4E00\u9910\u5EFA\u8BAE</p><h2>${ctx.esc(recipe.name)}</h2><p class="next-kcal"><span class="num">${recipe.nutrition.kcal}</span> \u7EA6\u5343\u5361</p><p class="next-blurb">${ctx.esc(blurb)}</p><div class="next-actions"><button class="primary-button" data-diet-action="recipe" data-diet-id="${ctx.esc(recipe.id)}">\u67E5\u770B\u8FD9\u9053 ${ctx.icon("arrow")}</button><button class="text-button" data-diet-action="another">\u6362\u4E00\u9053</button></div></div><div class="next-meal-art meal-${ctx.esc(recipe.meal)}" aria-hidden="true">${ctx.icon("bowl")}</div></article>`;
   }
-  function mealCard(meal) {
+  function mealStrip(meals) {
+    return `<section class="diet-section meal-strip"><div class="section-row"><h2>\u9910\u6B21\u8BB0\u5F55</h2></div><div class="meal-scroll">${meals.map((item) => mealCard(item, true)).join("")}</div></section>`;
+  }
+  function mealCard(meal, compact = false) {
     const estimated = meal.items.filter((item) => item.nutrition);
     const kcal = estimated.reduce((sum, item) => sum + item.nutrition.kcal, 0);
+    const names = meal.items.map((item) => item.name).filter(Boolean).join("\u3001");
+    if (compact) {
+      return `<article class="meal-tile"><div class="meal-tile-top"><span class="meal-mark" aria-hidden="true"></span><div><p class="meal-kicker">${mealNames[meal.meal]}</p><p class="meal-kcal">${estimated.length ? `<span class="num">${kcal}</span> \u5343\u5361` : "\u6682\u65F6\u7B97\u4E0D\u51FA\u6765"}</p></div></div><p class="meal-names">${ctx.esc(names)}</p><span class="meal-actions"><button class="text-button" data-diet-action="edit-meal" data-diet-id="${ctx.esc(meal.id)}">\u4FEE\u6539</button><button class="text-button" data-diet-action="delete-meal" data-diet-id="${ctx.esc(meal.id)}">\u5220\u9664</button></span></article>`;
+    }
     return `<article class="saved-meal"><div class="section-mini"><span>${mealNames[meal.meal]} \xB7 <span class="num">${ctx.esc(meal.date)}</span></span><span class="meal-actions"><button class="text-button" data-diet-action="edit-meal" data-diet-id="${ctx.esc(meal.id)}">\u4FEE\u6539</button><button class="text-button" data-diet-action="delete-meal" data-diet-id="${ctx.esc(meal.id)}">\u5220\u9664</button></span></div><ul class="meal-lines">${meal.items.map((item) => `<li><span>${ctx.esc(item.name)}</span><span class="num">${item.grams ?? "\u2014"} \u514B</span><span class="num">${item.nutrition ? `\u7EA6 ${item.nutrition.kcal} \u5343\u5361` : "\u6682\u65F6\u7B97\u4E0D\u51FA\u6765"}</span></li>`).join("")}</ul><p class="small muted">${estimated.length ? `\u8FD9\u4E00\u9910\u5927\u7EA6 <span class="num">${kcal}</span> \u5343\u5361` : "\u8FD9\u4E00\u9910\u8FD8\u6CA1\u6709\u7B97\u51FA\u70ED\u91CF"}</p></article>`;
+  }
+  function recipeRow(recipe) {
+    const note = visibleNote(recipe.note);
+    return `<button class="recipe-row" type="button" data-diet-action="recipe" data-diet-id="${ctx.esc(recipe.id)}"><span class="recipe-swatch meal-${ctx.esc(recipe.meal)}" aria-hidden="true">${ctx.icon("bowl")}</span><span class="recipe-row-body"><strong>${ctx.esc(recipe.name)}</strong><span class="recipe-facts"><span class="num">\u7EA6 ${recipe.nutrition.kcal} \u5343\u5361</span><span>${mealNames[recipe.meal] || "\u5BB6\u5E38"}</span>${recipe.blockedByHerbs ? "<span>\u5148\u4E0D\u4E3B\u52A8\u63A8\u8350</span>" : ""}</span>${note ? `<span class="recipe-line">${ctx.esc(note)}</span>` : ""}</span><span class="recipe-chevron" aria-hidden="true">${ctx.icon("arrow")}</span></button>`;
   }
   function openRecipe(id) {
     const recipe = catalog?.recipes.find((item) => item.id === id) || recommendation?.recipe;
@@ -1258,8 +1276,18 @@ function defaultMeal() {
   return hour < 21 ? "dinner" : "snack";
 }
 function heading(title, sub) {
-  const now = /* @__PURE__ */ new Date();
-  return `<div class="page-heading diet-heading"><div><p class="eyebrow">\u77E5\u517B</p><h1>${title}</h1><p>${sub}</p></div><div class="date-stamp"><strong class="num">${String(now.getMonth() + 1).padStart(2, "0")}<span>/${String(now.getDate()).padStart(2, "0")}</span></strong><span>\u4ECA\u5929 \xB7 \u8BB0\u5728\u672C\u673A</span></div></div>`;
+  return `<header class="page-heading diet-heading"><div><h1>${title}</h1><p>${sub}</p></div></header>`;
+}
+function matchLibrary(recipe, filter) {
+  if (!filter || filter === "all") return true;
+  if (filter === "breakfast" || filter === "lunch" || filter === "dinner" || filter === "snack") return recipe.meal === filter;
+  const note = `${recipe.note || ""}`;
+  if (filter === "light") return note.includes("\u6E05\u6DE1");
+  if (filter === "home") return note.includes("\u5BB6\u5E38");
+  return true;
+}
+function bowlArt() {
+  return '<svg viewBox="0 0 72 56" fill="none" aria-hidden="true"><ellipse cx="36" cy="44" rx="24" ry="7" fill="#E6D9C8"/><path d="M14 28h44c0 12-9 18-22 18S14 40 14 28z" fill="#FFFCF8" stroke="#C9B8A4" stroke-width="1.4"/><path d="M24 27c1.5-7 6-11 12-11s10.5 4 12 11" stroke="#7FA38E" stroke-width="1.5" stroke-linecap="round"/><path d="M30 18c2-4 5-6 8-6" stroke="#A8C5B5" stroke-width="1.4" stroke-linecap="round"/></svg>';
 }
 function friendlyMessage(message, fallback = "\u8BF7\u7A0D\u540E\u518D\u8BD5") {
   const text = String(message || "").trim();
@@ -1306,22 +1334,24 @@ function macroPills(nutrition) {
   const share = macroShares(nutrition);
   return `<div class="macro-stack" aria-hidden="true"><i class="protein" style="width:${share.protein.toFixed(1)}%"></i><i class="fat" style="width:${share.fat.toFixed(1)}%"></i><i class="carb" style="width:${share.carb.toFixed(1)}%"></i></div><p class="macro-pills"><span>\u86CB\u767D\u8D28 <b class="num">${nutrition.protein}</b> \u514B</span><span>\u8102\u80AA <b class="num">${nutrition.fat}</b> \u514B</span><span>\u78B3\u6C34 <b class="num">${nutrition.carb}</b> \u514B</span></p>`;
 }
-function macroBars(totals, targets) {
+function macroTiles(totals, targets) {
   const rows = [
-    ["\u86CB\u767D\u8D28", totals.protein, targets?.protein],
-    ["\u8102\u80AA", totals.fat, targets?.fat],
-    ["\u78B3\u6C34", totals.carb, targets?.carb]
+    ["\u86CB\u767D\u8D28", "protein", totals.protein, targets?.protein],
+    ["\u78B3\u6C34\u5316\u5408\u7269", "carb", totals.carb, targets?.carb],
+    ["\u8102\u80AA", "fat", totals.fat, targets?.fat]
   ];
-  const gramSum = rows.reduce((sum, row) => sum + (Number(row[1]) || 0), 0) || 1;
-  return `<div class="macro-bars">${rows.map(([label, value, target]) => {
+  return `<div class="macro-tiles">${rows.map(([label, kind, value, target]) => {
     const amount = Number(value) || 0;
     const hasTarget = target != null && Number(target) > 0;
-    const ratio = hasTarget ? amount / Number(target) : amount / gramSum;
-    const width2 = Math.max(0, Math.min(ratio, 1)) * 100;
-    const over = hasTarget && ratio > 1;
-    const note = hasTarget ? `\u76EE\u6807 ${target} \u514B` : "\u5360\u4E09\u9879\u5408\u8BA1";
-    return `<div class="macro-line"><div class="macro-line-top"><span>${label}</span><span class="num">${amount} \u514B</span></div><div class="bar${over ? " over" : ""}"><span style="width:${width2.toFixed(1)}%"></span></div><p class="small muted">${note}${over ? " \xB7 \u5DF2\u8D85\u8FC7" : ""}</p></div>`;
+    const note = hasTarget ? `\u76EE\u6807 ${target} \u514B` : "\u672A\u8BBE\u76EE\u6807";
+    return `<article class="macro-tile"><span class="macro-ico ${kind}" aria-hidden="true">${macroGlyph(kind)}</span><p>${label}</p><strong class="num">${amount}<small>\u514B</small></strong><p class="small">${note}</p></article>`;
   }).join("")}</div>`;
+}
+function macroGlyph(kind) {
+  const open = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
+  if (kind === "protein") return `${open}<path d="M19 4C11 4 6 8 6 14a5 5 0 0 0 5 5c7 0 11-5 8-15Z"/><path d="M9 19c2-5 5-8 10-10"/></svg>`;
+  if (kind === "carb") return `${open}<path d="M5 14c2-6 5-8 7-8s5 2 7 8"/><path d="M7 14h10c0 4-2.5 6-5 6s-5-2-5-6Z"/></svg>`;
+  return `${open}<path d="M12 3.5c2.2 4 5 6.8 5 10.2a5 5 0 0 1-10 0c0-3.4 2.8-6.2 5-10.2Z"/></svg>`;
 }
 function ringSvg(ratio, tone) {
   const dash = ratio == null ? RING_C : Math.max(0, Math.min(ratio, 1)) * RING_C;
@@ -1347,7 +1377,7 @@ async function compressImage(file) {
 }
 
 // src/client/app.js
-var icons = { home: '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21v-8h6v8"/>', leaf: '<path d="M20 3c-9-1-16 3-16 10a7 7 0 0 0 7 7C18 20 21 12 20 3Z"/><path d="m4 21 11-12"/>', heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/>', user: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>', spark: '<path d="m12 3 2.6 6.4L21 12l-6.4 2.6L12 21l-2.6-6.4L3 12l6.4-2.6Z"/>', arrow: '<path d="M5 12h14m-5-5 5 5-5 5"/>', close: '<path d="m6 6 12 12M18 6 6 18"/>', bookmark: '<path d="M6 3h12v18l-6-4-6 4z"/>', sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/>', moon: '<path d="M21 13A9 9 0 0 1 11 3 9 9 0 1 0 21 13Z"/>', wind: '<path d="M3 8h12a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h5"/>', scale: '<path d="M4 5h16v16H4z"/><path d="M8 9a5 5 0 0 1 8 0M12 8v3"/>', bowl: '<path d="M3 12h18c0 6-5 8-9 8s-9-2-9-8Z"/><path d="M7 5v3m5-5v5m5-3v3"/>', check: '<path d="m5 12 4 4L19 6"/>', clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', back: '<path d="m14 5-7 7 7 7"/>', book: '<path d="M3 3h6a4 4 0 0 1 3 2 4 4 0 0 1 3-2h6v17h-6a4 4 0 0 0-3 2 4 4 0 0 0-3-2H3zM12 5v17"/>', cup: '<path d="M4 7h13v8a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM17 8h2a3 3 0 0 1 0 6h-2M7 3v1m4-1v1m4-1v1"/>', camera: '<path d="M4 8h3l2-3h6l2 3h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z"/><circle cx="12" cy="13" r="3.2"/>', send: '<path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/>' };
+var icons = { home: '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21v-8h6v8"/>', note: '<path d="M7 3h8l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M15 3v5h5M9 13h6M9 17h4"/>', leaf: '<path d="M20 3c-9-1-16 3-16 10a7 7 0 0 0 7 7C18 20 21 12 20 3Z"/><path d="m4 21 11-12"/>', heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/>', user: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>', spark: '<path d="m12 3 2.6 6.4L21 12l-6.4 2.6L12 21l-2.6-6.4L3 12l6.4-2.6Z"/>', arrow: '<path d="M5 12h14m-5-5 5 5-5 5"/>', close: '<path d="m6 6 12 12M18 6 6 18"/>', bookmark: '<path d="M6 3h12v18l-6-4-6 4z"/>', sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/>', moon: '<path d="M21 13A9 9 0 0 1 11 3 9 9 0 1 0 21 13Z"/>', wind: '<path d="M3 8h12a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h5"/>', scale: '<path d="M4 5h16v16H4z"/><path d="M8 9a5 5 0 0 1 8 0M12 8v3"/>', bowl: '<path d="M3 12h18c0 6-5 8-9 8s-9-2-9-8Z"/><path d="M7 5v3m5-5v5m5-3v3"/>', check: '<path d="m5 12 4 4L19 6"/>', clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', back: '<path d="m14 5-7 7 7 7"/>', book: '<path d="M3 3h6a4 4 0 0 1 3 2 4 4 0 0 1 3-2h6v17h-6a4 4 0 0 0-3 2 4 4 0 0 0-3-2H3zM12 5v17"/>', cup: '<path d="M4 7h13v8a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM17 8h2a3 3 0 0 1 0 6h-2M7 3v1m4-1v1m4-1v1"/>', camera: '<path d="M4 8h3l2-3h6l2 3h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z"/><circle cx="12" cy="13" r="3.2"/>', send: '<path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/>' };
 var icon = (name) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name] || icons.leaf}</svg>`;
 var esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 var dietPages = createDietPages({ getState: () => state, writeStore, toast, navigate, openDetail, icon, esc, render: () => render() });
@@ -1420,9 +1450,14 @@ function toast(s) {
 function paintIcons(root = document) {
   root.querySelectorAll("[data-icon]").forEach((el) => el.innerHTML = icon(el.dataset.icon));
 }
+function chineseDate(now = /* @__PURE__ */ new Date()) {
+  const week = ["\u5468\u65E5", "\u5468\u4E00", "\u5468\u4E8C", "\u5468\u4E09", "\u5468\u56DB", "\u5468\u4E94", "\u5468\u516D"][now.getDay()];
+  return `${now.getMonth() + 1}\u6708${now.getDate()}\u65E5 \xB7 ${week}`;
+}
 function heading2(title, sub, english = "YOUR WELLNESS SPACE") {
   const now = /* @__PURE__ */ new Date();
-  return `<div class="page-heading"><div><p class="eyebrow">${english}</p><h1>${title}</h1><p>${sub}</p></div><div class="date-stamp"><strong>${String(now.getMonth() + 1).padStart(2, "0")}<span>/${String(now.getDate()).padStart(2, "0")}</span></strong><span>\u4ECA\u5929 \xB7 \u597D\u597D\u751F\u6D3B</span></div></div>`;
+  const week = ["\u5468\u65E5", "\u5468\u4E00", "\u5468\u4E8C", "\u5468\u4E09", "\u5468\u56DB", "\u5468\u4E94", "\u5468\u516D"][now.getDay()];
+  return `<div class="page-heading"><div><p class="eyebrow">${english}</p><h1>${title}</h1><p>${sub}</p></div><div class="date-stamp"><strong>${now.getMonth() + 1}\u6708${now.getDate()}\u65E5</strong><span>${week}</span></div></div>`;
 }
 function sectionHead(title, label, button = "") {
   return `<div class="section-heading"><div><span class="eyebrow">${label}</span><h2>${title}</h2></div>${button}</div>`;
@@ -1459,8 +1494,14 @@ function render() {
     b.classList.toggle("active", b.dataset.page === page && b.classList.contains("nav-item"));
     if (b.classList.contains("nav-item")) b.setAttribute("aria-current", b.dataset.page === page ? "page" : "false");
   });
+  main.classList.remove("is-entering");
   main.innerHTML = (storageError ? `<div class="storage-error" role="alert">${esc(storageError)} <button class="text-button" data-action="retry-storage">\u91CD\u8BD5\u5B58\u50A8</button></div>` : "") + ({ home, today, library, food, care, profile }[page] || home)();
-  document.querySelector(".topbar-label").textContent = "\u77E5\u517B";
+  const label = document.querySelector(".topbar-label");
+  if (label) label.textContent = "\u77E5\u517B";
+  const slot = document.getElementById("date-slot");
+  if (slot) slot.textContent = chineseDate();
+  void main.offsetWidth;
+  main.classList.add("is-entering");
   paintIcons();
 }
 function navigate(next, replace = false) {
@@ -1636,13 +1677,13 @@ async function savePlan(id) {
   toast("\u5DF2\u4FDD\u5B58\uFF0C\u53EF\u5728\u201C\u6211\u7684\u65B9\u6848\u201D\u4E2D\u7EE7\u7EED\u8C03\u6574");
 }
 document.addEventListener("click", async (e) => {
-  const b = e.target.closest("button,a.brand");
+  const b = e.target.closest("button,a.brand,a.topbar-brand");
   if (!b) return;
   const d = b.dataset;
   if (await assessment.action(b)) return;
   try {
     if (await dietPages.onClick(b)) return;
-    if (b.classList.contains("brand")) {
+    if (b.classList.contains("brand") || b.classList.contains("topbar-brand")) {
       e.preventDefault();
       navigate("home");
     } else if (d.page) navigate(d.page);

@@ -22,6 +22,7 @@ export function createDietPages(ctx) {
   let composeError = '';
   let photoName = '';
   let pendingFile = null;
+  let libraryFilter = 'all';
 
   document.addEventListener('input', event => {
     const el = event.target;
@@ -53,37 +54,36 @@ export function createDietPages(ctx) {
     const state = ctx.getState();
     const todayMeals = mealsOn(state, localDateString());
     const meal = composeMeal || defaultMeal();
-    const status = busy ? '正在看这一餐' : (photoName ? `已选 ${photoName}` : '写好后发送，或拍一张');
-    return `${heading('记下这一餐', '拍一张，或写一句话。')}
-      <div class="diet-page">${catalogError ? `<div class="storage-error" role="alert">${ctx.esc(catalogError)}</div>` : ''}${urgent ? urgentBanner(urgent) : ''}
-      <div class="diet-layout">
-        <section>
-          <form id="meal-form" class="composer ${busy ? 'is-busy' : ''}">
-            <label class="meal-chip">这一餐
-              <select name="meal" aria-label="这一餐">${mealOrder.map(key => `<option value="${key}" ${key === meal ? 'selected' : ''}>${mealNames[key]}</option>`).join('')}</select>
-            </label>
-            <div class="composer-box">
-              <textarea name="text" maxlength="1500" rows="2" placeholder="中午吃了一碗米饭和番茄炒蛋" aria-label="写下吃了什么">${ctx.esc(composeText)}</textarea>
-              <div class="composer-actions">
-                <label class="icon-hit">
-                  <span class="sr-only">拍照或上传照片</span>
-                  <input id="meal-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" capture="environment">
-                  ${ctx.icon('camera')}
-                </label>
-                <button class="icon-hit send" type="submit" aria-label="${busy ? '正在识别' : '识别这一餐'}" aria-busy="${busy ? 'true' : 'false'}" ${busy ? 'disabled' : ''}>${ctx.icon('send')}</button>
-              </div>
+    const status = busy ? '正在看这一餐' : (photoName ? `已选 ${photoName}` : '');
+    const side = todayMeals.length
+      ? `<aside class="quiet-card today-side"><div class="quiet-copy"><h2>今天已经记下</h2><p>轻轻记一笔，养成更好的节奏。</p></div><div class="quiet-meals">${todayMeals.map(item => mealCard(item, true)).join('')}</div><button class="pill-link" data-page="today">看今天 ${ctx.icon('arrow')}</button></aside>`
+      : `<aside class="quiet-card today-side is-empty"><div class="quiet-art" aria-hidden="true">${bowlArt()}</div><div class="quiet-copy"><h2>今天还没记</h2><p>轻轻记一笔，养成更好的节奏。</p></div><button class="pill-link" data-page="today">看今天 ${ctx.icon('arrow')}</button></aside>`;
+    return `<div class="diet-page diet-record">${catalogError ? `<div class="storage-error" role="alert">${ctx.esc(catalogError)}</div>` : ''}${urgent ? urgentBanner(urgent) : ''}
+      <section class="hero-card">
+        <div class="hero-wash" aria-hidden="true"></div>
+        <div class="hero-copy"><h1>记下这一餐</h1><p>拍一张，或写一句话</p></div>
+        <form id="meal-form" class="composer ${busy ? 'is-busy' : ''}">
+          <label class="meal-chip"><span class="sr-only">这一餐</span>
+            <select name="meal" aria-label="这一餐">${mealOrder.map(key => `<option value="${key}" ${key === meal ? 'selected' : ''}>${mealNames[key]}</option>`).join('')}</select>
+          </label>
+          <div class="composer-box">
+            <textarea name="text" maxlength="1500" rows="2" placeholder="记录食物、感受或拍照…" aria-label="写下吃了什么">${ctx.esc(composeText)}</textarea>
+            <div class="composer-actions">
+              <label class="icon-hit">
+                <span class="sr-only">拍照或上传照片</span>
+                <input id="meal-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" capture="environment">
+                ${ctx.icon('camera')}
+              </label>
+              <button class="icon-hit send" type="submit" aria-label="${busy ? '正在识别' : '识别这一餐'}" aria-busy="${busy ? 'true' : 'false'}" ${busy ? 'disabled' : ''}>${ctx.icon('send')}</button>
             </div>
-            <p class="composer-status" role="status" data-photo-name>${ctx.esc(status)}</p>
-            ${composeError ? `<p class="composer-error" role="alert">${ctx.esc(composeError)}</p>` : ''}
-          </form>
-          ${draft ? editor(draft) : ''}
-        </section>
-        <aside class="diet-card today-side">
-          <h2>今天已经记下</h2>
-          ${todayMeals.length ? todayMeals.map(mealCard).join('') : '<p class="empty-copy">今天还没记。写一句话，或拍一张。</p>'}
-          <button class="text-button diet-link" data-page="today">看今天 ${ctx.icon('arrow')}</button>
-        </aside>
-      </div></div>`;
+          </div>
+          <p class="composer-status" role="status" data-photo-name>${ctx.esc(status)}</p>
+          ${composeError ? `<p class="composer-error" role="alert">${ctx.esc(composeError)}</p>` : ''}
+        </form>
+      </section>
+      ${draft ? editor(draft) : ''}
+      ${side}
+    </div>`;
   }
 
   function today() {
@@ -91,21 +91,23 @@ export function createDietPages(ctx) {
     const state = ctx.getState();
     const meals = mealsOn(state, localDateString());
     const body = meals.length
-      ? `${reportBlock()}${recommendBlock()}<section class="diet-section"><h2>今天记下的</h2>${meals.map(mealCard).join('')}</section>`
-      : '<div class="empty-state"><div><h3>今天还没记下一餐</h3><p>记下来之后，这里才会出现合计。</p><button class="primary-button" data-page="home">去记一餐</button></div></div>';
-    return `${heading('今天', '看看今天大约吃了多少。')}<div class="diet-page">${urgent ? urgentBanner(urgent) : ''}${body}</div>`;
+      ? `${reportBlock()}${mealStrip(meals)}${recommendBlock()}${adviceCard()}`
+      : `<div class="empty-hero"><div class="quiet-art" aria-hidden="true">${bowlArt()}</div><div><h2>今天还没记</h2><p>轻轻记一笔，这里才会出现合计。</p><button class="primary-button" data-page="home">去记一餐</button></div></div>`;
+    return `${heading('今日', '看看今天大约吃了多少。')}<div class="diet-page diet-today">${urgent ? urgentBanner(urgent) : ''}${body}</div>`;
   }
 
   function library() {
-    if (!catalog) return `${heading('食谱', '选一道，当作下一餐。')}<div class="diet-page">${catalogError ? `<div class="storage-error">${ctx.esc(catalogError)}</div>` : '<p class="empty-copy">正在准备食谱。</p>'}</div>`;
-    return `${heading('食谱', '选一道，当作下一餐。')}<div class="diet-page"><div class="food-grid diet-library">${catalog.recipes.map(recipe => `<button class="recipe-tile diet-recipe" data-diet-action="recipe" data-diet-id="${ctx.esc(recipe.id)}"><div class="recipe-type-art"><span>${mealNames[recipe.meal] || '家常'}</span></div><div class="recipe-tile-body"><h3>${ctx.esc(recipe.name)}</h3><p class="num">约 ${recipe.nutrition.kcal} 千卡</p>${recipe.blockedByHerbs ? '<span class="chip chip-quiet">先不主动推荐</span>' : ''}</div></button>`).join('')}</div></div>`;
+    if (!catalog) return `${heading('食谱', '按现在的记录，挑下一餐')}<div class="diet-page">${catalogError ? `<div class="storage-error">${ctx.esc(catalogError)}</div>` : '<p class="empty-copy">正在准备食谱。</p>'}</div>`;
+    const filters = [['all', '全部'], ['light', '清淡'], ['home', '家常'], ['breakfast', '早餐'], ['lunch', '午餐'], ['dinner', '晚餐']];
+    const list = catalog.recipes.filter(recipe => matchLibrary(recipe, libraryFilter));
+    return `${heading('食谱', '按现在的记录，挑下一餐')}<div class="diet-page diet-library-page"><div class="filter-row" aria-label="食谱筛选">${filters.map(([id, label]) => `<button type="button" class="filter-chip ${libraryFilter === id ? 'active' : ''}" data-diet-action="library-filter" data-diet-filter="${id}" aria-pressed="${libraryFilter === id}">${label}</button>`).join('')}</div><div class="recipe-list">${list.length ? list.map(recipeRow).join('') : '<p class="empty-copy">这一类里还没有食谱。</p>'}</div><p class="library-foot">记下今日饮食，遇见更合适的食谱</p></div>`;
   }
 
   function settings() {
     const settingsState = ctx.getState().dietSettings;
     const targets = settingsState.targets;
     const flags = settingsState.flags;
-    return `${heading('我的', '目标和记录都在这台手机上。')}<div class="diet-page"><section class="diet-card"><h2>每日目标</h2><p class="small muted">按自己的习惯填。留空的项目不参与对比。</p><form id="target-form"><div class="target-grid"><label class="form-label">热量（千卡）<input name="kcal" inputmode="numeric" min="0" max="10000" value="${targets.kcal ?? ''}"></label><label class="form-label">蛋白质（克）<input name="protein" inputmode="numeric" min="0" max="500" value="${targets.protein ?? ''}"></label><label class="form-label">脂肪（克）<input name="fat" inputmode="numeric" min="0" max="500" value="${targets.fat ?? ''}"></label><label class="form-label">碳水（克）<input name="carb" inputmode="numeric" min="0" max="500" value="${targets.carb ?? ''}"></label></div><label class="check-line"><input type="checkbox" name="confirm" ${targets.confirmed ? 'checked' : ''}> 把这些数字当作我的每日目标</label><button class="primary-button" type="submit">保存目标</button></form></section><section class="diet-card"><h2>这些情况下，建议会更谨慎</h2><p class="small muted">勾选后，不会按吃得少来催你，也不会因为蛋白质不够就推荐高蛋白的菜。</p><form id="flags-form">${flagBox('pregnancy', '孕期或备孕', flags.pregnancy)}${flagBox('lactation', '哺乳', flags.lactation)}${flagBox('minor', '未成年', flags.minor)}${flagBox('kidney', '肾病', flags.kidney)}${flagBox('diabetes', '糖尿病', flags.diabetes)}${flagBox('hypertension', '高血压', flags.hypertension)}${flagBox('eatingDisorder', '吃饭让我很痛苦，或出现催吐、绝食', flags.eatingDisorder)}<label class="check-line"><input type="checkbox" name="confirm" ${settingsState.flagsConfirmed ? 'checked' : ''}> 按这些情况调整文字建议</label><button class="primary-button" type="submit">保存</button></form></section><section class="diet-card"><h2>隐私与说明</h2><p class="small muted">记录只留在这台手机上。热量是估算。</p><button class="text-button" data-action="privacy">查看隐私与说明</button></section><section class="diet-card"><h2>清除这台手机上的记录</h2><p class="small muted">饮食记录和每日目标会一起清掉，清掉后找不回来。</p><button class="outline-button" data-action="reset">清除记录</button></section></div>`;
+    return `${heading('我的', '目标和记录都在这台手机上。')}<div class="diet-page diet-settings"><section class="diet-card"><h2>每日目标</h2><p class="small muted">按自己的习惯填。留空的项目不参与对比。</p><form id="target-form"><div class="target-grid"><label class="form-label">热量（千卡）<input name="kcal" inputmode="numeric" min="0" max="10000" value="${targets.kcal ?? ''}"></label><label class="form-label">蛋白质（克）<input name="protein" inputmode="numeric" min="0" max="500" value="${targets.protein ?? ''}"></label><label class="form-label">脂肪（克）<input name="fat" inputmode="numeric" min="0" max="500" value="${targets.fat ?? ''}"></label><label class="form-label">碳水（克）<input name="carb" inputmode="numeric" min="0" max="500" value="${targets.carb ?? ''}"></label></div><label class="check-line"><input type="checkbox" name="confirm" ${targets.confirmed ? 'checked' : ''}> 把这些数字当作我的每日目标</label><button class="primary-button" type="submit">保存目标</button></form></section><section class="diet-card"><h2>这些情况下，建议会更谨慎</h2><p class="small muted">勾选后，不会按吃得少来催你，也不会因为蛋白质不够就推荐高蛋白的菜。</p><form id="flags-form">${flagBox('pregnancy', '孕期或备孕', flags.pregnancy)}${flagBox('lactation', '哺乳', flags.lactation)}${flagBox('minor', '未成年', flags.minor)}${flagBox('kidney', '肾病', flags.kidney)}${flagBox('diabetes', '糖尿病', flags.diabetes)}${flagBox('hypertension', '高血压', flags.hypertension)}${flagBox('eatingDisorder', '吃饭让我很痛苦，或出现催吐、绝食', flags.eatingDisorder)}<label class="check-line"><input type="checkbox" name="confirm" ${settingsState.flagsConfirmed ? 'checked' : ''}> 按这些情况调整文字建议</label><button class="primary-button" type="submit">保存</button></form></section><section class="settings-list" aria-label="更多"><button class="settings-row" type="button" data-action="privacy"><span><strong>隐私与说明</strong><small>记录只留在这台手机上。热量是估算。</small></span>${ctx.icon('arrow')}</button><button class="settings-row" type="button" data-action="reset"><span><strong>清除这台手机上的记录</strong><small>饮食记录和每日目标会一起清掉。</small></span>${ctx.icon('arrow')}</button></section></div>`;
   }
 
   async function onClick(button) {
@@ -116,6 +118,7 @@ export function createDietPages(ctx) {
     else if (action === 'discard') { draft = null; urgent = null; ctx.render(); }
     else if (action === 'delete-meal') { await ctx.writeStore(storage => storage.removeMeal(button.dataset.dietId)); invalidateToday(); ctx.toast('已删除这一餐'); }
     else if (action === 'edit-meal') beginEdit(button.dataset.dietId);
+    else if (action === 'library-filter') { libraryFilter = button.dataset.dietFilter || 'all'; ctx.render(); }
     else if (action === 'recipe') openRecipe(button.dataset.dietId);
     else if (action === 'another') await anotherRecipe();
     else if (action === 'retry-today') { invalidateToday(); ctx.render(); }
@@ -340,33 +343,53 @@ export function createDietPages(ctx) {
       ? (totals.counted ? `今日约 ${totals.kcal} 千卡，还没有确认每日目标` : '今天还没有可计算的热量')
       : `今日约 ${totals.kcal} 千卡，目标 ${target.kcal} 千卡，${gap >= 0 ? `大约还少 ${gap} 千卡` : `大约多了 ${Math.abs(gap)} 千卡`}`;
     const gapCopy = gap == null
-      ? '<p class="dash-gap">每日目标还没确认，所以这里只显示合计。</p>'
-      : `<p class="dash-gap ${gap < 0 ? 'over' : ''}">和你确认过的 <span class="num">${target.kcal}</span> 千卡相比，${gap >= 0 ? `大约还少 <span class="num">${gap}</span> 千卡` : `大约多了 <span class="num">${Math.abs(gap)}</span> 千卡`}。</p>`;
+      ? '<p class="dash-gap">还没确认每日目标，这里只显示合计。</p>'
+      : `<p class="dash-gap ${gap < 0 ? 'over' : ''}">目标 <span class="num">${target.kcal}</span> 千卡 · ${gap >= 0 ? `还差 <span class="num">${gap}</span> 千卡` : `多了 <span class="num">${Math.abs(gap)}</span> 千卡`}</p>`;
+    const ringLabel = ratio == null
+      ? `<strong class="ring-word">合计</strong><span>${totals.counted ? '未设目标' : '没有可计算的热量'}</span>`
+      : `<span class="ring-kicker">今日进度</span><strong class="num">${Math.min(999, Math.round(ratio * 100))}%</strong><span>${ratio > 1 ? '超过目标' : '对照目标'}</span>`;
+    return `<section class="dash" aria-label="今日热量">
+      <div class="dash-main"><p class="eyebrow">今日摄入</p><p class="kcal-hero"><span class="num">${center}</span>${totals.counted ? '<small>千卡</small>' : ''}</p>${gapCopy}${report.skipped?.length ? `<p class="small muted">还没算进去：${report.skipped.map(name => ctx.esc(name)).join('、')}。</p>` : ''}</div>
+      <div class="ring-wrap" role="img" aria-label="${ctx.esc(aria)}">${ringSvg(ratio, tone)}<div class="ring-center">${ringLabel}</div></div>
+    </section>
+    ${macroTiles(totals, target)}`;
+  }
+
+  function adviceCard() {
+    if (!report || report.mode !== 'report') return '';
     const advice = report.adviceKept && report.advice
       ? `<p>${ctx.esc(report.advice)}</p>`
       : (report.adviceNote ? `<p class="small muted">${ctx.esc(gentleNotice(report.adviceNote))}</p>` : '');
-    return `<section class="dash" aria-label="今日热量">
-      <div class="ring-wrap" role="img" aria-label="${ctx.esc(aria)}">${ringSvg(ratio, tone)}<div class="ring-center"><strong class="num">${center}</strong><span>${totals.counted ? '今日千卡' : '没有可计算的热量'}</span></div></div>
-      <div class="dash-copy"><p class="eyebrow">今天大约</p>${gapCopy}${report.skipped?.length ? `<p class="small muted">还没算进去：${report.skipped.map(name => ctx.esc(name)).join('、')}。</p>` : ''}</div>
-    </section>
-    <section class="diet-card"><h2>三大营养素</h2>${macroBars(totals, target)}</section>
-    <section class="diet-card advice-card"><h2>今天的建议</h2>${advice}</section>`;
+    return advice ? `<section class="diet-card advice-card"><h2>今天的建议</h2>${advice}</section>` : '';
   }
 
   function recommendBlock() {
-    if (!recommendation) return '<section class="diet-card"><p class="composer-status">正在选下一餐。</p></section>';
-    if (!recommendation.recipe) return `<section class="diet-card"><h2>下一餐</h2><p>${ctx.esc(gentleNotice(recommendation.reason || recommendation.reasonNote || '今天先从食谱里自己挑一道吧。'))}</p><button class="text-button diet-link" data-page="library">去看食谱 ${ctx.icon('arrow')}</button></section>`;
+    if (!recommendation) return '<section class="diet-card next-wait"><p class="composer-status">正在选下一餐。</p></section>';
+    if (!recommendation.recipe) return `<section class="diet-card next-wait"><h2>下一餐建议</h2><p>${ctx.esc(gentleNotice(recommendation.reason || recommendation.reasonNote || '今天先从食谱里自己挑一道吧。'))}</p><button class="pill-link" data-page="library">去看食谱 ${ctx.icon('arrow')}</button></section>`;
     const recipe = recommendation.recipe;
-    const reason = recommendation.reasonKept && recommendation.reason
-      ? `<p class="advice-line">${ctx.esc(recommendation.reason)}</p>`
-      : (recommendation.reasonNote ? `<p class="small muted">${ctx.esc(gentleNotice(recommendation.reasonNote))}</p>` : '');
-    return `<article class="recipe-feature"><div class="recipe-feature-art"><span>${mealNames[recipe.meal] || '家常'}</span></div><div class="recipe-feature-body"><p class="eyebrow">下一餐可以从这道开始</p><h2>${ctx.esc(recipe.name)}</h2><p class="food-kcal"><span class="num">${recipe.nutrition.kcal}</span><small>约千卡</small></p>${macroPills(recipe.nutrition)}${reason}<div class="button-row"><button class="primary-button" data-diet-action="recipe" data-diet-id="${ctx.esc(recipe.id)}">查看做法</button><button class="outline-button" data-diet-action="another">换一道</button></div></div></article>`;
+    const blurb = recommendation.reasonKept && recommendation.reason
+      ? recommendation.reason
+      : (recommendation.reasonNote ? gentleNotice(recommendation.reasonNote) : (visibleNote(recipe.note) || `${mealNames[recipe.meal] || '家常'} · 约 ${recipe.nutrition.kcal} 千卡`));
+    return `<article class="next-meal"><div class="next-meal-copy"><p class="eyebrow">下一餐建议</p><h2>${ctx.esc(recipe.name)}</h2><p class="next-kcal"><span class="num">${recipe.nutrition.kcal}</span> 约千卡</p><p class="next-blurb">${ctx.esc(blurb)}</p><div class="next-actions"><button class="primary-button" data-diet-action="recipe" data-diet-id="${ctx.esc(recipe.id)}">查看这道 ${ctx.icon('arrow')}</button><button class="text-button" data-diet-action="another">换一道</button></div></div><div class="next-meal-art meal-${ctx.esc(recipe.meal)}" aria-hidden="true">${ctx.icon('bowl')}</div></article>`;
   }
 
-  function mealCard(meal) {
+  function mealStrip(meals) {
+    return `<section class="diet-section meal-strip"><div class="section-row"><h2>餐次记录</h2></div><div class="meal-scroll">${meals.map(item => mealCard(item, true)).join('')}</div></section>`;
+  }
+
+  function mealCard(meal, compact = false) {
     const estimated = meal.items.filter(item => item.nutrition);
     const kcal = estimated.reduce((sum, item) => sum + item.nutrition.kcal, 0);
+    const names = meal.items.map(item => item.name).filter(Boolean).join('、');
+    if (compact) {
+      return `<article class="meal-tile"><div class="meal-tile-top"><span class="meal-mark" aria-hidden="true"></span><div><p class="meal-kicker">${mealNames[meal.meal]}</p><p class="meal-kcal">${estimated.length ? `<span class="num">${kcal}</span> 千卡` : '暂时算不出来'}</p></div></div><p class="meal-names">${ctx.esc(names)}</p><span class="meal-actions"><button class="text-button" data-diet-action="edit-meal" data-diet-id="${ctx.esc(meal.id)}">修改</button><button class="text-button" data-diet-action="delete-meal" data-diet-id="${ctx.esc(meal.id)}">删除</button></span></article>`;
+    }
     return `<article class="saved-meal"><div class="section-mini"><span>${mealNames[meal.meal]} · <span class="num">${ctx.esc(meal.date)}</span></span><span class="meal-actions"><button class="text-button" data-diet-action="edit-meal" data-diet-id="${ctx.esc(meal.id)}">修改</button><button class="text-button" data-diet-action="delete-meal" data-diet-id="${ctx.esc(meal.id)}">删除</button></span></div><ul class="meal-lines">${meal.items.map(item => `<li><span>${ctx.esc(item.name)}</span><span class="num">${item.grams ?? '—'} 克</span><span class="num">${item.nutrition ? `约 ${item.nutrition.kcal} 千卡` : '暂时算不出来'}</span></li>`).join('')}</ul><p class="small muted">${estimated.length ? `这一餐大约 <span class="num">${kcal}</span> 千卡` : '这一餐还没有算出热量'}</p></article>`;
+  }
+
+  function recipeRow(recipe) {
+    const note = visibleNote(recipe.note);
+    return `<button class="recipe-row" type="button" data-diet-action="recipe" data-diet-id="${ctx.esc(recipe.id)}"><span class="recipe-swatch meal-${ctx.esc(recipe.meal)}" aria-hidden="true">${ctx.icon('bowl')}</span><span class="recipe-row-body"><strong>${ctx.esc(recipe.name)}</strong><span class="recipe-facts"><span class="num">约 ${recipe.nutrition.kcal} 千卡</span><span>${mealNames[recipe.meal] || '家常'}</span>${recipe.blockedByHerbs ? '<span>先不主动推荐</span>' : ''}</span>${note ? `<span class="recipe-line">${ctx.esc(note)}</span>` : ''}</span><span class="recipe-chevron" aria-hidden="true">${ctx.icon('arrow')}</span></button>`;
   }
 
   function openRecipe(id) {
@@ -416,8 +439,18 @@ function defaultMeal() {
   return hour < 21 ? 'dinner' : 'snack';
 }
 function heading(title, sub) {
-  const now = new Date();
-  return `<div class="page-heading diet-heading"><div><p class="eyebrow">知养</p><h1>${title}</h1><p>${sub}</p></div><div class="date-stamp"><strong class="num">${String(now.getMonth() + 1).padStart(2, '0')}<span>/${String(now.getDate()).padStart(2, '0')}</span></strong><span>今天 · 记在本机</span></div></div>`;
+  return `<header class="page-heading diet-heading"><div><h1>${title}</h1><p>${sub}</p></div></header>`;
+}
+function matchLibrary(recipe, filter) {
+  if (!filter || filter === 'all') return true;
+  if (filter === 'breakfast' || filter === 'lunch' || filter === 'dinner' || filter === 'snack') return recipe.meal === filter;
+  const note = `${recipe.note || ''}`;
+  if (filter === 'light') return note.includes('清淡');
+  if (filter === 'home') return note.includes('家常');
+  return true;
+}
+function bowlArt() {
+  return '<svg viewBox="0 0 72 56" fill="none" aria-hidden="true"><ellipse cx="36" cy="44" rx="24" ry="7" fill="#E6D9C8"/><path d="M14 28h44c0 12-9 18-22 18S14 40 14 28z" fill="#FFFCF8" stroke="#C9B8A4" stroke-width="1.4"/><path d="M24 27c1.5-7 6-11 12-11s10.5 4 12 11" stroke="#7FA38E" stroke-width="1.5" stroke-linecap="round"/><path d="M30 18c2-4 5-6 8-6" stroke="#A8C5B5" stroke-width="1.4" stroke-linecap="round"/></svg>';
 }
 export function friendlyMessage(message, fallback = '请稍后再试') {
   const text = String(message || '').trim();
@@ -463,6 +496,25 @@ function macroShares(nutrition) {
 function macroPills(nutrition) {
   const share = macroShares(nutrition);
   return `<div class="macro-stack" aria-hidden="true"><i class="protein" style="width:${share.protein.toFixed(1)}%"></i><i class="fat" style="width:${share.fat.toFixed(1)}%"></i><i class="carb" style="width:${share.carb.toFixed(1)}%"></i></div><p class="macro-pills"><span>蛋白质 <b class="num">${nutrition.protein}</b> 克</span><span>脂肪 <b class="num">${nutrition.fat}</b> 克</span><span>碳水 <b class="num">${nutrition.carb}</b> 克</span></p>`;
+}
+function macroTiles(totals, targets) {
+  const rows = [
+    ['蛋白质', 'protein', totals.protein, targets?.protein],
+    ['碳水化合物', 'carb', totals.carb, targets?.carb],
+    ['脂肪', 'fat', totals.fat, targets?.fat],
+  ];
+  return `<div class="macro-tiles">${rows.map(([label, kind, value, target]) => {
+    const amount = Number(value) || 0;
+    const hasTarget = target != null && Number(target) > 0;
+    const note = hasTarget ? `目标 ${target} 克` : '未设目标';
+    return `<article class="macro-tile"><span class="macro-ico ${kind}" aria-hidden="true">${macroGlyph(kind)}</span><p>${label}</p><strong class="num">${amount}<small>克</small></strong><p class="small">${note}</p></article>`;
+  }).join('')}</div>`;
+}
+function macroGlyph(kind) {
+  const open = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
+  if (kind === 'protein') return `${open}<path d="M19 4C11 4 6 8 6 14a5 5 0 0 0 5 5c7 0 11-5 8-15Z"/><path d="M9 19c2-5 5-8 10-10"/></svg>`;
+  if (kind === 'carb') return `${open}<path d="M5 14c2-6 5-8 7-8s5 2 7 8"/><path d="M7 14h10c0 4-2.5 6-5 6s-5-2-5-6Z"/></svg>`;
+  return `${open}<path d="M12 3.5c2.2 4 5 6.8 5 10.2a5 5 0 0 1-10 0c0-3.4 2.8-6.2 5-10.2Z"/></svg>`;
 }
 function macroBars(totals, targets) {
   const rows = [
