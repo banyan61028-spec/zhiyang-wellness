@@ -281,7 +281,18 @@ body{background:radial-gradient(680px 240px at 88% -40px,rgba(168,197,181,.38),t
 .next-actions .text-button{min-height:40px;color:var(--color-muted)}
 .next-meal-art,.recipe-swatch{display:grid;place-items:center;border-radius:18px;color:var(--color-primary)}
 .next-meal-art{min-height:112px;background:linear-gradient(160deg,#E7F0E4,#D5E6D4)}
-.next-meal-art svg,.recipe-swatch svg{width:32px;height:32px}
+.next-meal-art svg,.recipe-swatch svg,.recipe-cover svg{width:32px;height:32px}
+.recipe-photo{position:relative;overflow:hidden;padding:0}
+.recipe-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.recipe-photo svg{display:none}
+.recipe-photo.is-fallback svg{display:block}
+.recipe-swatch.recipe-photo,.next-meal-art.recipe-photo{display:block}
+.recipe-swatch.recipe-photo img{width:84px;height:84px}
+.next-meal-art.recipe-photo{min-height:128px}
+.next-meal-art.recipe-photo img{position:absolute;inset:0;width:100%;height:100%}
+.recipe-cover{display:block;width:100%;height:232px;overflow:hidden;background:#E7F0E4}
+.recipe-cover img{width:100%;height:232px;object-fit:cover}
+.detail-dialog{overflow:hidden}
 .next-wait{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
 .next-wait .pill-link{margin-top:4px}
 
@@ -352,4 +363,5 @@ body{background:radial-gradient(680px 240px at 88% -40px,rgba(168,197,181,.38),t
   .macro-tile{padding:10px 8px}
   .macro-tile p{font-size:11px}
   .macro-tile strong{font-size:18px}
+  .recipe-cover,.recipe-cover img{height:200px}
 }

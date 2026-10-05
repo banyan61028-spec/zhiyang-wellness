@@ -370,7 +370,7 @@ export function createDietPages(ctx) {
     const blurb = recommendation.reasonKept && recommendation.reason
       ? recommendation.reason
       : (recommendation.reasonNote ? gentleNotice(recommendation.reasonNote) : (visibleNote(recipe.note) || `${mealNames[recipe.meal] || '家常'} · 约 ${recipe.nutrition.kcal} 千卡`));
-    return `<article class="next-meal"><div class="next-meal-copy"><p class="eyebrow">下一餐建议</p><h2>${ctx.esc(recipe.name)}</h2><p class="next-kcal"><span class="num">${recipe.nutrition.kcal}</span> 约千卡</p><p class="next-blurb">${ctx.esc(blurb)}</p><div class="next-actions"><button class="primary-button" data-diet-action="recipe" data-diet-id="${ctx.esc(recipe.id)}">查看这道 ${ctx.icon('arrow')}</button><button class="text-button" data-diet-action="another">换一道</button></div></div><div class="next-meal-art meal-${ctx.esc(recipe.meal)}" aria-hidden="true">${ctx.icon('bowl')}</div></article>`;
+    return `<article class="next-meal"><div class="next-meal-copy"><p class="eyebrow">下一餐建议</p><h2>${ctx.esc(recipe.name)}</h2><p class="next-kcal"><span class="num">${recipe.nutrition.kcal}</span> 约千卡</p><p class="next-blurb">${ctx.esc(blurb)}</p><div class="next-actions"><button class="primary-button" data-diet-action="recipe" data-diet-id="${ctx.esc(recipe.id)}">查看这道 ${ctx.icon('arrow')}</button><button class="text-button" data-diet-action="another">换一道</button></div></div>${recipePhoto(recipe, 'next')}</article>`;
   }
 
   function mealStrip(meals) {
@@ -387,9 +387,16 @@ export function createDietPages(ctx) {
     return `<article class="saved-meal"><div class="section-mini"><span>${mealNames[meal.meal]} · <span class="num">${ctx.esc(meal.date)}</span></span><span class="meal-actions"><button class="text-button" data-diet-action="edit-meal" data-diet-id="${ctx.esc(meal.id)}">修改</button><button class="text-button" data-diet-action="delete-meal" data-diet-id="${ctx.esc(meal.id)}">删除</button></span></div><ul class="meal-lines">${meal.items.map(item => `<li><span>${ctx.esc(item.name)}</span><span class="num">${item.grams ?? '—'} 克</span><span class="num">${item.nutrition ? `约 ${item.nutrition.kcal} 千卡` : '暂时算不出来'}</span></li>`).join('')}</ul><p class="small muted">${estimated.length ? `这一餐大约 <span class="num">${kcal}</span> 千卡` : '这一餐还没有算出热量'}</p></article>`;
   }
 
+  function recipePhoto(recipe, variant) {
+    const src = `/recipes/${encodeURIComponent(recipe.id)}.jpg`;
+    const frame = variant === 'cover' ? 'recipe-cover' : variant === 'next' ? 'next-meal-art' : 'recipe-swatch';
+    const alt = variant === 'cover' ? ctx.esc(recipe.name) : '';
+    return `<span class="${frame} recipe-photo meal-${ctx.esc(recipe.meal)}"><img src="${ctx.esc(src)}" alt="${alt}" loading="lazy" onerror="this.hidden=true;this.parentElement.classList.add('is-fallback')">${ctx.icon('bowl')}</span>`;
+  }
+
   function recipeRow(recipe) {
     const note = visibleNote(recipe.note);
-    return `<button class="recipe-row" type="button" data-diet-action="recipe" data-diet-id="${ctx.esc(recipe.id)}"><span class="recipe-swatch meal-${ctx.esc(recipe.meal)}" aria-hidden="true">${ctx.icon('bowl')}</span><span class="recipe-row-body"><strong>${ctx.esc(recipe.name)}</strong><span class="recipe-facts"><span class="num">约 ${recipe.nutrition.kcal} 千卡</span><span>${mealNames[recipe.meal] || '家常'}</span>${recipe.blockedByHerbs ? '<span>先不主动推荐</span>' : ''}</span>${note ? `<span class="recipe-line">${ctx.esc(note)}</span>` : ''}</span><span class="recipe-chevron" aria-hidden="true">${ctx.icon('arrow')}</span></button>`;
+    return `<button class="recipe-row" type="button" data-diet-action="recipe" data-diet-id="${ctx.esc(recipe.id)}">${recipePhoto(recipe, 'row')}<span class="recipe-row-body"><strong>${ctx.esc(recipe.name)}</strong><span class="recipe-facts"><span class="num">约 ${recipe.nutrition.kcal} 千卡</span><span>${mealNames[recipe.meal] || '家常'}</span>${recipe.blockedByHerbs ? '<span>先不主动推荐</span>' : ''}</span>${note ? `<span class="recipe-line">${ctx.esc(note)}</span>` : ''}</span><span class="recipe-chevron" aria-hidden="true">${ctx.icon('arrow')}</span></button>`;
   }
 
   function openRecipe(id) {
@@ -397,7 +404,7 @@ export function createDietPages(ctx) {
     if (!recipe || recipe.id !== id && recommendation?.recipe?.id !== id) return;
     const chosen = recipe.id === id ? recipe : recommendation.recipe;
     const note = visibleNote(chosen.note);
-    ctx.openDetail(`<div class="detail-body"><span class="chip">食谱</span><h2>${ctx.esc(chosen.name)}</h2><p class="small muted">${mealNames[chosen.meal] || '家常'}</p><p class="food-kcal"><span class="num">${chosen.nutrition.kcal}</span><small>约千卡</small></p>${macroPills(chosen.nutrition)}<h3>原料和克数</h3><div class="ingredient-list">${chosen.ingredients.map(item => `<span>${ctx.esc(item.name)} <span class="num">${item.grams}</span> 克</span>`).join('')}</div><h3>做法</h3><ol class="step-list">${chosen.steps.map(step => `<li>${ctx.esc(step)}</li>`).join('')}</ol>${note ? `<p class="gentle-note">${ctx.esc(note)}</p>` : ''}${chosen.avoid?.includes('kidney_high_protein') ? '<p class="boundary-note">这道蛋白质比较高。有肾病情况时，不会因为蛋白质不够就推荐它。</p>' : ''}</div>`, '食谱');
+    ctx.openDetail(`${recipePhoto(chosen, 'cover')}<div class="detail-body"><span class="chip">食谱</span><h2>${ctx.esc(chosen.name)}</h2><p class="small muted">${mealNames[chosen.meal] || '家常'}</p><p class="food-kcal"><span class="num">${chosen.nutrition.kcal}</span><small>约千卡</small></p>${macroPills(chosen.nutrition)}<h3>原料和克数</h3><div class="ingredient-list">${chosen.ingredients.map(item => `<span>${ctx.esc(item.name)} <span class="num">${item.grams}</span> 克</span>`).join('')}</div><h3>做法</h3><ol class="step-list">${chosen.steps.map(step => `<li>${ctx.esc(step)}</li>`).join('')}</ol>${note ? `<p class="gentle-note">${ctx.esc(note)}</p>` : ''}${chosen.avoid?.includes('kidney_high_protein') ? '<p class="boundary-note">这道蛋白质比较高。有肾病情况时，不会因为蛋白质不够就推荐它。</p>' : ''}</div>`, '食谱');
   }
 
   async function saveTargets(form) {

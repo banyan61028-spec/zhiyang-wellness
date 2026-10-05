@@ -27,6 +27,11 @@ test('example tables parse, keep sources, and do not invent recipe calories', ()
   assert.deepEqual(parsed.errors, []);
   assert.ok(parsed.catalog.foods.length >= 30);
   assert.equal(source.recipes.length, 20);
+  for (const recipe of source.recipes) {
+    const photo = readFileSync(`public/recipes/${recipe.id}.jpg`);
+    assert.equal(photo[0], 0xff, recipe.id);
+    assert.equal(photo[1], 0xd8, recipe.id);
+  }
   assert.equal(source.getRecipe('egg-rice'), null);
   assert.ok(source.recipes.every(recipe => recipe.example === true && recipe.sourceNote.includes('待审核')));
   assert.ok(parsed.catalog.foods.every(food => food.example === true && food.sourceNote));
