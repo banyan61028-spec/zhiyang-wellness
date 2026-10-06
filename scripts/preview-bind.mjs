@@ -1,7 +1,7 @@
 import { networkInterfaces } from 'node:os';
 
 export function readPreviewBind(env = {}) {
-  const host = String(env.HOST ?? '').trim() || '127.0.0.1';
+  const host = String(env.HOST ?? '').trim() || (String(env.ZHIYANG_START ?? '') === '1' ? '0.0.0.0' : '127.0.0.1');
   const raw = String(env.PORT ?? '').trim();
   let port = 8765;
   if (raw) {

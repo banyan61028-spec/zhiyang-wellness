@@ -17,5 +17,5 @@ try {
   if (code !== 0) process.exit(code || 1);
 }
 
-if (!String(process.env.HOST ?? '').trim()) process.env.HOST = '0.0.0.0';
+process.env.ZHIYANG_START = '1';
 await import('./dev.mjs');

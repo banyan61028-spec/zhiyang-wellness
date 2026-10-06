@@ -8,6 +8,8 @@ test('preview bind defaults to loopback and follows HOST and PORT', () => {
   assert.deepEqual(readPreviewBind({ PORT: 'nope' }), { host: '127.0.0.1', port: 8765 });
   assert.deepEqual(readPreviewBind({ PORT: '0' }), { host: '127.0.0.1', port: 8765 });
   assert.deepEqual(readPreviewBind({ PORT: '65536' }), { host: '127.0.0.1', port: 8765 });
+  assert.deepEqual(readPreviewBind({ ZHIYANG_START: '1' }), { host: '0.0.0.0', port: 8765 });
+  assert.deepEqual(readPreviewBind({ ZHIYANG_START: '1', HOST: '127.0.0.1' }), { host: '127.0.0.1', port: 8765 });
 });
 
 test('binding all interfaces prints LAN links and the quota warning', () => {
