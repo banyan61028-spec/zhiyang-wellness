@@ -1438,6 +1438,43 @@ async function bootStorage() {
   if (storage) await refreshState();
   else render();
 }
+async function readInviteStatus() {
+  try {
+    const response = await fetch("/api/invite/status", { headers: { accept: "application/json" }, cache: "no-store" });
+    if (!response.ok) return { unlocked: false, unavailable: true };
+    const body = await response.json();
+    return { unlocked: body.unlocked === true, unavailable: false };
+  } catch {
+    return { unlocked: false, unavailable: true };
+  }
+}
+function showInvite(message = "") {
+  main.innerHTML = `<section class="invite-gate"><p class="eyebrow">\u77E5\u517B</p><h1>\u8BF7\u8F93\u5165\u9080\u8BF7\u7801</h1><p>\u6838\u5BF9\u4E4B\u540E\u5C31\u53EF\u4EE5\u5F00\u59CB\u8BB0\u5F55\u4ECA\u5929\u5403\u4E86\u4EC0\u4E48\u3002</p><form id="invite-form"><label class="form-label">\u9080\u8BF7\u7801<input name="code" autocomplete="off" autocapitalize="off" spellcheck="false" autofocus></label><p class="invite-error" role="alert">${esc(message)}</p><button class="primary-button" type="submit">\u8FDB\u5165</button></form></section>`;
+}
+async function submitInvite(form) {
+  const error = form.querySelector(".invite-error");
+  const button = form.querySelector("button");
+  const code = String(new FormData(form).get("code") || "").trim();
+  if (!code) {
+    error.textContent = "\u8BF7\u5148\u586B\u5199\u9080\u8BF7\u7801";
+    return;
+  }
+  button.disabled = true;
+  error.textContent = "";
+  try {
+    const response = await fetch("/api/invite", { method: "POST", headers: { "content-type": "application/json", accept: "application/json" }, body: JSON.stringify({ code }) });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok || body.unlocked !== true) {
+      error.textContent = typeof body.error === "string" && body.error ? body.error : "\u9080\u8BF7\u7801\u4E0D\u5BF9\uFF0C\u8BF7\u518D\u8BD5\u4E00\u6B21";
+      return;
+    }
+    location.reload();
+  } catch {
+    error.textContent = "\u6682\u65F6\u65E0\u6CD5\u6838\u5BF9\u9080\u8BF7\u7801\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5";
+  } finally {
+    button.disabled = false;
+  }
+}
 var pendingPlans = /* @__PURE__ */ new Map();
 var main = document.getElementById("main");
 var detail = document.getElementById("detail-dialog");
@@ -1810,6 +1847,11 @@ document.addEventListener("click", async (e) => {
   }
 });
 document.addEventListener("submit", async (e) => {
+  if (e.target.id === "invite-form") {
+    e.preventDefault();
+    await submitInvite(e.target);
+    return;
+  }
   try {
     if (await dietPages.onSubmit(e)) return;
   } catch (error) {
@@ -1853,31 +1895,37 @@ window.addEventListener("resize", () => {
   }
   width = innerWidth;
 });
-page = ["home", "today", "library", "profile"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "home";
-render();
-try {
-  if (!localStorage.getItem("zhiyang-privacy-ack")) document.getElementById("first-run").hidden = false;
-} catch {
-}
-historyAPI(true);
-await bootStorage();
-var context = document.modelContext;
-if (context?.registerTool) {
-  const life = new AbortController();
-  const tools = [{ name: "get_wellness_demo_overview", title: "\u8BFB\u53D6\u5F53\u524D\u9875\u9762\u6982\u89C8", description: "Read the current page and counts of saved plans and content. Does not expose chat or personal profile data.", inputSchema: { type: "object", properties: {}, additionalProperties: false }, annotations: { readOnlyHint: true, untrustedContentHint: false }, execute(input) {
-    if (!input || typeof input !== "object" || Object.keys(input).length) throw new Error("Expected an empty object");
-    return { page, mode: "mock", savedPlans: state.plans.length, savedItems: state.saved.length };
-  } }, { name: "navigate_wellness_demo", title: "\u5207\u6362\u9875\u9762", description: "Navigate to an existing page. Does not send a message, assess health, or save a plan.", inputSchema: { type: "object", properties: { page: { type: "string", enum: ["home", "today", "library", "food", "care", "profile"] } }, required: ["page"], additionalProperties: false }, annotations: { readOnlyHint: false, untrustedContentHint: false }, execute(input) {
-    if (!input || Object.keys(input).length !== 1 || !["home", "today", "library", "food", "care", "profile"].includes(input.page)) throw new Error("Invalid page");
-    navigate(input.page);
-    return { page };
-  } }];
-  for (const tool of tools) {
-    try {
-      Promise.resolve(context.registerTool(tool, { signal: life.signal })).catch(() => {
-      });
-    } catch {
-    }
+var invite = await readInviteStatus();
+if (!invite.unlocked) {
+  document.body.classList.add("is-locked");
+  showInvite(invite.unavailable ? "\u6682\u65F6\u65E0\u6CD5\u786E\u8BA4\u5165\u53E3\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5" : "");
+} else {
+  page = ["home", "today", "library", "profile"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "home";
+  render();
+  try {
+    if (!localStorage.getItem("zhiyang-privacy-ack")) document.getElementById("first-run").hidden = false;
+  } catch {
   }
-  window.addEventListener("pagehide", () => life.abort(), { once: true });
+  historyAPI(true);
+  await bootStorage();
+  const context = document.modelContext;
+  if (context?.registerTool) {
+    const life = new AbortController();
+    const tools = [{ name: "get_wellness_demo_overview", title: "\u8BFB\u53D6\u5F53\u524D\u9875\u9762\u6982\u89C8", description: "Read the current page and counts of saved plans and content. Does not expose chat or personal profile data.", inputSchema: { type: "object", properties: {}, additionalProperties: false }, annotations: { readOnlyHint: true, untrustedContentHint: false }, execute(input) {
+      if (!input || typeof input !== "object" || Object.keys(input).length) throw new Error("Expected an empty object");
+      return { page, mode: "mock", savedPlans: state.plans.length, savedItems: state.saved.length };
+    } }, { name: "navigate_wellness_demo", title: "\u5207\u6362\u9875\u9762", description: "Navigate to an existing page. Does not send a message, assess health, or save a plan.", inputSchema: { type: "object", properties: { page: { type: "string", enum: ["home", "today", "library", "food", "care", "profile"] } }, required: ["page"], additionalProperties: false }, annotations: { readOnlyHint: false, untrustedContentHint: false }, execute(input) {
+      if (!input || Object.keys(input).length !== 1 || !["home", "today", "library", "food", "care", "profile"].includes(input.page)) throw new Error("Invalid page");
+      navigate(input.page);
+      return { page };
+    } }];
+    for (const tool of tools) {
+      try {
+        Promise.resolve(context.registerTool(tool, { signal: life.signal })).catch(() => {
+        });
+      } catch {
+      }
+    }
+    window.addEventListener("pagehide", () => life.abort(), { once: true });
+  }
 }

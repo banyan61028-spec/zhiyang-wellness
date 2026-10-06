@@ -365,3 +365,14 @@ body{background:radial-gradient(680px 240px at 88% -40px,rgba(168,197,181,.38),t
   .macro-tile strong{font-size:18px}
   .recipe-cover,.recipe-cover img{height:200px}
 }
+body.is-locked .sidebar,body.is-locked .topbar,body.is-locked .site-footer,body.is-locked #first-run{display:none}
+body.is-locked .workspace{width:100%;margin:0;padding:0}
+body.is-locked #main{max-width:440px;min-height:100vh;display:grid;place-items:center;padding:32px 20px}
+.invite-gate{width:100%;background:var(--color-surface);border-radius:var(--radius-lg);box-shadow:var(--shadow-md);padding:32px 28px 28px}
+.invite-gate .eyebrow{color:var(--color-sage);letter-spacing:.16em}
+.invite-gate h1{margin:8px 0 10px;color:var(--color-ink);font-size:28px;font-weight:650}
+.invite-gate>p{color:var(--color-muted);font-size:15px;line-height:1.7}
+.invite-gate .form-label{margin-top:22px;color:var(--color-ink)}
+.invite-gate input{border-radius:14px;background:var(--color-bg);border-color:transparent;min-height:48px}
+.invite-error{min-height:1.4em;margin:10px 0 0;color:var(--color-over);font-size:14px}
+.invite-gate .primary-button{width:100%;margin-top:12px;border-radius:999px}

@@ -32,6 +32,8 @@ const env = {
   DASHSCOPE_TIMEOUT_MS: process.env.DASHSCOPE_TIMEOUT_MS || '',
   BOOHEE_API_KEY: process.env.BOOHEE_API_KEY || '',
   BOOHEE_BASE_URL: process.env.BOOHEE_BASE_URL || '',
+  INVITE_CODES: process.env.INVITE_CODES || '',
+  INVITE_SECRET: process.env.INVITE_SECRET || '',
   NUTRITION_FOODS_CSV: await readFile('data/nutrition/foods.csv', 'utf8'),
   NUTRITION_RECIPES_CSV: await readFile('data/nutrition/recipes.csv', 'utf8'),
   NUTRITION_CONFIG: await readFile('data/nutrition/config.json', 'utf8'),
@@ -51,4 +53,9 @@ createServer(async (req, res) => {
   } catch { res.writeHead(500); res.end('Preview unavailable'); }
 }).listen(port, host, () => {
   for (const line of previewStartupLines({ host, port, addresses: lanIpv4Addresses() })) console.log(line);
+  if (String(process.env.INVITE_CODES || '').trim()) {
+    console.log(String(process.env.INVITE_SECRET || '').trim()
+      ? '邀请码已开启。未持有有效 cookie 的访问会先看到邀请页。'
+      : '已设置 INVITE_CODES，但缺少 INVITE_SECRET，邀请码暂时无法通过。');
+  }
 });

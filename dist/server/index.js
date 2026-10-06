@@ -3103,10 +3103,141 @@ async function readJson(request, maxBytes) {
   return JSON.parse(new TextDecoder().decode(joined));
 }
 
+// src/server/invite.js
+var COOKIE = "zhiyang_invite";
+var MAX_AGE_SECONDS = 90 * 24 * 60 * 60;
+var encoder = new TextEncoder();
+function parseInviteCodes(value) {
+  const seen = /* @__PURE__ */ new Set();
+  for (const part of String(value ?? "").split(/[\s,]+/)) {
+    const code = part.trim();
+    if (code) seen.add(code);
+  }
+  return [...seen];
+}
+function readInviteConfig(env = {}) {
+  const codes = parseInviteCodes(env.INVITE_CODES);
+  const secret = String(env.INVITE_SECRET ?? "").trim();
+  return { enabled: codes.length > 0, codes, secret };
+}
+function safeEqual(left, right) {
+  const a = String(left);
+  const b = String(right);
+  const length = Math.max(a.length, b.length);
+  let diff = a.length ^ b.length;
+  for (let index = 0; index < length; index += 1) diff |= (a.charCodeAt(index) || 0) ^ (b.charCodeAt(index) || 0);
+  return diff === 0;
+}
+function codeAccepted(code, codes) {
+  const value = String(code ?? "").trim();
+  if (!value || !codes?.length) return false;
+  let matched = 0;
+  for (const expected of codes) matched |= safeEqual(value, expected) ? 1 : 0;
+  return matched === 1;
+}
+async function hmacHex(secret, message) {
+  const key = await crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(message));
+  return [...new Uint8Array(signature)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+async function signInviteToken(secret, now = Date.now()) {
+  const exp = now + MAX_AGE_SECONDS * 1e3;
+  const payload = `v1.${exp}`;
+  return `${payload}.${await hmacHex(secret, payload)}`;
+}
+async function verifyInviteToken(token, secret, now = Date.now()) {
+  try {
+    if (!secret) return false;
+    const match = /^v1\.(\d+)\.([a-f0-9]{64})$/.exec(String(token ?? ""));
+    if (!match) return false;
+    const exp = Number(match[1]);
+    if (!Number.isSafeInteger(exp) || exp < now || exp > now + MAX_AGE_SECONDS * 1e3 + 6e4) return false;
+    const payload = `v1.${exp}`;
+    return safeEqual(await hmacHex(secret, payload), match[2]);
+  } catch {
+    return false;
+  }
+}
+function readCookie(header, name = COOKIE) {
+  for (const part of String(header ?? "").split(";")) {
+    const index = part.indexOf("=");
+    if (index < 1) continue;
+    if (part.slice(0, index).trim() !== name) continue;
+    try {
+      return decodeURIComponent(part.slice(index + 1).trim());
+    } catch {
+      return "";
+    }
+  }
+  return "";
+}
+function requestIsHttps(request, url) {
+  if (url.protocol === "https:") return true;
+  const forwarded = request.headers.get("x-forwarded-proto") || request.headers.get("x-forwarded-protocol") || "";
+  if (forwarded.split(",")[0].trim().toLowerCase() === "https") return true;
+  return /(?:^|[;,])\s*proto=https\b/i.test(request.headers.get("forwarded") || "");
+}
+function inviteCookie(token, secure) {
+  return `${COOKIE}=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${MAX_AGE_SECONDS}${secure ? "; Secure" : ""}`;
+}
+var json2 = (body, status = 200, extra = {}) => new Response(JSON.stringify(body), {
+  status,
+  headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", "x-content-type-options": "nosniff", ...extra }
+});
+async function readInviteJson(request) {
+  if (Number(request.headers.get("content-length")) > 2048) {
+    const error = new Error("size");
+    throw error;
+  }
+  const text = await request.text();
+  if (text.length > 2048) throw new Error("size");
+  return JSON.parse(text);
+}
+async function inviteAllows(request, env) {
+  const config = readInviteConfig(env);
+  if (!config.enabled) return true;
+  return verifyInviteToken(readCookie(request.headers.get("cookie")), config.secret);
+}
+async function handleInvite(request, env, url) {
+  const config = readInviteConfig(env);
+  if (url.pathname === "/api/invite/status") {
+    if (request.method !== "GET") return json2({ error: "\u8BF7\u4F7F\u7528 GET \u8BF7\u6C42" }, 405);
+    if (!config.enabled) return json2({ unlocked: true });
+    const unlocked = await verifyInviteToken(readCookie(request.headers.get("cookie")), config.secret);
+    return json2({ unlocked });
+  }
+  if (request.method !== "POST") return json2({ error: "\u8BF7\u4F7F\u7528 POST \u8BF7\u6C42" }, 405);
+  if (!config.enabled) return json2({ unlocked: true });
+  if (!config.secret) return json2({ error: "\u6682\u65F6\u65E0\u6CD5\u6838\u5BF9\u9080\u8BF7\u7801\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5" }, 503);
+  if (!request.headers.get("content-type")?.startsWith("application/json")) return json2({ error: "\u8BF7\u6C42\u9700\u4E3A JSON" }, 415);
+  let body;
+  try {
+    body = await readInviteJson(request);
+  } catch (error) {
+    return json2({ error: error.message === "size" ? "\u8BF7\u6C42\u5185\u5BB9\u8FC7\u957F" : "\u8BF7\u5148\u586B\u5199\u9080\u8BF7\u7801" }, error.message === "size" ? 413 : 400);
+  }
+  const code = typeof body?.code === "string" ? body.code : "";
+  if (!String(code).trim()) return json2({ error: "\u8BF7\u5148\u586B\u5199\u9080\u8BF7\u7801" }, 400);
+  if (!codeAccepted(code, config.codes)) return json2({ error: "\u9080\u8BF7\u7801\u4E0D\u5BF9\uFF0C\u8BF7\u518D\u8BD5\u4E00\u6B21" }, 401);
+  const token = await signInviteToken(config.secret);
+  return json2({ unlocked: true }, 200, { "set-cookie": inviteCookie(token, requestIsHttps(request, url)) });
+}
+
 // src/server/index.js
 var MAX_BYTES = 48 * 1024;
 var buckets = /* @__PURE__ */ new Map();
-var json2 = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", "x-content-type-options": "nosniff" } });
+var json3 = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", "x-content-type-options": "nosniff" } });
+function takeRateLimit(request) {
+  const key = request.headers.get("cf-connecting-ip") || "local";
+  const now = Date.now();
+  for (const [bucketKey, value] of buckets) if (now - value.start > 6e4) buckets.delete(bucketKey);
+  const bucket = buckets.get(key) || { start: now, count: 0 };
+  bucket.count += 1;
+  if (buckets.size >= 1e3 && !buckets.has(key)) return json3({ error: "\u670D\u52A1\u7E41\u5FD9\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5" }, 429);
+  buckets.set(key, bucket);
+  if (bucket.count > 40) return json3({ error: "\u8BF7\u6C42\u8F83\u591A\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5" }, 429);
+  return null;
+}
 async function boundedJSON(request) {
   if (Number(request.headers.get("content-length")) > MAX_BYTES) throw new Error("size");
   const reader = request.body?.getReader();
@@ -3135,22 +3266,23 @@ var index_default = {
   async fetch(request, env = {}) {
     const url = new URL(request.url);
     const diet = url.pathname.startsWith("/api/diet");
-    if (!diet && url.pathname !== "/api/agent") return env.ASSETS ? env.ASSETS.fetch(request) : new Response("Not found", { status: 404 });
-    if (request.headers.get("origin") && request.headers.get("origin") !== url.origin) return json2({ error: "\u8BF7\u6C42\u6765\u6E90\u4E0D\u5339\u914D" }, 403);
-    if (request.method !== "POST" && !(diet && request.method === "GET")) return json2({ error: "\u8BF7\u4F7F\u7528 POST \u8BF7\u6C42" }, 405);
-    if (request.method === "POST" && !diet && !request.headers.get("content-type")?.startsWith("application/json")) return json2({ error: "\u8BF7\u6C42\u9700\u4E3A JSON" }, 415);
-    const key = request.headers.get("cf-connecting-ip") || "local";
-    const now = Date.now();
-    for (const [key2, value] of buckets) if (now - value.start > 6e4) buckets.delete(key2);
-    const bucket = buckets.get(key) || { start: now, count: 0 };
-    bucket.count++;
-    if (buckets.size >= 1e3 && !buckets.has(key)) return json2({ error: "\u670D\u52A1\u7E41\u5FD9\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5" }, 429);
-    buckets.set(key, bucket);
-    if (bucket.count > 40) return json2({ error: "\u8BF7\u6C42\u8F83\u591A\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5" }, 429);
+    const invite = url.pathname === "/api/invite" || url.pathname === "/api/invite/status";
+    if (!diet && !invite && url.pathname !== "/api/agent") return env.ASSETS ? env.ASSETS.fetch(request) : new Response("Not found", { status: 404 });
+    if (request.headers.get("origin") && request.headers.get("origin") !== url.origin) return json3({ error: "\u8BF7\u6C42\u6765\u6E90\u4E0D\u5339\u914D" }, 403);
+    if (invite) {
+      const limited2 = takeRateLimit(request);
+      if (limited2) return limited2;
+      return handleInvite(request, env, url);
+    }
+    if (request.method !== "POST" && !(diet && request.method === "GET")) return json3({ error: "\u8BF7\u4F7F\u7528 POST \u8BF7\u6C42" }, 405);
+    if (request.method === "POST" && !diet && !request.headers.get("content-type")?.startsWith("application/json")) return json3({ error: "\u8BF7\u6C42\u9700\u4E3A JSON" }, 415);
+    const limited = takeRateLimit(request);
+    if (limited) return limited;
+    if (!await inviteAllows(request, env)) return json3({ error: "\u8BF7\u5148\u586B\u5199\u9080\u8BF7\u7801" }, 401);
     try {
-      return diet ? handleDiet(request, env, url) : json2(respond(await boundedJSON(request)));
+      return diet ? handleDiet(request, env, url) : json3(respond(await boundedJSON(request)));
     } catch (error) {
-      return json2({ error: error.message === "size" ? "\u8BF7\u6C42\u5185\u5BB9\u8FC7\u957F" : "\u8BF7\u6C42\u6216\u56DE\u590D\u6821\u9A8C\u672A\u901A\u8FC7" }, error.message === "size" ? 413 : 400);
+      return json3({ error: error.message === "size" ? "\u8BF7\u6C42\u5185\u5BB9\u8FC7\u957F" : "\u8BF7\u6C42\u6216\u56DE\u590D\u6821\u9A8C\u672A\u901A\u8FC7" }, error.message === "size" ? 413 : 400);
     }
   }
 };

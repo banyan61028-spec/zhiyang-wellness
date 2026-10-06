@@ -17,7 +17,21 @@ npm run build
 npm run dev
 ```
 
-预览地址默认是 `http://127.0.0.1:8765`。没有账号，饮食记录存在当前浏览器的 IndexedDB 里。
+预览地址默认是 `http://127.0.0.1:8765`。没有账号，饮食记录存在当前浏览器的 IndexedDB 里。不设置 `INVITE_CODES` 时，本地预览不会要邀请码。
+
+## 公开部署
+
+朋友需要网址和邀请码才能使用。记录仍在各自浏览器里，邀请码不是账号。环境变量、`npm start` 和 Docker 见 [公开部署](docs/15-公开部署.md)。
+
+```
+INVITE_CODES=friend-2026-east,friend-2026-west
+INVITE_SECRET=请换成至少32位的随机字符串
+DASHSCOPE_API_KEY=你的密钥
+BOOHEE_API_KEY=你的密钥
+HOST=0.0.0.0
+```
+
+`PORT` 由平台注入。`npm start` 在没写 `HOST` 时监听 `0.0.0.0`。`.env` 不要提交。
 
 ## 用手机在同一 Wi-Fi 下试用
 
@@ -152,6 +166,7 @@ npm test
 - [现有代码去留评估](docs/12-现有代码去留评估.md)
 - [技术路线草案](docs/13-技术路线草案.md)
 - [家常食谱草稿](docs/14-家常食谱草稿.md)
+- [公开部署](docs/15-公开部署.md)
 - [食物与食谱导入](data/nutrition/README.md)
 
 本试用版已经按 linden 的决定接上：模型用 OpenAI 兼容的大模型服务，当前可用蚂蚁数科大模型平台或阿里云百炼。食物数据由自己导入，每日目标自己填写，不做账号。示例数据只为了把闭环跑通。
