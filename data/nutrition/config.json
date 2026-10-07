@@ -1,0 +1,10 @@
+{
+  "catalogVersion": "example-2026-10-03",
+  "portionDefaults": { "small": 100, "medium": 150, "large": 250 },
+  "models": {
+    "provider": "dashscope",
+    "baseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "vision": "qwen3-vl-flash",
+    "text": "qwen-plus"
+  }
+}

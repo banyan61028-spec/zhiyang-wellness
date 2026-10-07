@@ -1,0 +1,1690 @@
+{
+  "version": "example-2026-10-03",
+  "portionDefaults": {
+    "small": 100,
+    "medium": 150,
+    "large": 250
+  },
+  "foods": [
+    {
+      "id": "rice-cooked",
+      "name": "米饭",
+      "aliases": [
+        "白饭",
+        "蒸米饭",
+        "大米饭"
+      ],
+      "per100g": {
+        "kcal": 130,
+        "protein": 2.7,
+        "fat": 0.3,
+        "carb": 28.2
+      },
+      "source": "USDA FoodData Central（示例）",
+      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
+      "version": "example-2026-10-03",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 100,
+        "medium": 150,
+        "large": 200
+      }
+    },
+    {
+      "id": "rice-porridge",
+      "name": "白粥",
+      "aliases": [
+        "大米粥",
+        "稀饭"
+      ],
+      "per100g": null,
+      "source": "本地占位",
+      "sourceNote": "本地没有可引用的稀粥数据。原先每100克 46 千卡对不上 USDA 条目，是把煮米饭按比例稀释后的数字，已撤下。记录时按这个名字查询薄荷；查不到或失败才无法估算。",
+      "version": "example-2026-10-04",
+      "calculable": false,
+      "example": true,
+      "portion": {
+        "small": 200,
+        "medium": 300,
+        "large": 400
+      }
+    },
+    {
+      "id": "noodle-cooked",
+      "name": "煮鸡蛋面",
+      "aliases": [
+        "鸡蛋面"
+      ],
+      "per100g": {
+        "kcal": 138,
+        "protein": 4.5,
+        "fat": 2.1,
+        "carb": 25.2
+      },
+      "source": "USDA FoodData Central",
+      "sourceNote": "参考 USDA FoodData Central SR Legacy FDC 169732（Noodles egg enriched cooked）每100克。蛋白质 4.54 四舍五入为 4.5，脂肪 2.07 为 2.1，碳水 25.16 为 25.2。这是煮鸡蛋面，不是挂面，也不是阳春面。公开领域数据，不是中国食物成分表。待审核。",
+      "version": "usda-fdc-2026-10-04",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 150,
+        "medium": 250,
+        "large": 350
+      }
+    },
+    {
+      "id": "oat-cooked",
+      "name": "燕麦粥",
+      "aliases": [
+        "麦片粥",
+        "煮燕麦"
+      ],
+      "per100g": {
+        "kcal": 71,
+        "protein": 2.5,
+        "fat": 1.5,
+        "carb": 12
+      },
+      "source": "USDA FoodData Central",
+      "sourceNote": "参考 USDA FoodData Central SR Legacy FDC 173905（Cereals oats regular and quick unenriched cooked with water without salt）每100克。蛋白质 2.54 四舍五入为 2.5，脂肪 1.52 为 1.5，碳水 12.0。这是加水煮软的燕麦，不是干燕麦片。公开领域数据，不是中国食物成分表。待审核。",
+      "version": "usda-fdc-2026-10-04",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 150,
+        "medium": 200,
+        "large": 280
+      }
+    },
+    {
+      "id": "millet-cooked",
+      "name": "煮小米（干饭式）",
+      "aliases": [
+        "煮小米",
+        "干饭小米"
+      ],
+      "per100g": {
+        "kcal": 119,
+        "protein": 3.5,
+        "fat": 1,
+        "carb": 23.7
+      },
+      "source": "USDA FoodData Central",
+      "sourceNote": "参考 USDA FoodData Central SR Legacy FDC 168871（Millet cooked）每100克。蛋白质 3.51 四舍五入为 3.5，碳水 23.67 为 23.7。这是煮熟的小米干饭，不是稀小米粥。公开领域数据，不是中国食物成分表。待审核。",
+      "version": "usda-fdc-2026-10-04",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 100,
+        "medium": 150,
+        "large": 200
+      }
+    },
+    {
+      "id": "sweet-potato",
+      "name": "烤红薯",
+      "aliases": [
+        "红薯",
+        "地瓜",
+        "烤地瓜"
+      ],
+      "per100g": {
+        "kcal": 90,
+        "protein": 2,
+        "fat": 0.2,
+        "carb": 20.7
+      },
+      "source": "USDA FoodData Central",
+      "sourceNote": "参考 USDA FoodData Central SR Legacy FDC 170134（Sweet potato cooked baked in skin flesh with salt）每100克。蛋白质 2.01 四舍五入为 2，脂肪 0.15 为 0.2，碳水 20.71 为 20.7。这是烤红薯，不是生红薯。公开领域数据，不是中国食物成分表。待审核。",
+      "version": "usda-fdc-2026-10-04",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 100,
+        "medium": 150,
+        "large": 250
+      }
+    },
+    {
+      "id": "corn-cooked",
+      "name": "甜玉米（煮）",
+      "aliases": [
+        "玉米",
+        "玉米粒",
+        "甜玉米"
+      ],
+      "per100g": {
+        "kcal": 96,
+        "protein": 3.4,
+        "fat": 1.5,
+        "carb": 21
+      },
+      "source": "USDA FoodData Central",
+      "sourceNote": "参考 USDA FoodData Central SR Legacy FDC 168525（Corn sweet yellow cooked boiled drained with salt）每100克。蛋白质 3.41 四舍五入为 3.4，碳水 20.98 为 21。这是煮甜玉米，不是玉米面或爆米花。公开领域数据，不是中国食物成分表。待审核。",
+      "version": "usda-fdc-2026-10-04",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 80,
+        "medium": 150,
+        "large": 200
+      }
+    },
+    {
+      "id": "potato-cooked",
+      "name": "煮土豆",
+      "aliases": [
+        "土豆",
+        "马铃薯"
+      ],
+      "per100g": {
+        "kcal": 87,
+        "protein": 1.9,
+        "fat": 0.1,
+        "carb": 20.1
+      },
+      "source": "USDA FoodData Central",
+      "sourceNote": "参考 USDA FoodData Central SR Legacy FDC 170438（Potatoes boiled cooked in skin flesh without salt）每100克。能量 87，蛋白质 1.87 四舍五入为 1.9，碳水 20.13 为 20.1。这是带皮煮的土豆肉，不是生土豆或炸土豆。公开领域数据，不是中国食物成分表。待审核。",
+      "version": "usda-fdc-2026-10-04",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 100,
+        "medium": 150,
+        "large": 250
+      }
+    },
+    {
+      "id": "egg-whole",
+      "name": "鸡蛋",
+      "aliases": [
+        "蛋",
+        "煮鸡蛋",
+        "荷包蛋"
+      ],
+      "per100g": {
+        "kcal": 143,
+        "protein": 12.6,
+        "fat": 9.5,
+        "carb": 0.7
+      },
+      "source": "USDA FoodData Central（示例）",
+      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
+      "version": "example-2026-10-03",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 40,
+        "medium": 50,
+        "large": 60
+      }
+    },
+    {
+      "id": "egg-white",
+      "name": "鸡蛋白",
+      "aliases": [
+        "蛋白",
+        "蛋清"
+      ],
+      "per100g": {
+        "kcal": 52,
+        "protein": 10.9,
+        "fat": 0.2,
+        "carb": 0.7
+      },
+      "source": "USDA FoodData Central（示例）",
+      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
+      "version": "example-2026-10-03",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 30,
+        "medium": 33,
+        "large": 40
+      }
+    },
+    {
+      "id": "chicken-breast",
+      "name": "鸡胸肉",
+      "aliases": [
+        "鸡胸",
+        "熟鸡胸"
+      ],
+      "per100g": {
+        "kcal": 165,
+        "protein": 31,
+        "fat": 3.6,
+        "carb": 0
+      },
+      "source": "USDA FoodData Central（示例）",
+      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
+      "version": "example-2026-10-03",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 80,
+        "medium": 120,
+        "large": 180
+      }
+    },
+    {
+      "id": "pork-lean",
+      "name": "猪瘦肉",
+      "aliases": [
+        "瘦肉",
+        "里脊"
+      ],
+      "per100g": {
+        "kcal": 197,
+        "protein": 27.3,
+        "fat": 9,
+        "carb": 0
+      },
+      "source": "USDA FoodData Central（示例）",
+      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
+      "version": "example-2026-10-03",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 50,
+        "medium": 80,
+        "large": 120
+      }
+    },
+    {
+      "id": "beef-cooked",
+      "name": "牛肉",
+      "aliases": [
+        "瘦牛肉",
+        "熟牛肉"
+      ],
+      "per100g": {
+        "kcal": 250,
+        "protein": 26,
+        "fat": 15,
+        "carb": 0
+      },
+      "source": "USDA FoodData Central（示例）",
+      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
+      "version": "example-2026-10-03",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 50,
+        "medium": 80,
+        "large": 120
+      }
+    },
+    {
+      "id": "salmon",
+      "name": "三文鱼",
+      "aliases": [
+        "鲑鱼"
+      ],
+      "per100g": {
+        "kcal": 208,
+        "protein": 20,
+        "fat": 13,
+        "carb": 0
+      },
+      "source": "USDA FoodData Central（示例）",
+      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
+      "version": "example-2026-10-03",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 80,
+        "medium": 100,
+        "large": 150
+      }
+    },
+    {
+      "id": "shrimp",
+      "name": "虾仁",
+      "aliases": [
+        "虾",
+        "熟虾"
+      ],
+      "per100g": {
+        "kcal": 99,
+        "protein": 24,
+        "fat": 0.3,
+        "carb": 0.2
+      },
+      "source": "USDA FoodData Central（示例）",
+      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
+      "version": "example-2026-10-03",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 60,
+        "medium": 100,
+        "large": 150
+      }
+    },
+    {
+      "id": "tofu-firm",
+      "name": "北豆腐",
+      "aliases": [
+        "豆腐",
+        "老豆腐"
+      ],
+      "per100g": {
+        "kcal": 76,
+        "protein": 8.1,
+        "fat": 4.8,
+        "carb": 1.9
+      },
+      "source": "USDA FoodData Central（示例）",
+      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
+      "version": "example-2026-10-03",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 80,
+        "medium": 150,
+        "large": 200
+      }
+    },
+    {
+      "id": "tofu-silken",
+      "name": "内酯豆腐",
+      "aliases": [
+        "嫩豆腐"
+      ],
+      "per100g": {
+        "kcal": 55,
+        "protein": 4.8,
+        "fat": 2.7,
+        "carb": 2
+      },
+      "source": "USDA FoodData Central（示例）",
+      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
+      "version": "example-2026-10-03",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 80,
+        "medium": 150,
+        "large": 200
+      }
+    },
+    {
+      "id": "edamame",
+      "name": "毛豆",
+      "aliases": [
+        "熟毛豆"
+      ],
+      "per100g": {
+        "kcal": 121,
+        "protein": 11.9,
+        "fat": 5.2,
+        "carb": 8.9
+      },
+      "source": "USDA FoodData Central（示例）",
+      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
+      "version": "example-2026-10-03",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 50,
+        "medium": 80,
+        "large": 120
+      }
+    },
+    {
+      "id": "milk",
+      "name": "牛奶",
+      "aliases": [
+        "纯牛奶"
+      ],
+      "per100g": {
+        "kcal": 61,
+        "protein": 3.2,
+        "fat": 3.3,
+        "carb": 4.8
+      },
+      "source": "USDA FoodData Central（示例）",
+      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
+      "version": "example-2026-10-03",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 200,
+        "medium": 250,
+        "large": 300
+      }
+    },
+    {
+      "id": "yogurt",
+      "name": "原味酸奶",
+      "aliases": [
+        "酸奶"
+      ],
+      "per100g": {
+        "kcal": 63,
+        "protein": 5.3,
+        "fat": 1.6,
+        "carb": 7
+      },
+      "source": "USDA FoodData Central（示例）",
+      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
+      "version": "example-2026-10-03",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 100,
+        "medium": 150,
+        "large": 200
+      }
+    },
+    {
+      "id": "broccoli",
+      "name": "西兰花",
+      "aliases": [
+        "绿花菜"
+      ],
+      "per100g": {
+        "kcal": 34,
+        "protein": 2.8,
+        "fat": 0.4,
+        "carb": 6.6
+      },
+      "source": "USDA FoodData Central（示例）",
+      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
+      "version": "example-2026-10-03",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 80,
+        "medium": 150,
+        "large": 200
+      }
+    },
+    {
+      "id": "spinach",
+      "name": "菠菜",
+      "aliases": [],
+      "per100g": {
+        "kcal": 23,
+        "protein": 2.9,
+        "fat": 0.4,
+        "carb": 3.6
+      },
+      "source": "USDA FoodData Central（示例）",
+      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
+      "version": "example-2026-10-03",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 80,
+        "medium": 150,
+        "large": 200
+      }
+    },
+    {
+      "id": "tomato",
+      "name": "番茄",
+      "aliases": [
+        "西红柿"
+      ],
+      "per100g": {
+        "kcal": 18,
+        "protein": 0.9,
+        "fat": 0.2,
+        "carb": 3.9
+      },
+      "source": "USDA FoodData Central（示例）",
+      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
+      "version": "example-2026-10-03",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 100,
+        "medium": 150,
+        "large": 250
+      }
+    },
+    {
+      "id": "cucumber",
+      "name": "黄瓜",
+      "aliases": [
+        "青瓜"
+      ],
+      "per100g": {
+        "kcal": 15,
+        "protein": 0.7,
+        "fat": 0.1,
+        "carb": 3.6
+      },
+      "source": "USDA FoodData Central（示例）",
+      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
+      "version": "example-2026-10-03",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 80,
+        "medium": 150,
+        "large": 200
+      }
+    },
+    {
+      "id": "carrot",
+      "name": "胡萝卜",
+      "aliases": [
+        "红萝卜"
+      ],
+      "per100g": {
+        "kcal": 41,
+        "protein": 0.9,
+        "fat": 0.2,
+        "carb": 9.6
+      },
+      "source": "USDA FoodData Central（示例）",
+      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
+      "version": "example-2026-10-03",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 50,
+        "medium": 100,
+        "large": 150
+      }
+    },
+    {
+      "id": "cabbage",
+      "name": "大白菜",
+      "aliases": [
+        "白菜"
+      ],
+      "per100g": {
+        "kcal": 13,
+        "protein": 1.5,
+        "fat": 0.2,
+        "carb": 2.2
+      },
+      "source": "USDA FoodData Central（示例）",
+      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
+      "version": "example-2026-10-03",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 100,
+        "medium": 150,
+        "large": 250
+      }
+    },
+    {
+      "id": "eggplant",
+      "name": "茄子",
+      "aliases": [],
+      "per100g": {
+        "kcal": 25,
+        "protein": 1,
+        "fat": 0.2,
+        "carb": 5.9
+      },
+      "source": "USDA FoodData Central（示例）",
+      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
+      "version": "example-2026-10-03",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 80,
+        "medium": 150,
+        "large": 200
+      }
+    },
+    {
+      "id": "shiitake",
+      "name": "香菇",
+      "aliases": [
+        "鲜香菇"
+      ],
+      "per100g": {
+        "kcal": 34,
+        "protein": 2.2,
+        "fat": 0.5,
+        "carb": 6.8
+      },
+      "source": "USDA FoodData Central（示例）",
+      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
+      "version": "example-2026-10-03",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 50,
+        "medium": 80,
+        "large": 120
+      }
+    },
+    {
+      "id": "lettuce",
+      "name": "生菜",
+      "aliases": [],
+      "per100g": {
+        "kcal": 15,
+        "protein": 1.4,
+        "fat": 0.2,
+        "carb": 2.9
+      },
+      "source": "USDA FoodData Central（示例）",
+      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
+      "version": "example-2026-10-03",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 50,
+        "medium": 80,
+        "large": 120
+      }
+    },
+    {
+      "id": "pumpkin",
+      "name": "南瓜",
+      "aliases": [],
+      "per100g": {
+        "kcal": 20,
+        "protein": 0.7,
+        "fat": 0.1,
+        "carb": 4.9
+      },
+      "source": "USDA FoodData Central（示例）",
+      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
+      "version": "example-2026-10-03",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 80,
+        "medium": 150,
+        "large": 200
+      }
+    },
+    {
+      "id": "apple",
+      "name": "苹果",
+      "aliases": [],
+      "per100g": {
+        "kcal": 52,
+        "protein": 0.3,
+        "fat": 0.2,
+        "carb": 13.8
+      },
+      "source": "USDA FoodData Central（示例）",
+      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
+      "version": "example-2026-10-03",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 100,
+        "medium": 150,
+        "large": 200
+      }
+    },
+    {
+      "id": "banana",
+      "name": "香蕉",
+      "aliases": [],
+      "per100g": {
+        "kcal": 89,
+        "protein": 1.1,
+        "fat": 0.3,
+        "carb": 22.8
+      },
+      "source": "USDA FoodData Central（示例）",
+      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
+      "version": "example-2026-10-03",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 80,
+        "medium": 120,
+        "large": 150
+      }
+    },
+    {
+      "id": "orange",
+      "name": "橙子",
+      "aliases": [
+        "橘子",
+        "橙"
+      ],
+      "per100g": {
+        "kcal": 47,
+        "protein": 0.9,
+        "fat": 0.1,
+        "carb": 11.8
+      },
+      "source": "USDA FoodData Central（示例）",
+      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
+      "version": "example-2026-10-03",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 100,
+        "medium": 150,
+        "large": 200
+      }
+    },
+    {
+      "id": "peanut",
+      "name": "花生",
+      "aliases": [
+        "熟花生"
+      ],
+      "per100g": {
+        "kcal": 567,
+        "protein": 25.8,
+        "fat": 49.2,
+        "carb": 16.1
+      },
+      "source": "USDA FoodData Central（示例）",
+      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
+      "version": "example-2026-10-03",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 15,
+        "medium": 25,
+        "large": 40
+      }
+    },
+    {
+      "id": "oil",
+      "name": "食用油",
+      "aliases": [
+        "油",
+        "植物油"
+      ],
+      "per100g": {
+        "kcal": 884,
+        "protein": 0,
+        "fat": 100,
+        "carb": 0
+      },
+      "source": "USDA FoodData Central（示例）",
+      "sourceNote": "示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。",
+      "version": "example-2026-10-03",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 5,
+        "medium": 10,
+        "large": 15
+      }
+    },
+    {
+      "id": "soy-milk",
+      "name": "无糖豆浆",
+      "aliases": [
+        "豆浆",
+        "豆奶"
+      ],
+      "per100g": {
+        "kcal": 39,
+        "protein": 3.5,
+        "fat": 2.1,
+        "carb": 1.3
+      },
+      "source": "USDA FoodData Central",
+      "sourceNote": "参考 USDA FoodData Central Foundation FDC 1999630（Soy milk unsweetened plain shelf stable）每100克。能量 38.485 四舍五入为 39，蛋白质 3.546875 四舍五入为 3.5，脂肪 2.125 为 2.1，碳水 1.293125 为 1.3。公开领域数据，不是中国食物成分表。待审核。",
+      "version": "usda-fdc-2026-10-04",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 200,
+        "medium": 250,
+        "large": 300
+      }
+    },
+    {
+      "id": "lamb-cooked",
+      "name": "熟羊肉",
+      "aliases": [
+        "羊肉",
+        "煮羊肉"
+      ],
+      "per100g": {
+        "kcal": 199,
+        "protein": 29.3,
+        "fat": 8.2,
+        "carb": 0
+      },
+      "source": "USDA FoodData Central",
+      "sourceNote": "参考 USDA FoodData Central SR Legacy FDC 173811（Lamb New Zealand imported frozen loin separable lean only cooked broiled）每100克。脂肪 8.24 四舍五入为 8.2。公开领域数据，不是中国食物成分表。待审核。",
+      "version": "usda-fdc-2026-10-04",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 50,
+        "medium": 80,
+        "large": 120
+      }
+    },
+    {
+      "id": "celery",
+      "name": "芹菜",
+      "aliases": [],
+      "per100g": {
+        "kcal": 14,
+        "protein": 0.7,
+        "fat": 0.2,
+        "carb": 3
+      },
+      "source": "USDA FoodData Central",
+      "sourceNote": "参考 USDA FoodData Central SR Legacy FDC 169988（Celery raw）每100克。蛋白质 0.69、脂肪 0.17、碳水 2.97 四舍五入。公开领域数据，不是中国食物成分表。待审核。",
+      "version": "usda-fdc-2026-10-04",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 80,
+        "medium": 150,
+        "large": 200
+      }
+    },
+    {
+      "id": "winter-melon",
+      "name": "冬瓜",
+      "aliases": [
+        "熟冬瓜"
+      ],
+      "per100g": {
+        "kcal": 11,
+        "protein": 0.4,
+        "fat": 0.2,
+        "carb": 2.5
+      },
+      "source": "USDA FoodData Central",
+      "sourceNote": "参考 USDA FoodData Central SR Legacy FDC 170549（Waxgourd chinese preserving melon cooked boiled drained with salt）每100克。碳水 2.45 四舍五入为 2.5。公开领域数据，不是中国食物成分表。待审核。",
+      "version": "usda-fdc-2026-10-04",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 100,
+        "medium": 200,
+        "large": 300
+      }
+    },
+    {
+      "id": "cod",
+      "name": "鳕鱼",
+      "aliases": [
+        "大西洋鳕鱼"
+      ],
+      "per100g": {
+        "kcal": 105,
+        "protein": 22.8,
+        "fat": 0.9,
+        "carb": 0
+      },
+      "source": "USDA FoodData Central",
+      "sourceNote": "参考 USDA FoodData Central SR Legacy FDC 171956（Fish cod Atlantic cooked dry heat）每100克。脂肪 0.86 四舍五入为 0.9。公开领域数据，不是中国食物成分表。待审核。",
+      "version": "usda-fdc-2026-10-04",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 80,
+        "medium": 120,
+        "large": 160
+      }
+    },
+    {
+      "id": "green-beans",
+      "name": "四季豆",
+      "aliases": [
+        "豆角",
+        "煮四季豆"
+      ],
+      "per100g": {
+        "kcal": 35,
+        "protein": 1.9,
+        "fat": 0.3,
+        "carb": 7.9
+      },
+      "source": "USDA FoodData Central",
+      "sourceNote": "参考 USDA FoodData Central SR Legacy FDC 169141（Beans snap green cooked boiled drained without salt）每100克。蛋白质 1.89、脂肪 0.28、碳水 7.88 四舍五入。公开领域数据，不是中国食物成分表。待审核。",
+      "version": "usda-fdc-2026-10-04",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 80,
+        "medium": 150,
+        "large": 200
+      }
+    },
+    {
+      "id": "buckwheat-cooked",
+      "name": "熟荞麦",
+      "aliases": [
+        "荞麦"
+      ],
+      "per100g": {
+        "kcal": 92,
+        "protein": 3.4,
+        "fat": 0.6,
+        "carb": 19.9
+      },
+      "source": "USDA FoodData Central",
+      "sourceNote": "参考 USDA FoodData Central SR Legacy FDC 170686（Buckwheat groats roasted cooked）每100克。蛋白质 3.38、脂肪 0.62 四舍五入。公开领域数据，不是中国食物成分表。待审核。",
+      "version": "usda-fdc-2026-10-04",
+      "calculable": true,
+      "example": true,
+      "portion": {
+        "small": 150,
+        "medium": 200,
+        "large": 280
+      }
+    },
+    {
+      "id": "millet-porridge",
+      "name": "小米粥",
+      "aliases": [],
+      "per100g": null,
+      "source": "本地占位",
+      "sourceNote": "本地没有可引用的稀小米粥数据。煮小米（干饭式）是另一种食物，不能拿来当稀粥。记录时按这个名字查询薄荷；查不到或失败才无法估算。",
+      "version": "example-2026-10-04",
+      "calculable": false,
+      "example": true,
+      "portion": {
+        "small": 200,
+        "medium": 300,
+        "large": 400
+      }
+    },
+    {
+      "id": "chinese-noodle",
+      "name": "面条",
+      "aliases": [
+        "煮面条",
+        "挂面"
+      ],
+      "per100g": null,
+      "source": "本地占位",
+      "sourceNote": "本地能算的面是煮鸡蛋面，不是挂面或普通面条。记录时按这个名字查询薄荷；查不到或失败才无法估算。",
+      "version": "example-2026-10-04",
+      "calculable": false,
+      "example": true,
+      "portion": {
+        "small": 150,
+        "medium": 250,
+        "large": 350
+      }
+    },
+    {
+      "id": "yangchun-noodle",
+      "name": "阳春面",
+      "aliases": [],
+      "per100g": null,
+      "source": "本地占位",
+      "sourceNote": "阳春面是带汤的面，不是煮鸡蛋面。本地不计算。记录时按这个名字查询薄荷；查不到或失败才无法估算。",
+      "version": "example-2026-10-04",
+      "calculable": false,
+      "example": true,
+      "portion": {
+        "small": 300,
+        "medium": 450,
+        "large": 600
+      }
+    },
+    {
+      "id": "beef-noodle",
+      "name": "牛肉面",
+      "aliases": [
+        "牛肉拉面"
+      ],
+      "per100g": null,
+      "source": "本地占位",
+      "sourceNote": "本地表没有每100克营养。记录时按这个名字查询薄荷；查不到或失败才无法估算，不会编造热量。",
+      "version": "example-2026-10-03",
+      "calculable": false,
+      "example": true,
+      "portion": {
+        "small": 300,
+        "medium": 450,
+        "large": 600
+      }
+    },
+    {
+      "id": "steamed-bun",
+      "name": "馒头",
+      "aliases": [],
+      "per100g": null,
+      "source": "本地占位",
+      "sourceNote": "本地表没有每100克营养。记录时按这个名字查询薄荷；查不到或失败才无法估算，不会编造热量。",
+      "version": "example-2026-10-03",
+      "calculable": false,
+      "example": true,
+      "portion": {
+        "small": 50,
+        "medium": 100,
+        "large": 150
+      }
+    },
+    {
+      "id": "dumpling",
+      "name": "饺子",
+      "aliases": [
+        "水饺"
+      ],
+      "per100g": null,
+      "source": "本地占位",
+      "sourceNote": "本地表没有每100克营养。记录时按这个名字查询薄荷；查不到或失败才无法估算，不会编造热量。",
+      "version": "example-2026-10-03",
+      "calculable": false,
+      "example": true,
+      "portion": {
+        "small": 100,
+        "medium": 200,
+        "large": 300
+      }
+    },
+    {
+      "id": "takeout-combo",
+      "name": "外卖套餐",
+      "aliases": [
+        "套餐"
+      ],
+      "per100g": null,
+      "source": "本地占位",
+      "sourceNote": "说法太笼统，不查询薄荷，也不编造热量。请拆成具体的菜再记。",
+      "version": "example-2026-10-03",
+      "calculable": false,
+      "example": true,
+      "portion": {
+        "small": 300,
+        "medium": 450,
+        "large": 600
+      }
+    }
+  ],
+  "recipes": [
+    {
+      "id": "millet-egg",
+      "name": "煮小米配煮蛋",
+      "meal": "breakfast",
+      "ingredients": [
+        {
+          "foodId": "millet-cooked",
+          "grams": 100
+        },
+        {
+          "foodId": "egg-whole",
+          "grams": 50
+        }
+      ],
+      "steps": [
+        "煮小米按干饭盛一碗。",
+        "鸡蛋煮熟，配在旁边。"
+      ],
+      "note": "这是干饭式煮小米，不是稀小米粥。蛋白质不算高。",
+      "avoid": [],
+      "sourceNote": "待审核草稿。家常做法简述。热量由原料克数和食物表计算，不在这里手写。",
+      "example": true
+    },
+    {
+      "id": "oat-milk-egg",
+      "name": "燕麦牛奶煮蛋",
+      "meal": "breakfast",
+      "ingredients": [
+        {
+          "foodId": "oat-cooked",
+          "grams": 180
+        },
+        {
+          "foodId": "milk",
+          "grams": 200
+        },
+        {
+          "foodId": "egg-whole",
+          "grams": 50
+        }
+      ],
+      "steps": [
+        "燕麦用牛奶煮软或拌匀。",
+        "鸡蛋煮熟。",
+        "放温后吃，不加糖。"
+      ],
+      "note": "均衡早餐，奶和蛋都有。",
+      "avoid": [],
+      "sourceNote": "待审核草稿。家常做法简述。热量由原料克数和食物表计算，不在这里手写。",
+      "example": true
+    },
+    {
+      "id": "soy-oat",
+      "name": "无糖豆浆燕麦",
+      "meal": "breakfast",
+      "ingredients": [
+        {
+          "foodId": "soy-milk",
+          "grams": 250
+        },
+        {
+          "foodId": "oat-cooked",
+          "grams": 160
+        }
+      ],
+      "steps": [
+        "无糖豆浆加热。",
+        "倒入煮好的燕麦拌匀。"
+      ],
+      "note": "植物来源的早餐，默认不加糖。",
+      "avoid": [],
+      "sourceNote": "待审核草稿。家常做法简述。热量由原料克数和食物表计算，不在这里手写。",
+      "example": true
+    },
+    {
+      "id": "sweet-potato-egg",
+      "name": "烤红薯鸡蛋",
+      "meal": "breakfast",
+      "ingredients": [
+        {
+          "foodId": "sweet-potato",
+          "grams": 200
+        },
+        {
+          "foodId": "egg-whole",
+          "grams": 50
+        }
+      ],
+      "steps": [
+        "红薯烤熟。",
+        "配一个煮鸡蛋。"
+      ],
+      "note": "好做，主食用的是烤红薯。",
+      "avoid": [],
+      "sourceNote": "待审核草稿。家常做法简述。热量由原料克数和食物表计算，不在这里手写。",
+      "example": true
+    },
+    {
+      "id": "pumpkin-millet",
+      "name": "南瓜配煮小米",
+      "meal": "breakfast",
+      "ingredients": [
+        {
+          "foodId": "pumpkin",
+          "grams": 150
+        },
+        {
+          "foodId": "millet-cooked",
+          "grams": 80
+        }
+      ],
+      "steps": [
+        "南瓜蒸熟或煮软。",
+        "配一小份干饭式煮小米。"
+      ],
+      "note": "清淡早餐。小米是煮熟的干饭，不是熬稀的粥。热量不高，蛋白质也少。",
+      "avoid": [],
+      "sourceNote": "待审核草稿。家常做法简述。热量由原料克数和食物表计算，不在这里手写。",
+      "example": true
+    },
+    {
+      "id": "yogurt-egg-apple",
+      "name": "酸奶煮蛋配苹果",
+      "meal": "breakfast",
+      "ingredients": [
+        {
+          "foodId": "yogurt",
+          "grams": 150
+        },
+        {
+          "foodId": "egg-whole",
+          "grams": 50
+        },
+        {
+          "foodId": "apple",
+          "grams": 100
+        }
+      ],
+      "steps": [
+        "鸡蛋煮熟。",
+        "苹果洗净切块，配原味酸奶。"
+      ],
+      "note": "默认不加糖。适合想吃得清淡一点的早晨。",
+      "avoid": [],
+      "sourceNote": "待审核草稿。家常做法简述。热量由原料克数和食物表计算，不在这里手写。",
+      "example": true
+    },
+    {
+      "id": "tomato-egg-rice",
+      "name": "番茄鸡蛋盖饭",
+      "meal": "lunch",
+      "ingredients": [
+        {
+          "foodId": "egg-whole",
+          "grams": 100
+        },
+        {
+          "foodId": "tomato",
+          "grams": 150
+        },
+        {
+          "foodId": "oil",
+          "grams": 8
+        },
+        {
+          "foodId": "rice-cooked",
+          "grams": 150
+        }
+      ],
+      "steps": [
+        "番茄切块炒软。",
+        "打入鸡蛋炒匀，少放油。",
+        "盖在米饭上。"
+      ],
+      "note": "家常午饭，荤素和主食都有。",
+      "avoid": [],
+      "sourceNote": "待审核草稿。家常做法简述。热量由原料克数和食物表计算，不在这里手写。",
+      "example": true
+    },
+    {
+      "id": "chicken-broccoli",
+      "name": "鸡胸西兰花饭",
+      "meal": "lunch",
+      "ingredients": [
+        {
+          "foodId": "chicken-breast",
+          "grams": 120
+        },
+        {
+          "foodId": "broccoli",
+          "grams": 150
+        },
+        {
+          "foodId": "rice-cooked",
+          "grams": 150
+        },
+        {
+          "foodId": "oil",
+          "grams": 5
+        }
+      ],
+      "steps": [
+        "鸡胸肉煮熟或少油煎熟。",
+        "西兰花焯熟。",
+        "配米饭。"
+      ],
+      "note": "蛋白质较高，适合今天蛋白质还差一截的时候。",
+      "avoid": [
+        "kidney_high_protein"
+      ],
+      "sourceNote": "待审核草稿。家常做法简述。热量由原料克数和食物表计算，不在这里手写。",
+      "example": true
+    },
+    {
+      "id": "saozi-noodle",
+      "name": "家常臊子面",
+      "meal": "lunch",
+      "ingredients": [
+        {
+          "foodId": "noodle-cooked",
+          "grams": 220
+        },
+        {
+          "foodId": "pork-lean",
+          "grams": 60
+        },
+        {
+          "foodId": "tomato",
+          "grams": 100
+        },
+        {
+          "foodId": "tofu-firm",
+          "grams": 80
+        },
+        {
+          "foodId": "carrot",
+          "grams": 40
+        },
+        {
+          "foodId": "oil",
+          "grams": 8
+        }
+      ],
+      "steps": [
+        "瘦肉切碎，和番茄、胡萝卜、豆腐一起炒熟或煮熟。",
+        "煮鸡蛋面煮好，浇上这一份。"
+      ],
+      "note": "陕西家常面。面条按 USDA 煮鸡蛋面计，不是汤面。浇头按家里买得到的瘦肉、番茄和豆腐来写。",
+      "avoid": [],
+      "sourceNote": "待审核草稿。家常做法简述。热量由原料克数和食物表计算，不在这里手写。",
+      "example": true
+    },
+    {
+      "id": "lamb-cabbage",
+      "name": "羊肉炒白菜",
+      "meal": "lunch",
+      "ingredients": [
+        {
+          "foodId": "lamb-cooked",
+          "grams": 90
+        },
+        {
+          "foodId": "cabbage",
+          "grams": 180
+        },
+        {
+          "foodId": "rice-cooked",
+          "grams": 100
+        },
+        {
+          "foodId": "oil",
+          "grams": 8
+        }
+      ],
+      "steps": [
+        "熟羊肉和白菜一起炒匀，油只算这一小份。",
+        "配一小碗米饭。"
+      ],
+      "note": "陕西家里常见的羊肉吃法。蛋白质较高。",
+      "avoid": [
+        "kidney_high_protein"
+      ],
+      "sourceNote": "待审核草稿。家常做法简述。热量由原料克数和食物表计算，不在这里手写。",
+      "example": true
+    },
+    {
+      "id": "shrimp-cucumber",
+      "name": "虾仁黄瓜饭",
+      "meal": "lunch",
+      "ingredients": [
+        {
+          "foodId": "shrimp",
+          "grams": 100
+        },
+        {
+          "foodId": "cucumber",
+          "grams": 120
+        },
+        {
+          "foodId": "rice-cooked",
+          "grams": 150
+        },
+        {
+          "foodId": "oil",
+          "grams": 6
+        }
+      ],
+      "steps": [
+        "虾仁煮熟。",
+        "黄瓜切片一起炒或焯一下。",
+        "配米饭。"
+      ],
+      "note": "蛋白质主要来自虾仁，脂肪不高。",
+      "avoid": [
+        "kidney_high_protein"
+      ],
+      "sourceNote": "待审核草稿。家常做法简述。热量由原料克数和食物表计算，不在这里手写。",
+      "example": true
+    },
+    {
+      "id": "steamed-cod",
+      "name": "清蒸鳕鱼配饭",
+      "meal": "lunch",
+      "ingredients": [
+        {
+          "foodId": "cod",
+          "grams": 120
+        },
+        {
+          "foodId": "broccoli",
+          "grams": 120
+        },
+        {
+          "foodId": "rice-cooked",
+          "grams": 150
+        }
+      ],
+      "steps": [
+        "鳕鱼清蒸熟。",
+        "西兰花焯熟。",
+        "配米饭，不另加油。"
+      ],
+      "note": "用大西洋鳕鱼代表少油的清蒸白身鱼。蛋白质较高，热量不算高。",
+      "avoid": [
+        "kidney_high_protein"
+      ],
+      "sourceNote": "待审核草稿。家常做法简述。热量由原料克数和食物表计算，不在这里手写。",
+      "example": true
+    },
+    {
+      "id": "oil-spinach-noodle",
+      "name": "油泼菠菜面",
+      "meal": "lunch",
+      "ingredients": [
+        {
+          "foodId": "noodle-cooked",
+          "grams": 200
+        },
+        {
+          "foodId": "spinach",
+          "grams": 150
+        },
+        {
+          "foodId": "oil",
+          "grams": 10
+        },
+        {
+          "foodId": "peanut",
+          "grams": 8
+        }
+      ],
+      "steps": [
+        "煮鸡蛋面煮好，菠菜焯熟垫在下面。",
+        "一小勺热油和拍碎的熟花生浇上。"
+      ],
+      "note": "陕西家常面的简化版。面条按 USDA 煮鸡蛋面计。油和花生都算进热量。",
+      "avoid": [],
+      "sourceNote": "待审核草稿。家常做法简述。热量由原料克数和食物表计算，不在这里手写。",
+      "example": true
+    },
+    {
+      "id": "tofu-cabbage",
+      "name": "白菜豆腐饭",
+      "meal": "dinner",
+      "ingredients": [
+        {
+          "foodId": "tofu-firm",
+          "grams": 150
+        },
+        {
+          "foodId": "cabbage",
+          "grams": 180
+        },
+        {
+          "foodId": "rice-cooked",
+          "grams": 100
+        },
+        {
+          "foodId": "oil",
+          "grams": 6
+        }
+      ],
+      "steps": [
+        "豆腐和白菜煮熟或少油炒熟。",
+        "配少量米饭。"
+      ],
+      "note": "晚饭可以清淡一些，热量留得比较低。",
+      "avoid": [],
+      "sourceNote": "待审核草稿。家常做法简述。热量由原料克数和食物表计算，不在这里手写。",
+      "example": true
+    },
+    {
+      "id": "celery-pork",
+      "name": "芹菜炒瘦肉",
+      "meal": "dinner",
+      "ingredients": [
+        {
+          "foodId": "celery",
+          "grams": 160
+        },
+        {
+          "foodId": "pork-lean",
+          "grams": 70
+        },
+        {
+          "foodId": "rice-cooked",
+          "grams": 120
+        },
+        {
+          "foodId": "oil",
+          "grams": 6
+        }
+      ],
+      "steps": [
+        "瘦肉和芹菜一起少油炒熟。",
+        "配一碗米饭。"
+      ],
+      "note": "家常小炒，南北都能做。",
+      "avoid": [],
+      "sourceNote": "待审核草稿。家常做法简述。热量由原料克数和食物表计算，不在这里手写。",
+      "example": true
+    },
+    {
+      "id": "melon-shrimp",
+      "name": "冬瓜虾仁",
+      "meal": "dinner",
+      "ingredients": [
+        {
+          "foodId": "winter-melon",
+          "grams": 220
+        },
+        {
+          "foodId": "shrimp",
+          "grams": 90
+        },
+        {
+          "foodId": "oil",
+          "grams": 5
+        }
+      ],
+      "steps": [
+        "冬瓜煮软。",
+        "虾仁煮熟放进去，少放油。"
+      ],
+      "note": "清淡小份，没有把主食算进去。热量低、蛋白质不低。",
+      "avoid": [
+        "kidney_high_protein"
+      ],
+      "sourceNote": "待审核草稿。家常做法简述。热量由原料克数和食物表计算，不在这里手写。",
+      "example": true
+    },
+    {
+      "id": "potato-beef",
+      "name": "土豆炖牛肉",
+      "meal": "dinner",
+      "ingredients": [
+        {
+          "foodId": "beef-cooked",
+          "grams": 80
+        },
+        {
+          "foodId": "potato-cooked",
+          "grams": 180
+        },
+        {
+          "foodId": "carrot",
+          "grams": 50
+        },
+        {
+          "foodId": "oil",
+          "grams": 6
+        }
+      ],
+      "steps": [
+        "牛肉煮熟，和煮土豆、胡萝卜一起炖软。",
+        "油按这一小份计算。"
+      ],
+      "note": "北方家常炖菜。土豆按带皮煮熟的可食部计。蛋白质不低。",
+      "avoid": [
+        "kidney_high_protein"
+      ],
+      "sourceNote": "待审核草稿。家常做法简述。热量由原料克数和食物表计算，不在这里手写。",
+      "example": true
+    },
+    {
+      "id": "green-bean-pork",
+      "name": "豆角炒肉",
+      "meal": "dinner",
+      "ingredients": [
+        {
+          "foodId": "green-beans",
+          "grams": 160
+        },
+        {
+          "foodId": "pork-lean",
+          "grams": 60
+        },
+        {
+          "foodId": "rice-cooked",
+          "grams": 120
+        },
+        {
+          "foodId": "oil",
+          "grams": 6
+        }
+      ],
+      "steps": [
+        "四季豆炒熟炒透，再放瘦肉。",
+        "配米饭。"
+      ],
+      "note": "家常晚饭。四季豆必须炒熟。",
+      "avoid": [],
+      "sourceNote": "待审核草稿。家常做法简述。热量由原料克数和食物表计算，不在这里手写。",
+      "example": true
+    },
+    {
+      "id": "buckwheat-chicken",
+      "name": "荞麦鸡胸",
+      "meal": "dinner",
+      "ingredients": [
+        {
+          "foodId": "buckwheat-cooked",
+          "grams": 200
+        },
+        {
+          "foodId": "chicken-breast",
+          "grams": 100
+        },
+        {
+          "foodId": "broccoli",
+          "grams": 100
+        }
+      ],
+      "steps": [
+        "荞麦煮熟。",
+        "鸡胸肉煮熟或少油煎熟，配焯西兰花。"
+      ],
+      "note": "主食换成荞麦。蛋白质较高。",
+      "avoid": [
+        "kidney_high_protein"
+      ],
+      "sourceNote": "待审核草稿。家常做法简述。热量由原料克数和食物表计算，不在这里手写。",
+      "example": true
+    },
+    {
+      "id": "cucumber-tofu",
+      "name": "黄瓜拌豆腐",
+      "meal": "dinner",
+      "ingredients": [
+        {
+          "foodId": "tofu-silken",
+          "grams": 150
+        },
+        {
+          "foodId": "cucumber",
+          "grams": 160
+        }
+      ],
+      "steps": [
+        "黄瓜拍碎，嫩豆腐拌匀。",
+        "可以不加烹调油。"
+      ],
+      "note": "清淡小份，适合今天热量已经不低的时候。主食没算进去。",
+      "avoid": [],
+      "sourceNote": "待审核草稿。家常做法简述。热量由原料克数和食物表计算，不在这里手写。",
+      "example": true
+    }
+  ]
+}

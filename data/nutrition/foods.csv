@@ -1,0 +1,50 @@
+id,name,aliases,kcal_per_100g,protein_g_per_100g,fat_g_per_100g,carb_g_per_100g,source,source_note,version,calculable,example,portion_small_g,portion_medium_g,portion_large_g
+rice-cooked,米饭,白饭|蒸米饭|大米饭,130,2.7,0.3,28.2,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,100,150,200
+rice-porridge,白粥,大米粥|稀饭,,,,,本地占位,本地没有可引用的稀粥数据。原先每100克 46 千卡对不上 USDA 条目，是把煮米饭按比例稀释后的数字，已撤下。记录时按这个名字查询薄荷；查不到或失败才无法估算。,example-2026-10-04,false,true,200,300,400
+noodle-cooked,煮鸡蛋面,鸡蛋面,138,4.5,2.1,25.2,USDA FoodData Central,参考 USDA FoodData Central SR Legacy FDC 169732（Noodles egg enriched cooked）每100克。蛋白质 4.54 四舍五入为 4.5，脂肪 2.07 为 2.1，碳水 25.16 为 25.2。这是煮鸡蛋面，不是挂面，也不是阳春面。公开领域数据，不是中国食物成分表。待审核。,usda-fdc-2026-10-04,true,true,150,250,350
+oat-cooked,燕麦粥,麦片粥|煮燕麦,71,2.5,1.5,12,USDA FoodData Central,参考 USDA FoodData Central SR Legacy FDC 173905（Cereals oats regular and quick unenriched cooked with water without salt）每100克。蛋白质 2.54 四舍五入为 2.5，脂肪 1.52 为 1.5，碳水 12.0。这是加水煮软的燕麦，不是干燕麦片。公开领域数据，不是中国食物成分表。待审核。,usda-fdc-2026-10-04,true,true,150,200,280
+millet-cooked,煮小米（干饭式）,煮小米|干饭小米,119,3.5,1,23.7,USDA FoodData Central,参考 USDA FoodData Central SR Legacy FDC 168871（Millet cooked）每100克。蛋白质 3.51 四舍五入为 3.5，碳水 23.67 为 23.7。这是煮熟的小米干饭，不是稀小米粥。公开领域数据，不是中国食物成分表。待审核。,usda-fdc-2026-10-04,true,true,100,150,200
+sweet-potato,烤红薯,红薯|地瓜|烤地瓜,90,2,0.2,20.7,USDA FoodData Central,参考 USDA FoodData Central SR Legacy FDC 170134（Sweet potato cooked baked in skin flesh with salt）每100克。蛋白质 2.01 四舍五入为 2，脂肪 0.15 为 0.2，碳水 20.71 为 20.7。这是烤红薯，不是生红薯。公开领域数据，不是中国食物成分表。待审核。,usda-fdc-2026-10-04,true,true,100,150,250
+corn-cooked,甜玉米（煮）,玉米|玉米粒|甜玉米,96,3.4,1.5,21,USDA FoodData Central,参考 USDA FoodData Central SR Legacy FDC 168525（Corn sweet yellow cooked boiled drained with salt）每100克。蛋白质 3.41 四舍五入为 3.4，碳水 20.98 为 21。这是煮甜玉米，不是玉米面或爆米花。公开领域数据，不是中国食物成分表。待审核。,usda-fdc-2026-10-04,true,true,80,150,200
+potato-cooked,煮土豆,土豆|马铃薯,87,1.9,0.1,20.1,USDA FoodData Central,参考 USDA FoodData Central SR Legacy FDC 170438（Potatoes boiled cooked in skin flesh without salt）每100克。能量 87，蛋白质 1.87 四舍五入为 1.9，碳水 20.13 为 20.1。这是带皮煮的土豆肉，不是生土豆或炸土豆。公开领域数据，不是中国食物成分表。待审核。,usda-fdc-2026-10-04,true,true,100,150,250
+egg-whole,鸡蛋,蛋|煮鸡蛋|荷包蛋,143,12.6,9.5,0.7,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,40,50,60
+egg-white,鸡蛋白,蛋白|蛋清,52,10.9,0.2,0.7,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,30,33,40
+chicken-breast,鸡胸肉,鸡胸|熟鸡胸,165,31,3.6,0,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,80,120,180
+pork-lean,猪瘦肉,瘦肉|里脊,197,27.3,9,0,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,50,80,120
+beef-cooked,牛肉,瘦牛肉|熟牛肉,250,26,15,0,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,50,80,120
+salmon,三文鱼,鲑鱼,208,20,13,0,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,80,100,150
+shrimp,虾仁,虾|熟虾,99,24,0.3,0.2,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,60,100,150
+tofu-firm,北豆腐,豆腐|老豆腐,76,8.1,4.8,1.9,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,80,150,200
+tofu-silken,内酯豆腐,嫩豆腐,55,4.8,2.7,2,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,80,150,200
+edamame,毛豆,熟毛豆,121,11.9,5.2,8.9,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,50,80,120
+milk,牛奶,纯牛奶,61,3.2,3.3,4.8,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,200,250,300
+yogurt,原味酸奶,酸奶,63,5.3,1.6,7,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,100,150,200
+broccoli,西兰花,绿花菜,34,2.8,0.4,6.6,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,80,150,200
+spinach,菠菜,,23,2.9,0.4,3.6,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,80,150,200
+tomato,番茄,西红柿,18,0.9,0.2,3.9,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,100,150,250
+cucumber,黄瓜,青瓜,15,0.7,0.1,3.6,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,80,150,200
+carrot,胡萝卜,红萝卜,41,0.9,0.2,9.6,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,50,100,150
+cabbage,大白菜,白菜,13,1.5,0.2,2.2,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,100,150,250
+eggplant,茄子,,25,1,0.2,5.9,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,80,150,200
+shiitake,香菇,鲜香菇,34,2.2,0.5,6.8,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,50,80,120
+lettuce,生菜,,15,1.4,0.2,2.9,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,50,80,120
+pumpkin,南瓜,,20,0.7,0.1,4.9,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,80,150,200
+apple,苹果,,52,0.3,0.2,13.8,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,100,150,200
+banana,香蕉,,89,1.1,0.3,22.8,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,80,120,150
+orange,橙子,橘子|橙,47,0.9,0.1,11.8,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,100,150,200
+peanut,花生,熟花生,567,25.8,49.2,16.1,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,15,25,40
+oil,食用油,油|植物油,884,0,100,0,USDA FoodData Central（示例）,示例。参考 USDA FoodData Central 公开领域数据的常见数值手工录入并四舍五入；没有联网抓取，也不是中国食物成分表。正式使用请替换。,example-2026-10-03,true,true,5,10,15
+soy-milk,无糖豆浆,豆浆|豆奶,39,3.5,2.1,1.3,USDA FoodData Central,参考 USDA FoodData Central Foundation FDC 1999630（Soy milk unsweetened plain shelf stable）每100克。能量 38.485 四舍五入为 39，蛋白质 3.546875 四舍五入为 3.5，脂肪 2.125 为 2.1，碳水 1.293125 为 1.3。公开领域数据，不是中国食物成分表。待审核。,usda-fdc-2026-10-04,true,true,200,250,300
+lamb-cooked,熟羊肉,羊肉|煮羊肉,199,29.3,8.2,0,USDA FoodData Central,参考 USDA FoodData Central SR Legacy FDC 173811（Lamb New Zealand imported frozen loin separable lean only cooked broiled）每100克。脂肪 8.24 四舍五入为 8.2。公开领域数据，不是中国食物成分表。待审核。,usda-fdc-2026-10-04,true,true,50,80,120
+celery,芹菜,,14,0.7,0.2,3,USDA FoodData Central,参考 USDA FoodData Central SR Legacy FDC 169988（Celery raw）每100克。蛋白质 0.69、脂肪 0.17、碳水 2.97 四舍五入。公开领域数据，不是中国食物成分表。待审核。,usda-fdc-2026-10-04,true,true,80,150,200
+winter-melon,冬瓜,熟冬瓜,11,0.4,0.2,2.5,USDA FoodData Central,参考 USDA FoodData Central SR Legacy FDC 170549（Waxgourd chinese preserving melon cooked boiled drained with salt）每100克。碳水 2.45 四舍五入为 2.5。公开领域数据，不是中国食物成分表。待审核。,usda-fdc-2026-10-04,true,true,100,200,300
+cod,鳕鱼,大西洋鳕鱼,105,22.8,0.9,0,USDA FoodData Central,参考 USDA FoodData Central SR Legacy FDC 171956（Fish cod Atlantic cooked dry heat）每100克。脂肪 0.86 四舍五入为 0.9。公开领域数据，不是中国食物成分表。待审核。,usda-fdc-2026-10-04,true,true,80,120,160
+green-beans,四季豆,豆角|煮四季豆,35,1.9,0.3,7.9,USDA FoodData Central,参考 USDA FoodData Central SR Legacy FDC 169141（Beans snap green cooked boiled drained without salt）每100克。蛋白质 1.89、脂肪 0.28、碳水 7.88 四舍五入。公开领域数据，不是中国食物成分表。待审核。,usda-fdc-2026-10-04,true,true,80,150,200
+buckwheat-cooked,熟荞麦,荞麦,92,3.4,0.6,19.9,USDA FoodData Central,参考 USDA FoodData Central SR Legacy FDC 170686（Buckwheat groats roasted cooked）每100克。蛋白质 3.38、脂肪 0.62 四舍五入。公开领域数据，不是中国食物成分表。待审核。,usda-fdc-2026-10-04,true,true,150,200,280
+millet-porridge,小米粥,,,,,,本地占位,本地没有可引用的稀小米粥数据。煮小米（干饭式）是另一种食物，不能拿来当稀粥。记录时按这个名字查询薄荷；查不到或失败才无法估算。,example-2026-10-04,false,true,200,300,400
+chinese-noodle,面条,煮面条|挂面,,,,,本地占位,本地能算的面是煮鸡蛋面，不是挂面或普通面条。记录时按这个名字查询薄荷；查不到或失败才无法估算。,example-2026-10-04,false,true,150,250,350
+yangchun-noodle,阳春面,,,,,,本地占位,阳春面是带汤的面，不是煮鸡蛋面。本地不计算。记录时按这个名字查询薄荷；查不到或失败才无法估算。,example-2026-10-04,false,true,300,450,600
+beef-noodle,牛肉面,牛肉拉面,,,,,本地占位,本地表没有每100克营养。记录时按这个名字查询薄荷；查不到或失败才无法估算，不会编造热量。,example-2026-10-03,false,true,300,450,600
+steamed-bun,馒头,,,,,,本地占位,本地表没有每100克营养。记录时按这个名字查询薄荷；查不到或失败才无法估算，不会编造热量。,example-2026-10-03,false,true,50,100,150
+dumpling,饺子,水饺,,,,,本地占位,本地表没有每100克营养。记录时按这个名字查询薄荷；查不到或失败才无法估算，不会编造热量。,example-2026-10-03,false,true,100,200,300
+takeout-combo,外卖套餐,套餐,,,,,本地占位,说法太笼统，不查询薄荷，也不编造热量。请拆成具体的菜再记。,example-2026-10-03,false,true,300,450,600

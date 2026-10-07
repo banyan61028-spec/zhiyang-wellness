@@ -1,4 +1,5 @@
 import questionnaire from '../../content/questionnaire.json' with { type: 'json' };
+import { createId } from './id.js';
 export { questionnaire };
 export const options = [
   [0, '从未或几乎没有'], [1, '偶尔，只有少数时候'], [2, '有时，间歇出现'],
@@ -25,5 +26,5 @@ export function scoreAssessment(answers, version = questionnaire.id, scoreVersio
 export function assessmentRecord(answers) {
   const result = scoreAssessment(answers);
   if (result.status !== 'pilot_reference') throw new Error('请先完成全部题目');
-  return { id: crypto.randomUUID(), answers: structuredClone(answers), result, createdAt: new Date().toISOString(), useConditions: '成人可理解性试测；未经测量验证', questionnaireVersion: questionnaire.id };
+  return { id: createId(), answers: structuredClone(answers), result, createdAt: new Date().toISOString(), useConditions: '成人可理解性试测；未经测量验证', questionnaireVersion: questionnaire.id };
 }

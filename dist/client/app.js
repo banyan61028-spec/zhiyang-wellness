@@ -51,9 +51,88 @@ function validateReply(reply, requestId) {
   return reply;
 }
 
+// src/shared/id.js
+function createId(cryptoImpl = globalThis.crypto) {
+  if (typeof cryptoImpl?.randomUUID === "function") return cryptoImpl.randomUUID();
+  if (typeof cryptoImpl?.getRandomValues !== "function") throw new Error("\u65E0\u6CD5\u751F\u6210\u7F16\u53F7");
+  const bytes = new Uint8Array(16);
+  cryptoImpl.getRandomValues(bytes);
+  bytes[6] = bytes[6] & 15 | 64;
+  bytes[8] = bytes[8] & 63 | 128;
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+// src/shared/meals.js
+var defaultDietSettings = () => ({
+  targets: { kcal: null, protein: null, fat: null, carb: null, source: "user", confirmed: false },
+  flags: { pregnancy: false, lactation: false, minor: false, kidney: false, diabetes: false, hypertension: false, eatingDisorder: false },
+  flagsConfirmed: false
+});
+var MEALS = /* @__PURE__ */ new Set(["breakfast", "lunch", "dinner", "snack"]);
+var STATUSES = /* @__PURE__ */ new Set(["matched", "unestimated", "ambiguous"]);
+function cleanDietSettings(input = {}) {
+  const base = defaultDietSettings();
+  const targets = input.targets || {};
+  const flags = input.flags || {};
+  base.targets.confirmed = targets.confirmed === true;
+  base.targets.source = "user";
+  for (const key of ["kcal", "protein", "fat", "carb"]) base.targets[key] = cleanTarget(targets[key], key === "kcal" ? 1e4 : 500);
+  base.flagsConfirmed = input.flagsConfirmed === true;
+  for (const key of Object.keys(base.flags)) base.flags[key] = flags[key] === true;
+  if (!base.flagsConfirmed) {
+    for (const key of Object.keys(base.flags)) base.flags[key] = false;
+  }
+  return base;
+}
+function cleanTarget(value, max) {
+  if (value == null || value === "") return null;
+  const number = Number(value);
+  if (!Number.isInteger(number) || number < 0 || number > max) throw new Error("\u6BCF\u65E5\u76EE\u6807\u6570\u5B57\u65E0\u6548");
+  return number;
+}
+function validateMeal(meal) {
+  if (!meal || typeof meal.id !== "string" || !/^[\w-]{1,100}$/.test(meal.id)) throw new Error("\u8FD9\u4E00\u9910\u7684\u7F16\u53F7\u65E0\u6548");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(meal.date)) throw new Error("\u65E5\u671F\u65E0\u6548");
+  if (!MEALS.has(meal.meal)) throw new Error("\u9910\u6B21\u65E0\u6548");
+  if (!["text", "photo"].includes(meal.inputType)) throw new Error("\u8BB0\u5F55\u65B9\u5F0F\u65E0\u6548");
+  if (typeof meal.rawText !== "string" || meal.rawText.length > 1500) throw new Error("\u539F\u59CB\u6587\u5B57\u8FC7\u957F");
+  if (meal.inputType === "photo" && meal.rawText.includes("data:image")) throw new Error("\u7167\u7247\u4E0D\u4FDD\u5B58\u5728\u672C\u673A\u8BB0\u5F55\u91CC");
+  if (!Array.isArray(meal.items) || !meal.items.length || meal.items.length > 12) throw new Error("\u98DF\u7269\u9879\u65E0\u6548");
+  for (const item of meal.items) validateMealItem(item);
+  return {
+    id: meal.id,
+    date: meal.date,
+    meal: meal.meal,
+    inputType: meal.inputType,
+    rawText: meal.rawText,
+    items: meal.items.map((item) => ({ ...item, nutrition: item.nutrition ? { ...item.nutrition, per100g: item.nutrition.per100g ? { ...item.nutrition.per100g } : void 0 } : null, candidates: item.candidates || [] })),
+    createdAt: typeof meal.createdAt === "string" ? meal.createdAt : (/* @__PURE__ */ new Date()).toISOString(),
+    updatedAt: (/* @__PURE__ */ new Date()).toISOString(),
+    stub: meal.stub === true
+  };
+}
+function validateMealItem(item) {
+  if (!item || typeof item.name !== "string" || !item.name.trim() || item.name.length > 40) throw new Error("\u98DF\u7269\u540D\u65E0\u6548");
+  if (!STATUSES.has(item.status)) throw new Error("\u98DF\u7269\u72B6\u6001\u65E0\u6548");
+  if (item.grams != null && (!Number.isFinite(item.grams) || item.grams <= 0 || item.grams > 5e3)) throw new Error("\u514B\u6570\u65E0\u6548");
+  if (item.status === "matched") {
+    if (!item.foodId || !item.nutrition) throw new Error("\u5DF2\u5339\u914D\u7684\u98DF\u7269\u7F3A\u5C11\u8BA1\u7B97\u7ED3\u679C");
+    for (const key of ["kcal", "protein", "fat", "carb"]) if (!Number.isInteger(item.nutrition[key]) || item.nutrition[key] < 0) throw new Error("\u8425\u517B\u6570\u5B57\u65E0\u6548");
+    if (!item.nutrition.source || !item.nutrition.sourceNote || !item.nutrition.version) throw new Error("\u8425\u517B\u6570\u5B57\u7F3A\u5C11\u6765\u6E90");
+    if (item.nutrition.foodId !== item.foodId) throw new Error("\u8425\u517B\u6765\u6E90\u548C\u98DF\u7269\u4E0D\u4E00\u81F4");
+  } else if (item.nutrition != null) throw new Error("\u65E0\u6CD5\u4F30\u7B97\u7684\u98DF\u7269\u4E0D\u80FD\u5E26\u70ED\u91CF");
+}
+function localDateString(date = /* @__PURE__ */ new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day2 = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day2}`;
+}
+
 // src/shared/records.js
 var defaultProfile = { name: "\u4F53\u9A8C\u7528\u6237", goal: "\u5747\u8861\u996E\u98DF", habit: "\u81EA\u5DF1\u505A\u996D\u4E0E\u5916\u98DF\u90FD\u6709", preference: "\u6682\u65E0\u504F\u597D", updated: "" };
-var emptyState = () => ({ profile: { ...defaultProfile }, saved: [], plans: [], assessments: [], draft: null });
+var emptyState = () => ({ profile: { ...defaultProfile }, saved: [], plans: [], assessments: [], draft: null, meals: [], dietSettings: defaultDietSettings() });
 function cleanProfile(input = {}) {
   return Object.fromEntries(Object.entries(defaultProfile).map(([key, fallback]) => [key, typeof input[key] === "string" ? input[key].slice(0, key === "name" ? 20 : 80) : fallback]));
 }
@@ -81,7 +160,7 @@ function migrateLegacy(raw) {
   state2.saved = Array.isArray(old.saved) ? [...new Set(old.saved.filter(validFavorite))] : [];
   for (const p of Array.isArray(old.plans) ? old.plans : []) {
     try {
-      state2.plans.push(validatePlan({ ...p, id: crypto.randomUUID(), revision: 1, provenance: "demo", legacy: true, note: typeof p.note === "string" ? p.note : "\u65E7\u7248\u6F14\u793A\u65B9\u6848" }));
+      state2.plans.push(validatePlan({ ...p, id: createId(), revision: 1, provenance: "demo", legacy: true, note: typeof p.note === "string" ? p.note : "\u65E7\u7248\u6F14\u793A\u65B9\u6848" }));
     } catch {
     }
   }
@@ -431,17 +510,20 @@ function scoreAssessment(answers, version = questionnaire_default.id, scoreVersi
 function assessmentRecord(answers) {
   const result = scoreAssessment(answers);
   if (result.status !== "pilot_reference") throw new Error("\u8BF7\u5148\u5B8C\u6210\u5168\u90E8\u9898\u76EE");
-  return { id: crypto.randomUUID(), answers: structuredClone(answers), result, createdAt: (/* @__PURE__ */ new Date()).toISOString(), useConditions: "\u6210\u4EBA\u53EF\u7406\u89E3\u6027\u8BD5\u6D4B\uFF1B\u672A\u7ECF\u6D4B\u91CF\u9A8C\u8BC1", questionnaireVersion: questionnaire_default.id };
+  return { id: createId(), answers: structuredClone(answers), result, createdAt: (/* @__PURE__ */ new Date()).toISOString(), useConditions: "\u6210\u4EBA\u53EF\u7406\u89E3\u6027\u8BD5\u6D4B\uFF1B\u672A\u7ECF\u6D4B\u91CF\u9A8C\u8BC1", questionnaireVersion: questionnaire_default.id };
 }
 
 // src/client/storage.js
 var DB_NAME = "zhiyang-local-v2";
-var stores = ["profile", "favorites", "plans", "assessments", "drafts", "meta"];
+var stores = ["profile", "favorites", "plans", "assessments", "drafts", "meta", "meals", "dietSettings"];
 async function openStorage(factory = globalThis.indexedDB, legacy = globalThis.localStorage) {
   if (!factory) throw new Error("\u6B64\u6D4F\u89C8\u5668\u65E0\u6CD5\u4F7F\u7528\u672C\u673A\u5B58\u50A8");
   const db = await new Promise((resolve, reject) => {
-    const req = factory.open(DB_NAME, 1);
-    req.onupgradeneeded = () => stores.forEach((name) => req.result.createObjectStore(name));
+    const req = factory.open(DB_NAME, 2);
+    req.onupgradeneeded = () => {
+      const db2 = req.result;
+      for (const name of stores) if (!db2.objectStoreNames.contains(name)) db2.createObjectStore(name);
+    };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
     req.onblocked = () => reject(new Error("\u8BF7\u5173\u95ED\u5176\u4ED6\u65E7\u7248\u9875\u9762\u540E\u91CD\u8BD5"));
@@ -494,10 +576,25 @@ async function openStorage(factory = globalThis.indexedDB, legacy = globalThis.l
     load: () => transact(stores, (tx, set) => {
       const state2 = emptyState();
       set(state2);
-      for (const [store, field, key] of [["profile", "profile", "current"], ["favorites", "saved"], ["plans", "plans"], ["assessments", "assessments"], ["drafts", "draft", "current"]]) {
+      for (const [store, field, key] of [["profile", "profile", "current"], ["favorites", "saved"], ["plans", "plans"], ["assessments", "assessments"], ["drafts", "draft", "current"], ["meals", "meals"], ["dietSettings", "dietSettings", "current"]]) {
         const req = key ? tx.objectStore(store).get(key) : tx.objectStore(store).getAll();
         req.onsuccess = () => {
-          if (req.result !== void 0) state2[field] = field === "profile" ? cleanProfile(req.result) : req.result;
+          if (req.result === void 0) return;
+          if (field === "profile") state2.profile = cleanProfile(req.result);
+          else if (field === "dietSettings") {
+            try {
+              state2.dietSettings = cleanDietSettings(req.result);
+            } catch {
+            }
+          } else if (field === "meals") state2.meals = req.result.filter((meal) => {
+            try {
+              validateMeal(meal);
+              return true;
+            } catch {
+              return false;
+            }
+          });
+          else state2[field] = req.result;
         };
       }
     }, "readonly"),
@@ -535,6 +632,25 @@ async function openStorage(factory = globalThis.indexedDB, legacy = globalThis.l
       if (draft && draft.questionnaireVersion !== questionnaire_default.id) return Promise.reject(new Error("\u8349\u7A3F\u7248\u672C\u4E0D\u5339\u914D"));
       return transact(["drafts"], (tx) => draft ? tx.objectStore("drafts").put(draft, "current") : tx.objectStore("drafts").delete("current"));
     },
+    saveMeal: (meal) => transact(["meals"], (tx, set, abort) => {
+      try {
+        const record = validateMeal(meal);
+        tx.objectStore("meals").put(record, record.id);
+        set(record);
+      } catch (error) {
+        abort(error);
+      }
+    }),
+    removeMeal: (id) => transact(["meals"], (tx) => tx.objectStore("meals").delete(id)),
+    dietSettings: (input) => transact(["dietSettings"], (tx, set, abort) => {
+      try {
+        const record = cleanDietSettings(input);
+        tx.objectStore("dietSettings").put(record, "current");
+        set(record);
+      } catch (error) {
+        abort(error);
+      }
+    }),
     clear: async () => {
       legacy?.removeItem("zhiyang-demo-v1");
       await transact(stores, (tx) => {
@@ -671,10 +787,606 @@ function createAssessmentUI({ show, storage: storage2, changed, notify }) {
   };
 }
 
+// src/client/diet-client.js
+async function post(path, body, signal) {
+  const response = await fetch(path, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ requestId: createId(), ...body }),
+    signal,
+    cache: "no-store"
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload.error || "\u8FD9\u6B21\u6CA1\u6709\u5B8C\u6210");
+  if (payload.mode === "urgent_help") return payload;
+  return payload;
+}
+async function fetchCatalog() {
+  const response = await fetch("/api/diet/catalog", { cache: "no-store" });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(Array.isArray(payload.details) ? payload.details.join("\uFF1B") : payload.error || "\u98DF\u7269\u8868\u6682\u65F6\u8BFB\u4E0D\u51FA\u6765");
+  return payload;
+}
+function urgentIfNeeded(text) {
+  if (text && isExplicitUrgent(text)) return { ...urgentResponse(createId()), items: [], recipe: null, advice: "" };
+  return null;
+}
+var recognizeMeal = (body, signal) => urgentIfNeeded(body.text) || post("/api/diet/recognize", body, signal);
+var calculateItems = (body, signal) => post("/api/diet/calculate", body, signal);
+var requestReport = (body, signal) => post("/api/diet/report", body, signal);
+var requestRecommendation = (body, signal) => post("/api/diet/recommend", body, signal);
+
+// src/client/diet-page.js
+var mealNames = { breakfast: "\u65E9\u9910", lunch: "\u5348\u9910", dinner: "\u665A\u9910", snack: "\u52A0\u9910" };
+var mealOrder = ["breakfast", "lunch", "dinner", "snack"];
+var RING_R = 52;
+var RING_C = 2 * Math.PI * RING_R;
+function createDietPages(ctx) {
+  let catalog = null;
+  let catalogError = "";
+  let draft = null;
+  let busy = false;
+  let report = null;
+  let recommendation = null;
+  let excludeIds = [];
+  let inflight = "";
+  let urgent = null;
+  let composeText = "";
+  let composeMeal = "";
+  let composeError = "";
+  let photoName = "";
+  let pendingFile = null;
+  let libraryFilter = "all";
+  document.addEventListener("input", (event) => {
+    const el = event.target;
+    if (!(el instanceof HTMLTextAreaElement)) return;
+    if (el.name === "text" && el.closest("#meal-form")) composeText = el.value;
+  });
+  document.addEventListener("change", (event) => {
+    const el = event.target;
+    if (!(el instanceof HTMLElement)) return;
+    if (el.id === "meal-photo") {
+      pendingFile = el.files?.[0] || null;
+      photoName = pendingFile ? pendingFile.name : "";
+      const hint = document.querySelector("[data-photo-name]");
+      if (hint) hint.textContent = photoName ? `\u5DF2\u9009 ${photoName}` : "";
+      return;
+    }
+    if (el.name === "meal" && el.closest("#meal-form")) {
+      composeMeal = el.value;
+      return;
+    }
+    if (el.dataset.dietFood != null) void changeFood(el.dataset.dietFood, el.value).catch((error) => ctx.toast(friendlyMessage(error.message, "\u8FD9\u6B21\u6CA1\u6709\u6539\u6210\uFF0C\u8BF7\u518D\u8BD5\u4E00\u6B21")));
+    if (el.dataset.dietGrams != null) void changeGrams(el.dataset.dietGrams, el.value).catch((error) => ctx.toast(friendlyMessage(error.message, "\u8FD9\u6B21\u6CA1\u6709\u6539\u6210\uFF0C\u8BF7\u518D\u8BD5\u4E00\u6B21")));
+  });
+  async function loadCatalog() {
+    try {
+      catalog = await fetchCatalog();
+      catalogError = "";
+    } catch (error) {
+      catalog = null;
+      catalogError = friendlyMessage(error.message, "\u98DF\u8C31\u6682\u65F6\u6253\u4E0D\u5F00\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5");
+    }
+  }
+  function record() {
+    const state2 = ctx.getState();
+    const todayMeals = mealsOn(state2, localDateString());
+    const meal = composeMeal || defaultMeal();
+    const status = busy ? "\u6B63\u5728\u770B\u8FD9\u4E00\u9910" : photoName ? `\u5DF2\u9009 ${photoName}` : "";
+    const side = todayMeals.length ? `<aside class="quiet-card today-side"><div class="quiet-copy"><h2>\u4ECA\u5929\u5DF2\u7ECF\u8BB0\u4E0B</h2><p>\u8F7B\u8F7B\u8BB0\u4E00\u7B14\uFF0C\u517B\u6210\u66F4\u597D\u7684\u8282\u594F\u3002</p></div><div class="quiet-meals">${todayMeals.map((item) => mealCard(item, true)).join("")}</div><button class="pill-link" data-page="today">\u770B\u4ECA\u5929 ${ctx.icon("arrow")}</button></aside>` : `<aside class="quiet-card today-side is-empty"><div class="quiet-art" aria-hidden="true">${bowlArt()}</div><div class="quiet-copy"><h2>\u4ECA\u5929\u8FD8\u6CA1\u8BB0</h2><p>\u8F7B\u8F7B\u8BB0\u4E00\u7B14\uFF0C\u517B\u6210\u66F4\u597D\u7684\u8282\u594F\u3002</p></div><button class="pill-link" data-page="today">\u770B\u4ECA\u5929 ${ctx.icon("arrow")}</button></aside>`;
+    return `<div class="diet-page diet-record">${catalogError ? `<div class="storage-error" role="alert">${ctx.esc(catalogError)}</div>` : ""}${urgent ? urgentBanner(urgent) : ""}
+      <section class="hero-card">
+        <div class="hero-wash" aria-hidden="true"></div>
+        <div class="hero-copy"><h1>\u8BB0\u4E0B\u8FD9\u4E00\u9910</h1><p>\u62CD\u4E00\u5F20\uFF0C\u6216\u5199\u4E00\u53E5\u8BDD</p></div>
+        <form id="meal-form" class="composer ${busy ? "is-busy" : ""}">
+          <label class="meal-chip"><span class="sr-only">\u8FD9\u4E00\u9910</span>
+            <select name="meal" aria-label="\u8FD9\u4E00\u9910">${mealOrder.map((key) => `<option value="${key}" ${key === meal ? "selected" : ""}>${mealNames[key]}</option>`).join("")}</select>
+          </label>
+          <div class="composer-box">
+            <textarea name="text" maxlength="1500" rows="2" placeholder="\u8BB0\u5F55\u98DF\u7269\u3001\u611F\u53D7\u6216\u62CD\u7167\u2026" aria-label="\u5199\u4E0B\u5403\u4E86\u4EC0\u4E48">${ctx.esc(composeText)}</textarea>
+            <div class="composer-actions">
+              <label class="icon-hit">
+                <span class="sr-only">\u62CD\u7167\u6216\u4E0A\u4F20\u7167\u7247</span>
+                <input id="meal-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" capture="environment">
+                ${ctx.icon("camera")}
+              </label>
+              <button class="icon-hit send" type="submit" aria-label="${busy ? "\u6B63\u5728\u8BC6\u522B" : "\u8BC6\u522B\u8FD9\u4E00\u9910"}" aria-busy="${busy ? "true" : "false"}" ${busy ? "disabled" : ""}>${ctx.icon("send")}</button>
+            </div>
+          </div>
+          <p class="composer-status" role="status" data-photo-name>${ctx.esc(status)}</p>
+          ${composeError ? `<p class="composer-error" role="alert">${ctx.esc(composeError)}</p>` : ""}
+        </form>
+      </section>
+      ${draft ? editor(draft) : ""}
+      ${side}
+    </div>`;
+  }
+  function today2() {
+    scheduleToday();
+    const state2 = ctx.getState();
+    const meals = mealsOn(state2, localDateString());
+    const body = meals.length ? `${reportBlock()}${mealStrip(meals)}${recommendBlock()}${adviceCard()}` : `<div class="empty-hero"><div class="quiet-art" aria-hidden="true">${bowlArt()}</div><div><h2>\u4ECA\u5929\u8FD8\u6CA1\u8BB0</h2><p>\u8F7B\u8F7B\u8BB0\u4E00\u7B14\uFF0C\u8FD9\u91CC\u624D\u4F1A\u51FA\u73B0\u5408\u8BA1\u3002</p><button class="primary-button" data-page="home">\u53BB\u8BB0\u4E00\u9910</button></div></div>`;
+    return `${heading("\u4ECA\u65E5", "\u770B\u770B\u4ECA\u5929\u5927\u7EA6\u5403\u4E86\u591A\u5C11\u3002")}<div class="diet-page diet-today">${urgent ? urgentBanner(urgent) : ""}${body}</div>`;
+  }
+  function library2() {
+    if (!catalog) return `${heading("\u98DF\u8C31", "\u6309\u73B0\u5728\u7684\u8BB0\u5F55\uFF0C\u6311\u4E0B\u4E00\u9910")}<div class="diet-page">${catalogError ? `<div class="storage-error">${ctx.esc(catalogError)}</div>` : '<p class="empty-copy">\u6B63\u5728\u51C6\u5907\u98DF\u8C31\u3002</p>'}</div>`;
+    const filters = [["all", "\u5168\u90E8"], ["light", "\u6E05\u6DE1"], ["home", "\u5BB6\u5E38"], ["breakfast", "\u65E9\u9910"], ["lunch", "\u5348\u9910"], ["dinner", "\u665A\u9910"]];
+    const list = catalog.recipes.filter((recipe) => matchLibrary(recipe, libraryFilter));
+    return `${heading("\u98DF\u8C31", "\u6309\u73B0\u5728\u7684\u8BB0\u5F55\uFF0C\u6311\u4E0B\u4E00\u9910")}<div class="diet-page diet-library-page"><div class="filter-row" aria-label="\u98DF\u8C31\u7B5B\u9009">${filters.map(([id, label]) => `<button type="button" class="filter-chip ${libraryFilter === id ? "active" : ""}" data-diet-action="library-filter" data-diet-filter="${id}" aria-pressed="${libraryFilter === id}">${label}</button>`).join("")}</div><div class="recipe-list">${list.length ? list.map(recipeRow).join("") : '<p class="empty-copy">\u8FD9\u4E00\u7C7B\u91CC\u8FD8\u6CA1\u6709\u98DF\u8C31\u3002</p>'}</div><p class="library-foot">\u8BB0\u4E0B\u4ECA\u65E5\u996E\u98DF\uFF0C\u9047\u89C1\u66F4\u5408\u9002\u7684\u98DF\u8C31</p></div>`;
+  }
+  function settings() {
+    const settingsState = ctx.getState().dietSettings;
+    const targets = settingsState.targets;
+    const flags = settingsState.flags;
+    return `${heading("\u6211\u7684", "\u76EE\u6807\u548C\u8BB0\u5F55\u90FD\u5728\u8FD9\u53F0\u624B\u673A\u4E0A\u3002")}<div class="diet-page diet-settings"><section class="diet-card"><h2>\u6BCF\u65E5\u76EE\u6807</h2><p class="small muted">\u6309\u81EA\u5DF1\u7684\u4E60\u60EF\u586B\u3002\u7559\u7A7A\u7684\u9879\u76EE\u4E0D\u53C2\u4E0E\u5BF9\u6BD4\u3002</p><form id="target-form"><div class="target-grid"><label class="form-label">\u70ED\u91CF\uFF08\u5343\u5361\uFF09<input name="kcal" inputmode="numeric" min="0" max="10000" value="${targets.kcal ?? ""}"></label><label class="form-label">\u86CB\u767D\u8D28\uFF08\u514B\uFF09<input name="protein" inputmode="numeric" min="0" max="500" value="${targets.protein ?? ""}"></label><label class="form-label">\u8102\u80AA\uFF08\u514B\uFF09<input name="fat" inputmode="numeric" min="0" max="500" value="${targets.fat ?? ""}"></label><label class="form-label">\u78B3\u6C34\uFF08\u514B\uFF09<input name="carb" inputmode="numeric" min="0" max="500" value="${targets.carb ?? ""}"></label></div><label class="check-line"><input type="checkbox" name="confirm" ${targets.confirmed ? "checked" : ""}> \u628A\u8FD9\u4E9B\u6570\u5B57\u5F53\u4F5C\u6211\u7684\u6BCF\u65E5\u76EE\u6807</label><button class="primary-button" type="submit">\u4FDD\u5B58\u76EE\u6807</button></form></section><section class="diet-card"><h2>\u8FD9\u4E9B\u60C5\u51B5\u4E0B\uFF0C\u5EFA\u8BAE\u4F1A\u66F4\u8C28\u614E</h2><p class="small muted">\u52FE\u9009\u540E\uFF0C\u4E0D\u4F1A\u6309\u5403\u5F97\u5C11\u6765\u50AC\u4F60\uFF0C\u4E5F\u4E0D\u4F1A\u56E0\u4E3A\u86CB\u767D\u8D28\u4E0D\u591F\u5C31\u63A8\u8350\u9AD8\u86CB\u767D\u7684\u83DC\u3002</p><form id="flags-form">${flagBox("pregnancy", "\u5B55\u671F\u6216\u5907\u5B55", flags.pregnancy)}${flagBox("lactation", "\u54FA\u4E73", flags.lactation)}${flagBox("minor", "\u672A\u6210\u5E74", flags.minor)}${flagBox("kidney", "\u80BE\u75C5", flags.kidney)}${flagBox("diabetes", "\u7CD6\u5C3F\u75C5", flags.diabetes)}${flagBox("hypertension", "\u9AD8\u8840\u538B", flags.hypertension)}${flagBox("eatingDisorder", "\u5403\u996D\u8BA9\u6211\u5F88\u75DB\u82E6\uFF0C\u6216\u51FA\u73B0\u50AC\u5410\u3001\u7EDD\u98DF", flags.eatingDisorder)}<label class="check-line"><input type="checkbox" name="confirm" ${settingsState.flagsConfirmed ? "checked" : ""}> \u6309\u8FD9\u4E9B\u60C5\u51B5\u8C03\u6574\u6587\u5B57\u5EFA\u8BAE</label><button class="primary-button" type="submit">\u4FDD\u5B58</button></form></section><section class="settings-list" aria-label="\u66F4\u591A"><button class="settings-row" type="button" data-action="privacy"><span><strong>\u9690\u79C1\u4E0E\u8BF4\u660E</strong><small>\u8BB0\u5F55\u53EA\u7559\u5728\u8FD9\u53F0\u624B\u673A\u4E0A\u3002\u70ED\u91CF\u662F\u4F30\u7B97\u3002</small></span>${ctx.icon("arrow")}</button><button class="settings-row" type="button" data-action="reset"><span><strong>\u6E05\u9664\u8FD9\u53F0\u624B\u673A\u4E0A\u7684\u8BB0\u5F55</strong><small>\u996E\u98DF\u8BB0\u5F55\u548C\u6BCF\u65E5\u76EE\u6807\u4F1A\u4E00\u8D77\u6E05\u6389\u3002</small></span>${ctx.icon("arrow")}</button></section></div>`;
+  }
+  async function onClick(button) {
+    const action = button.dataset.dietAction;
+    if (!action) return false;
+    if (action === "portion") await changePortion(button.dataset.dietItem, button.dataset.dietSize);
+    else if (action === "save-draft") await saveDraft();
+    else if (action === "discard") {
+      draft = null;
+      urgent = null;
+      ctx.render();
+    } else if (action === "delete-meal") {
+      await ctx.writeStore((storage2) => storage2.removeMeal(button.dataset.dietId));
+      invalidateToday();
+      ctx.toast("\u5DF2\u5220\u9664\u8FD9\u4E00\u9910");
+    } else if (action === "edit-meal") beginEdit(button.dataset.dietId);
+    else if (action === "library-filter") {
+      libraryFilter = button.dataset.dietFilter || "all";
+      ctx.render();
+    } else if (action === "recipe") openRecipe(button.dataset.dietId);
+    else if (action === "another") await anotherRecipe();
+    else if (action === "retry-today") {
+      invalidateToday();
+      ctx.render();
+    } else return false;
+    return true;
+  }
+  async function onSubmit(event) {
+    if (event.target.id === "meal-form") {
+      event.preventDefault();
+      await submitMeal(event.target);
+      return true;
+    }
+    if (event.target.id === "target-form") {
+      event.preventDefault();
+      await saveTargets(event.target);
+      return true;
+    }
+    if (event.target.id === "flags-form") {
+      event.preventDefault();
+      await saveFlags(event.target);
+      return true;
+    }
+    return false;
+  }
+  async function submitMeal(form) {
+    const data = new FormData(form);
+    const text = String(data.get("text") || "").trim();
+    const meal = String(data.get("meal") || composeMeal || defaultMeal());
+    const file = form.querySelector("#meal-photo")?.files?.[0] || pendingFile;
+    composeText = String(data.get("text") || "");
+    composeMeal = meal;
+    if (file) {
+      pendingFile = file;
+      photoName = file.name;
+    }
+    if (!text && !file) {
+      composeError = "\u5199\u4E00\u53E5\u8BDD\uFF0C\u6216\u62CD\u4E00\u5F20\u8FD9\u4E00\u9910\u7684\u7167\u7247\u3002";
+      ctx.render();
+      return;
+    }
+    busy = true;
+    urgent = null;
+    composeError = "";
+    ctx.render();
+    try {
+      const imageDataUrl = file ? await compressImage(file) : "";
+      const result = await recognizeMeal({ text, imageDataUrl });
+      if (result.mode === "urgent_help") {
+        draft = null;
+        urgent = result;
+        composeText = "";
+        pendingFile = null;
+        photoName = "";
+        return;
+      }
+      draft = {
+        id: createId(),
+        date: localDateString(),
+        meal,
+        inputType: file ? "photo" : "text",
+        rawText: text,
+        stub: result.stub === true,
+        notice: result.notice || "",
+        createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+        items: result.items.map((item) => ({ ...item, clientId: createId() }))
+      };
+      composeText = "";
+      pendingFile = null;
+      photoName = "";
+      composeError = "";
+    } catch (error) {
+      composeError = friendlyMessage(error.message, "\u6682\u65F6\u65E0\u6CD5\u8BC6\u522B\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5\u6216\u6539\u4E3A\u6253\u5B57\u8BB0\u5F55");
+      ctx.toast(composeError);
+    } finally {
+      busy = false;
+      ctx.render();
+    }
+  }
+  function editor(current) {
+    return `<section class="draft-editor" aria-label="\u6838\u5BF9\u8FD9\u4E00\u9910"><div class="draft-head"><h2>\u6838\u5BF9\u8FD9\u4E00\u9910</h2><p class="small muted">${ctx.esc(gentleNotice(current.notice))}</p></div>${current.items.map((item) => itemCard(item)).join("")}<div class="button-row"><button class="primary-button" type="button" data-diet-action="save-draft">\u8BB0\u4E0B\u6765</button><button class="outline-button" type="button" data-diet-action="discard">\u5148\u4E0D\u8BB0</button></div></section>`;
+  }
+  function itemCard(item) {
+    const nutrition = item.nutrition;
+    const shown = displaySource(nutrition);
+    const kcal = nutrition ? `<p class="food-kcal"><span class="num">${nutrition.kcal}</span><small>\u7EA6\u5343\u5361</small></p>` : '<p class="food-kcal food-kcal-soft"><span>\u6682\u65F6\u7B97\u4E0D\u51FA\u6765</span><small>\u53EF\u4EE5\u6539\u9009\uFF0C\u6216\u5148\u7559\u7740</small></p>';
+    return `<article class="food-card">
+      <header class="food-card-head"><div><h3>${ctx.esc(item.name || item.inputName)}</h3>${item.inputName && item.inputName !== item.name ? `<p class="small muted">\u8BC6\u522B\u4E3A ${ctx.esc(item.inputName)}</p>` : ""}</div>${kcal}</header>
+      <div class="chip-row">${shown ? `<span class="chip">${shown.label}</span>` : '<span class="chip chip-soft">\u6682\u65F6\u7B97\u4E0D\u51FA\u6765</span>'}${item.portionLabel ? `<span class="chip chip-quiet">${ctx.esc(item.portionLabel)}</span>` : ""}</div>
+      ${foodSelect(item)}
+      <div class="portion-row" role="group" aria-label="\u4FEE\u6B63\u5206\u91CF">
+        ${portionButton(item, "small", "\u5C0F")}${portionButton(item, "medium", "\u4E2D")}${portionButton(item, "large", "\u5927")}
+        <label class="grams-field">\u514B\u6570<input data-diet-grams="${ctx.esc(item.clientId)}" type="number" min="1" max="5000" inputmode="numeric" value="${item.grams ?? ""}" aria-label="\u514B\u6570"></label>
+      </div>
+      ${nutrition ? `${macroPills(nutrition)}${shown.detail ? `<details class="source-fold"><summary>\u6570\u636E\u6765\u6E90</summary><p>${ctx.esc(shown.label)}\u3002${ctx.esc(shown.detail)}</p></details>` : `<details class="source-fold"><summary>\u6570\u636E\u6765\u6E90</summary><p>${ctx.esc(shown.label)}</p></details>`}` : `<div class="unestimated-panel"><p>${unestimatedCopy(item.reason)}</p></div>`}
+    </article>`;
+  }
+  function portionButton(item, size, label) {
+    const active = item.portionLabel === label;
+    return `<button type="button" data-diet-action="portion" data-diet-item="${ctx.esc(item.clientId)}" data-diet-size="${size}" class="${active ? "active" : ""}" aria-pressed="${active}">${label}</button>`;
+  }
+  function foodSelect(item) {
+    if (!catalog) return "";
+    const extras = [];
+    const push = (option) => {
+      if (option?.id && !extras.some((entry) => entry.id === option.id)) extras.push(option);
+    };
+    if (item.nutrition && item.foodId) push({ id: item.foodId, name: item.name });
+    for (const candidate of item.candidates || []) push(candidate);
+    const local = catalog.foods.filter((food2) => food2.calculable && !extras.some((entry) => entry.id === food2.id));
+    const options2 = [...extras, ...local];
+    const selected = item.nutrition ? item.foodId : "";
+    const asking = item.status === "ambiguous" && !item.nutrition;
+    const prompt = asking ? "\u8BF7\u9009\u62E9" : "\u5148\u4E0D\u7B97";
+    return `<label class="form-label food-pick">${asking ? "\u8FD9\u51E0\u9879\u90FD\u53EF\u80FD\uFF0C\u9009\u4E00\u4E2A" : "\u6362\u6210\u522B\u7684"}<select data-diet-food="${ctx.esc(item.clientId)}" aria-label="${asking ? "\u9009\u62E9\u5BF9\u5E94\u7684\u98DF\u7269" : "\u6539\u98DF\u7269"}"><option value="">${prompt}</option>${options2.map((option) => `<option value="${ctx.esc(option.id)}" ${option.id === selected ? "selected" : ""}>${ctx.esc(option.branded ? `${option.name}\uFF08\u54C1\u724C\u5305\u88C5\uFF09` : option.name)}</option>`).join("")}</select></label>`;
+  }
+  async function changePortion(clientId, size) {
+    const item = draft?.items.find((entry) => entry.clientId === clientId);
+    if (!item) return;
+    const food2 = catalog?.foods.find((entry) => entry.id === item.foodId);
+    const portion = food2?.portion || { small: 100, medium: 150, large: 250 };
+    item.grams = portion[size];
+    item.portionLabel = size === "small" ? "\u5C0F" : size === "large" ? "\u5927" : "\u4E2D";
+    item.userAdjusted = true;
+    await recalculate();
+  }
+  async function changeGrams(clientId, value) {
+    const item = draft?.items.find((entry) => entry.clientId === clientId);
+    if (!item) return;
+    item.grams = Number(value);
+    item.portionLabel = "\u81EA\u5B9A\u4E49";
+    item.userAdjusted = true;
+    await recalculate();
+  }
+  async function changeFood(clientId, foodId) {
+    const item = draft?.items.find((entry) => entry.clientId === clientId);
+    if (!item) return;
+    item.userAdjusted = true;
+    if (!foodId) {
+      item.foodId = null;
+      item.forceUnestimated = true;
+      item.status = "unestimated";
+    } else {
+      item.foodId = foodId;
+      item.forceUnestimated = false;
+      item.name = catalog?.foods.find((food2) => food2.id === foodId)?.name || item.name;
+    }
+    await recalculate();
+  }
+  async function recalculate() {
+    if (!draft) return;
+    const result = await calculateItems({ items: draft.items.map((item) => ({ name: item.inputName || item.name, inputName: item.inputName, foodId: item.forceUnestimated ? "" : item.foodId, grams: item.grams, portionLabel: item.portionLabel, forceUnestimated: item.forceUnestimated === true })) });
+    if (result.mode === "urgent_help") {
+      urgent = result;
+      draft = null;
+      ctx.render();
+      return;
+    }
+    draft.items = draft.items.map((item, index) => {
+      const next = result.items[index];
+      return { ...item, ...next, candidates: next.candidates?.length ? next.candidates : item.candidates, clientId: item.clientId, userAdjusted: item.userAdjusted, forceUnestimated: item.forceUnestimated === true && !next.nutrition };
+    });
+    ctx.render();
+  }
+  async function saveDraft() {
+    if (!draft?.items.length) return;
+    const record2 = validateMeal({ ...draft, rawText: draft.rawText || "" });
+    await ctx.writeStore((storage2) => storage2.saveMeal(record2));
+    draft = null;
+    invalidateToday();
+    ctx.toast("\u5DF2\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A");
+    ctx.render();
+  }
+  function beginEdit(id) {
+    const meal = ctx.getState().meals.find((item) => item.id === id);
+    if (!meal) return;
+    draft = { ...meal, items: meal.items.map((item) => ({ ...item, clientId: createId(), inputName: item.inputName || item.name })), notice: "\u6B63\u5728\u4FEE\u6539\u5DF2\u4FDD\u5B58\u7684\u4E00\u9910\u3002", stub: meal.stub };
+    urgent = null;
+    ctx.navigate("home");
+  }
+  function scheduleToday() {
+    const key = cacheKey();
+    if (report?.key === key && recommendation?.key === key || inflight === key) return;
+    inflight = key;
+    queueMicrotask(() => loadToday(key));
+  }
+  async function loadToday(key) {
+    try {
+      const meals = mealsOn(ctx.getState(), localDateString());
+      if (cacheKey() !== key) return;
+      if (!meals.length) {
+        report = { key, mode: "empty" };
+        recommendation = { key, empty: true, reason: "\u5148\u8BB0\u4E0B\u4ECA\u5929\u5403\u4E86\u4EC0\u4E48\uFF0C\u518D\u4ECE\u98DF\u8C31\u5E93\u91CC\u9009\u4E0B\u4E00\u9910\u3002", reasonKept: true };
+        excludeIds = [];
+        return;
+      }
+      const body = requestBody(meals);
+      const nextReport = { key, ...await requestReport(body) };
+      if (cacheKey() !== key) return;
+      report = nextReport;
+      if (report.mode === "urgent_help") {
+        urgent = report;
+        recommendation = { key, empty: true, reason: "", reasonKept: true };
+        return;
+      }
+      excludeIds = [];
+      const nextRecommendation = { key, ...await requestRecommendation({ ...body, excludeIds }) };
+      if (cacheKey() !== key) return;
+      recommendation = nextRecommendation;
+      if (recommendation.mode === "urgent_help") urgent = recommendation;
+    } catch (error) {
+      if (cacheKey() !== key) return;
+      report = { key, mode: "error", adviceNote: friendlyMessage(error.message, "\u4ECA\u5929\u7684\u5408\u8BA1\u6682\u65F6\u51FA\u4E0D\u6765\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5") };
+      recommendation = { key, empty: true, reason: "", reasonKept: false };
+    } finally {
+      if (inflight === key) inflight = "";
+      ctx.render();
+    }
+  }
+  async function anotherRecipe() {
+    if (!recommendation?.recipe) return;
+    excludeIds = [...excludeIds, recommendation.recipe.id];
+    const meals = mealsOn(ctx.getState(), localDateString());
+    const key = cacheKey();
+    recommendation = { key, ...await requestRecommendation({ ...requestBody(meals), excludeIds }) };
+    ctx.render();
+  }
+  function requestBody(meals) {
+    const settingsState = ctx.getState().dietSettings;
+    return {
+      meals: meals.map((meal) => ({ rawText: meal.rawText, items: meal.items.map((item) => ({ name: item.name, inputName: item.inputName, foodId: item.foodId, grams: item.grams, status: item.status, portionLabel: item.portionLabel })) })),
+      texts: meals.map((meal) => meal.rawText).filter(Boolean),
+      targets: settingsState.targets,
+      flags: settingsState.flags,
+      flagsConfirmed: settingsState.flagsConfirmed
+    };
+  }
+  function reportBlock() {
+    if (!report || report.mode === "empty") return '<section class="diet-card dash-loading"><p class="composer-status">\u6B63\u5728\u6C47\u603B\u4ECA\u5929\u7684\u70ED\u91CF\u3002</p></section>';
+    if (report.mode === "error") return `<div class="storage-error" role="alert">${ctx.esc(report.adviceNote)} <button class="text-button diet-link" data-diet-action="retry-today">\u91CD\u8BD5</button></div>`;
+    if (report.mode === "urgent_help") return "";
+    const totals = report.totals;
+    if (!totals) return "";
+    const target = report.targets;
+    const gap = target?.kcal != null ? target.kcal - totals.kcal : null;
+    const ratio = target?.kcal ? totals.kcal / target.kcal : null;
+    const tone = ratio != null && ratio > 1 ? "over" : "under";
+    const center = totals.counted ? String(totals.kcal) : "\u2014";
+    const aria = gap == null ? totals.counted ? `\u4ECA\u65E5\u7EA6 ${totals.kcal} \u5343\u5361\uFF0C\u8FD8\u6CA1\u6709\u786E\u8BA4\u6BCF\u65E5\u76EE\u6807` : "\u4ECA\u5929\u8FD8\u6CA1\u6709\u53EF\u8BA1\u7B97\u7684\u70ED\u91CF" : `\u4ECA\u65E5\u7EA6 ${totals.kcal} \u5343\u5361\uFF0C\u76EE\u6807 ${target.kcal} \u5343\u5361\uFF0C${gap >= 0 ? `\u5927\u7EA6\u8FD8\u5C11 ${gap} \u5343\u5361` : `\u5927\u7EA6\u591A\u4E86 ${Math.abs(gap)} \u5343\u5361`}`;
+    const gapCopy = gap == null ? '<p class="dash-gap">\u8FD8\u6CA1\u786E\u8BA4\u6BCF\u65E5\u76EE\u6807\uFF0C\u8FD9\u91CC\u53EA\u663E\u793A\u5408\u8BA1\u3002</p>' : `<p class="dash-gap ${gap < 0 ? "over" : ""}">\u76EE\u6807 <span class="num">${target.kcal}</span> \u5343\u5361 \xB7 ${gap >= 0 ? `\u8FD8\u5DEE <span class="num">${gap}</span> \u5343\u5361` : `\u591A\u4E86 <span class="num">${Math.abs(gap)}</span> \u5343\u5361`}</p>`;
+    const ringLabel = ratio == null ? `<strong class="ring-word">\u5408\u8BA1</strong><span>${totals.counted ? "\u672A\u8BBE\u76EE\u6807" : "\u6CA1\u6709\u53EF\u8BA1\u7B97\u7684\u70ED\u91CF"}</span>` : `<span class="ring-kicker">\u4ECA\u65E5\u8FDB\u5EA6</span><strong class="num">${Math.min(999, Math.round(ratio * 100))}%</strong><span>${ratio > 1 ? "\u8D85\u8FC7\u76EE\u6807" : "\u5BF9\u7167\u76EE\u6807"}</span>`;
+    return `<section class="dash" aria-label="\u4ECA\u65E5\u70ED\u91CF">
+      <div class="dash-main"><p class="eyebrow">\u4ECA\u65E5\u6444\u5165</p><p class="kcal-hero"><span class="num">${center}</span>${totals.counted ? "<small>\u5343\u5361</small>" : ""}</p>${gapCopy}${report.skipped?.length ? `<p class="small muted">\u8FD8\u6CA1\u7B97\u8FDB\u53BB\uFF1A${report.skipped.map((name) => ctx.esc(name)).join("\u3001")}\u3002</p>` : ""}</div>
+      <div class="ring-wrap" role="img" aria-label="${ctx.esc(aria)}">${ringSvg(ratio, tone)}<div class="ring-center">${ringLabel}</div></div>
+    </section>
+    ${macroTiles(totals, target)}`;
+  }
+  function adviceCard() {
+    if (!report || report.mode !== "report") return "";
+    const advice = report.adviceKept && report.advice ? `<p>${ctx.esc(report.advice)}</p>` : report.adviceNote ? `<p class="small muted">${ctx.esc(gentleNotice(report.adviceNote))}</p>` : "";
+    return advice ? `<section class="diet-card advice-card"><h2>\u4ECA\u5929\u7684\u5EFA\u8BAE</h2>${advice}</section>` : "";
+  }
+  function recommendBlock() {
+    if (!recommendation) return '<section class="diet-card next-wait"><p class="composer-status">\u6B63\u5728\u9009\u4E0B\u4E00\u9910\u3002</p></section>';
+    if (!recommendation.recipe) return `<section class="diet-card next-wait"><h2>\u4E0B\u4E00\u9910\u5EFA\u8BAE</h2><p>${ctx.esc(gentleNotice(recommendation.reason || recommendation.reasonNote || "\u4ECA\u5929\u5148\u4ECE\u98DF\u8C31\u91CC\u81EA\u5DF1\u6311\u4E00\u9053\u5427\u3002"))}</p><button class="pill-link" data-page="library">\u53BB\u770B\u98DF\u8C31 ${ctx.icon("arrow")}</button></section>`;
+    const recipe = recommendation.recipe;
+    const blurb = recommendation.reasonKept && recommendation.reason ? recommendation.reason : recommendation.reasonNote ? gentleNotice(recommendation.reasonNote) : visibleNote(recipe.note) || `${mealNames[recipe.meal] || "\u5BB6\u5E38"} \xB7 \u7EA6 ${recipe.nutrition.kcal} \u5343\u5361`;
+    return `<article class="next-meal"><div class="next-meal-copy"><p class="eyebrow">\u4E0B\u4E00\u9910\u5EFA\u8BAE</p><h2>${ctx.esc(recipe.name)}</h2><p class="next-kcal"><span class="num">${recipe.nutrition.kcal}</span> \u7EA6\u5343\u5361</p><p class="next-blurb">${ctx.esc(blurb)}</p><div class="next-actions"><button class="primary-button" data-diet-action="recipe" data-diet-id="${ctx.esc(recipe.id)}">\u67E5\u770B\u8FD9\u9053 ${ctx.icon("arrow")}</button><button class="text-button" data-diet-action="another">\u6362\u4E00\u9053</button></div></div>${recipePhoto(recipe, "next")}</article>`;
+  }
+  function mealStrip(meals) {
+    return `<section class="diet-section meal-strip"><div class="section-row"><h2>\u9910\u6B21\u8BB0\u5F55</h2></div><div class="meal-scroll">${meals.map((item) => mealCard(item, true)).join("")}</div></section>`;
+  }
+  function mealCard(meal, compact = false) {
+    const estimated = meal.items.filter((item) => item.nutrition);
+    const kcal = estimated.reduce((sum, item) => sum + item.nutrition.kcal, 0);
+    const names = meal.items.map((item) => item.name).filter(Boolean).join("\u3001");
+    if (compact) {
+      return `<article class="meal-tile"><div class="meal-tile-top"><span class="meal-mark" aria-hidden="true"></span><div><p class="meal-kicker">${mealNames[meal.meal]}</p><p class="meal-kcal">${estimated.length ? `<span class="num">${kcal}</span> \u5343\u5361` : "\u6682\u65F6\u7B97\u4E0D\u51FA\u6765"}</p></div></div><p class="meal-names">${ctx.esc(names)}</p><span class="meal-actions"><button class="text-button" data-diet-action="edit-meal" data-diet-id="${ctx.esc(meal.id)}">\u4FEE\u6539</button><button class="text-button" data-diet-action="delete-meal" data-diet-id="${ctx.esc(meal.id)}">\u5220\u9664</button></span></article>`;
+    }
+    return `<article class="saved-meal"><div class="section-mini"><span>${mealNames[meal.meal]} \xB7 <span class="num">${ctx.esc(meal.date)}</span></span><span class="meal-actions"><button class="text-button" data-diet-action="edit-meal" data-diet-id="${ctx.esc(meal.id)}">\u4FEE\u6539</button><button class="text-button" data-diet-action="delete-meal" data-diet-id="${ctx.esc(meal.id)}">\u5220\u9664</button></span></div><ul class="meal-lines">${meal.items.map((item) => `<li><span>${ctx.esc(item.name)}</span><span class="num">${item.grams ?? "\u2014"} \u514B</span><span class="num">${item.nutrition ? `\u7EA6 ${item.nutrition.kcal} \u5343\u5361` : "\u6682\u65F6\u7B97\u4E0D\u51FA\u6765"}</span></li>`).join("")}</ul><p class="small muted">${estimated.length ? `\u8FD9\u4E00\u9910\u5927\u7EA6 <span class="num">${kcal}</span> \u5343\u5361` : "\u8FD9\u4E00\u9910\u8FD8\u6CA1\u6709\u7B97\u51FA\u70ED\u91CF"}</p></article>`;
+  }
+  function recipePhoto(recipe, variant) {
+    const src = `/recipes/${encodeURIComponent(recipe.id)}.jpg`;
+    const frame = variant === "cover" ? "recipe-cover" : variant === "next" ? "next-meal-art" : "recipe-swatch";
+    const alt = variant === "cover" ? ctx.esc(recipe.name) : "";
+    return `<span class="${frame} recipe-photo meal-${ctx.esc(recipe.meal)}"><img src="${ctx.esc(src)}" alt="${alt}" loading="lazy" onerror="this.hidden=true;this.parentElement.classList.add('is-fallback')">${ctx.icon("bowl")}</span>`;
+  }
+  function recipeRow(recipe) {
+    const note = visibleNote(recipe.note);
+    return `<button class="recipe-row" type="button" data-diet-action="recipe" data-diet-id="${ctx.esc(recipe.id)}">${recipePhoto(recipe, "row")}<span class="recipe-row-body"><strong>${ctx.esc(recipe.name)}</strong><span class="recipe-facts"><span class="num">\u7EA6 ${recipe.nutrition.kcal} \u5343\u5361</span><span>${mealNames[recipe.meal] || "\u5BB6\u5E38"}</span>${recipe.blockedByHerbs ? "<span>\u5148\u4E0D\u4E3B\u52A8\u63A8\u8350</span>" : ""}</span>${note ? `<span class="recipe-line">${ctx.esc(note)}</span>` : ""}</span><span class="recipe-chevron" aria-hidden="true">${ctx.icon("arrow")}</span></button>`;
+  }
+  function openRecipe(id) {
+    const recipe = catalog?.recipes.find((item) => item.id === id) || recommendation?.recipe;
+    if (!recipe || recipe.id !== id && recommendation?.recipe?.id !== id) return;
+    const chosen = recipe.id === id ? recipe : recommendation.recipe;
+    const note = visibleNote(chosen.note);
+    ctx.openDetail(`${recipePhoto(chosen, "cover")}<div class="detail-body"><span class="chip">\u98DF\u8C31</span><h2>${ctx.esc(chosen.name)}</h2><p class="small muted">${mealNames[chosen.meal] || "\u5BB6\u5E38"}</p><p class="food-kcal"><span class="num">${chosen.nutrition.kcal}</span><small>\u7EA6\u5343\u5361</small></p>${macroPills(chosen.nutrition)}<h3>\u539F\u6599\u548C\u514B\u6570</h3><div class="ingredient-list">${chosen.ingredients.map((item) => `<span>${ctx.esc(item.name)} <span class="num">${item.grams}</span> \u514B</span>`).join("")}</div><h3>\u505A\u6CD5</h3><ol class="step-list">${chosen.steps.map((step) => `<li>${ctx.esc(step)}</li>`).join("")}</ol>${note ? `<p class="gentle-note">${ctx.esc(note)}</p>` : ""}${chosen.avoid?.includes("kidney_high_protein") ? '<p class="boundary-note">\u8FD9\u9053\u86CB\u767D\u8D28\u6BD4\u8F83\u9AD8\u3002\u6709\u80BE\u75C5\u60C5\u51B5\u65F6\uFF0C\u4E0D\u4F1A\u56E0\u4E3A\u86CB\u767D\u8D28\u4E0D\u591F\u5C31\u63A8\u8350\u5B83\u3002</p>' : ""}</div>`, "\u98DF\u8C31");
+  }
+  async function saveTargets(form) {
+    const data = new FormData(form);
+    if (!data.get("confirm")) {
+      ctx.toast("\u8BF7\u5148\u52FE\u9009\u786E\u8BA4\uFF0C\u518D\u4FDD\u5B58\u76EE\u6807");
+      return;
+    }
+    const current = ctx.getState().dietSettings;
+    await ctx.writeStore((storage2) => storage2.dietSettings({ ...current, targets: { kcal: blank(data.get("kcal")), protein: blank(data.get("protein")), fat: blank(data.get("fat")), carb: blank(data.get("carb")), source: "user", confirmed: true }, flagsConfirmed: current.flagsConfirmed }));
+    invalidateToday();
+    ctx.toast("\u6BCF\u65E5\u76EE\u6807\u5DF2\u4FDD\u5B58\u5728\u672C\u673A");
+  }
+  async function saveFlags(form) {
+    const data = new FormData(form);
+    if (!data.get("confirm")) {
+      ctx.toast("\u8BF7\u5148\u52FE\u9009\u786E\u8BA4\uFF0C\u518D\u4FDD\u5B58\u8FD9\u4E9B\u60C5\u51B5");
+      return;
+    }
+    const current = ctx.getState().dietSettings;
+    const flags = Object.fromEntries(["pregnancy", "lactation", "minor", "kidney", "diabetes", "hypertension", "eatingDisorder"].map((key) => [key, data.get(key) === "on"]));
+    await ctx.writeStore((storage2) => storage2.dietSettings({ ...current, flags, flagsConfirmed: true }));
+    invalidateToday();
+    ctx.toast("\u5DF2\u4FDD\u5B58\u3002\u4E4B\u540E\u7684\u62A5\u544A\u4F1A\u6309\u8FD9\u4E9B\u60C5\u51B5\u653E\u5BBD\u5EFA\u8BAE");
+  }
+  function invalidateToday() {
+    report = null;
+    recommendation = null;
+    excludeIds = [];
+    inflight = "";
+  }
+  function cacheKey() {
+    const state2 = ctx.getState();
+    const meals = mealsOn(state2, localDateString());
+    return JSON.stringify({ meals: meals.map((meal) => [meal.id, meal.updatedAt, meal.items.map((item) => [item.foodId, item.grams, item.status])]), targets: state2.dietSettings.targets, flags: state2.dietSettings.flags, flagsConfirmed: state2.dietSettings.flagsConfirmed });
+  }
+  return { loadCatalog, record, today: today2, library: library2, settings, onClick, onSubmit };
+}
+function mealsOn(state2, date) {
+  return (state2.meals || []).filter((meal) => meal.date === date).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+}
+function defaultMeal() {
+  const hour = (/* @__PURE__ */ new Date()).getHours();
+  if (hour < 10) return "breakfast";
+  if (hour < 15) return "lunch";
+  return hour < 21 ? "dinner" : "snack";
+}
+function heading(title, sub) {
+  return `<header class="page-heading diet-heading"><div><h1>${title}</h1><p>${sub}</p></div></header>`;
+}
+function matchLibrary(recipe, filter) {
+  if (!filter || filter === "all") return true;
+  if (filter === "breakfast" || filter === "lunch" || filter === "dinner" || filter === "snack") return recipe.meal === filter;
+  const note = `${recipe.note || ""}`;
+  if (filter === "light") return note.includes("\u6E05\u6DE1");
+  if (filter === "home") return note.includes("\u5BB6\u5E38");
+  return true;
+}
+function bowlArt() {
+  return '<svg viewBox="0 0 72 56" fill="none" aria-hidden="true"><ellipse cx="36" cy="44" rx="24" ry="7" fill="#E6D9C8"/><path d="M14 28h44c0 12-9 18-22 18S14 40 14 28z" fill="#FFFCF8" stroke="#C9B8A4" stroke-width="1.4"/><path d="M24 27c1.5-7 6-11 12-11s10.5 4 12 11" stroke="#7FA38E" stroke-width="1.5" stroke-linecap="round"/><path d="M30 18c2-4 5-6 8-6" stroke="#A8C5B5" stroke-width="1.4" stroke-linecap="round"/></svg>';
+}
+function friendlyMessage(message, fallback = "\u8BF7\u7A0D\u540E\u518D\u8BD5") {
+  const text = String(message || "").trim();
+  if (!text || /模型|密钥|API|DASHSCOPE|USDA|测试替身|未配置|大模型|千问|百炼|Demo|演示|示例/.test(text)) return fallback;
+  return text;
+}
+function gentleNotice(notice) {
+  return friendlyMessage(notice, "\u8BF7\u6838\u5BF9\u98DF\u7269\u548C\u5206\u91CF\uFF0C\u518D\u8BB0\u4E0B\u6765\u3002");
+}
+function displaySource(nutrition) {
+  if (!nutrition) return null;
+  if (nutrition.source === "\u8584\u8377\u5065\u5EB7") {
+    const code = String(nutrition.sourceNote || "").match(/编码\s*(\S+)/);
+    return { label: "\u8584\u8377\u5065\u5EB7", detail: code ? `\u98DF\u7269\u7F16\u7801 ${code[1]}` : "" };
+  }
+  const fdc = String(nutrition.sourceNote || "").match(/FDC\s*(\d+)/);
+  return { label: "\u77E5\u517B\u98DF\u7269\u5E93", detail: fdc ? `\u53C2\u8003\u7F16\u53F7 FDC ${fdc[1]}` : "" };
+}
+function visibleNote(note) {
+  return String(note || "").split(/(?<=[。！？])/).map((part) => part.trim()).filter((part) => part && !/USDA|FDC|待审核|示例|Demo|大模型|API|密钥|测试/.test(part)).join("");
+}
+function urgentBanner(result) {
+  return `<div class="urgent-help" role="alert"><strong>\u8BF7\u7ACB\u5373\u5BFB\u6C42\u4E13\u4E1A\u5E2E\u52A9</strong><p>${result.text}</p></div>`;
+}
+function unestimatedCopy(reason) {
+  if (reason === "too_vague") return "\u8FD9\u4E2A\u8BF4\u6CD5\u6709\u70B9\u7B3C\u7EDF\u3002\u5199\u6210\u5177\u4F53\u7684\u83DC\uFF0C\u6BD4\u5982\u300C\u7C73\u996D\u3001\u9752\u83DC\u548C\u9E21\u817F\u300D\uFF0C\u624D\u80FD\u4F30\u7B97\u3002";
+  return "\u8FD9\u9053\u6682\u65F6\u7B97\u4E0D\u51FA\u6765\u3002\u53EF\u4EE5\u6362\u6210\u4E0A\u9762\u7684\u98DF\u7269\uFF0C\u6216\u5148\u7559\u7740\u3002\u4E0D\u4F1A\u968F\u4FBF\u586B\u4E00\u4E2A\u70ED\u91CF\u3002";
+}
+function flagBox(name, label, checked) {
+  return `<label class="check-line"><input type="checkbox" name="${name}" ${checked ? "checked" : ""}> ${label}</label>`;
+}
+function blank(value) {
+  const text = String(value ?? "").trim();
+  return text === "" ? null : Number(text);
+}
+function macroShares(nutrition) {
+  const protein = Number(nutrition?.protein) || 0;
+  const fat = Number(nutrition?.fat) || 0;
+  const carb = Number(nutrition?.carb) || 0;
+  const total = protein + fat + carb || 1;
+  return { protein: protein / total * 100, fat: fat / total * 100, carb: carb / total * 100 };
+}
+function macroPills(nutrition) {
+  const share = macroShares(nutrition);
+  return `<div class="macro-stack" aria-hidden="true"><i class="protein" style="width:${share.protein.toFixed(1)}%"></i><i class="fat" style="width:${share.fat.toFixed(1)}%"></i><i class="carb" style="width:${share.carb.toFixed(1)}%"></i></div><p class="macro-pills"><span>\u86CB\u767D\u8D28 <b class="num">${nutrition.protein}</b> \u514B</span><span>\u8102\u80AA <b class="num">${nutrition.fat}</b> \u514B</span><span>\u78B3\u6C34 <b class="num">${nutrition.carb}</b> \u514B</span></p>`;
+}
+function macroTiles(totals, targets) {
+  const rows = [
+    ["\u86CB\u767D\u8D28", "protein", totals.protein, targets?.protein],
+    ["\u78B3\u6C34\u5316\u5408\u7269", "carb", totals.carb, targets?.carb],
+    ["\u8102\u80AA", "fat", totals.fat, targets?.fat]
+  ];
+  return `<div class="macro-tiles">${rows.map(([label, kind, value, target]) => {
+    const amount = Number(value) || 0;
+    const hasTarget = target != null && Number(target) > 0;
+    const note = hasTarget ? `\u76EE\u6807 ${target} \u514B` : "\u672A\u8BBE\u76EE\u6807";
+    return `<article class="macro-tile"><span class="macro-ico ${kind}" aria-hidden="true">${macroGlyph(kind)}</span><p>${label}</p><strong class="num">${amount}<small>\u514B</small></strong><p class="small">${note}</p></article>`;
+  }).join("")}</div>`;
+}
+function macroGlyph(kind) {
+  const open = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
+  if (kind === "protein") return `${open}<path d="M19 4C11 4 6 8 6 14a5 5 0 0 0 5 5c7 0 11-5 8-15Z"/><path d="M9 19c2-5 5-8 10-10"/></svg>`;
+  if (kind === "carb") return `${open}<path d="M5 14c2-6 5-8 7-8s5 2 7 8"/><path d="M7 14h10c0 4-2.5 6-5 6s-5-2-5-6Z"/></svg>`;
+  return `${open}<path d="M12 3.5c2.2 4 5 6.8 5 10.2a5 5 0 0 1-10 0c0-3.4 2.8-6.2 5-10.2Z"/></svg>`;
+}
+function ringSvg(ratio, tone) {
+  const dash = ratio == null ? RING_C : Math.max(0, Math.min(ratio, 1)) * RING_C;
+  const shown = dash.toFixed(2);
+  const rest = (RING_C - dash).toFixed(2);
+  return `<svg class="kcal-ring ${tone}" viewBox="0 0 140 140" aria-hidden="true"><circle cx="70" cy="70" r="${RING_R}" class="ring-track"/><circle cx="70" cy="70" r="${RING_R}" class="ring-value" stroke-dasharray="${shown} ${rest}" transform="rotate(-90 70 70)"/></svg>`;
+}
+async function compressImage(file) {
+  if (!file.type.startsWith("image/")) throw new Error("\u8BF7\u9009\u62E9\u56FE\u7247");
+  if (file.size > 8 * 1024 * 1024) throw new Error("\u56FE\u7247\u592A\u5927\uFF0C\u8BF7\u6362\u4E00\u5F20\u8F83\u5C0F\u7684\u7167\u7247");
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, 1024 / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.72));
+  if (!blob) throw new Error("\u7167\u7247\u5904\u7406\u5931\u8D25");
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  let binary = "";
+  for (let index = 0; index < bytes.length; index += 32768) binary += String.fromCharCode(...bytes.subarray(index, index + 32768));
+  return `data:image/jpeg;base64,${btoa(binary)}`;
+}
+
 // src/client/app.js
-var icons = { home: '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21v-8h6v8"/>', leaf: '<path d="M20 3c-9-1-16 3-16 10a7 7 0 0 0 7 7C18 20 21 12 20 3Z"/><path d="m4 21 11-12"/>', heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/>', user: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>', spark: '<path d="m12 3 2.6 6.4L21 12l-6.4 2.6L12 21l-2.6-6.4L3 12l6.4-2.6Z"/>', arrow: '<path d="M5 12h14m-5-5 5 5-5 5"/>', close: '<path d="m6 6 12 12M18 6 6 18"/>', bookmark: '<path d="M6 3h12v18l-6-4-6 4z"/>', sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/>', moon: '<path d="M21 13A9 9 0 0 1 11 3 9 9 0 1 0 21 13Z"/>', wind: '<path d="M3 8h12a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h5"/>', scale: '<path d="M4 5h16v16H4z"/><path d="M8 9a5 5 0 0 1 8 0M12 8v3"/>', bowl: '<path d="M3 12h18c0 6-5 8-9 8s-9-2-9-8Z"/><path d="M7 5v3m5-5v5m5-3v3"/>', check: '<path d="m5 12 4 4L19 6"/>', clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', back: '<path d="m14 5-7 7 7 7"/>', book: '<path d="M3 3h6a4 4 0 0 1 3 2 4 4 0 0 1 3-2h6v17h-6a4 4 0 0 0-3 2 4 4 0 0 0-3-2H3zM12 5v17"/>', cup: '<path d="M4 7h13v8a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM17 8h2a3 3 0 0 1 0 6h-2M7 3v1m4-1v1m4-1v1"/>' };
+var icons = { home: '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21v-8h6v8"/>', note: '<path d="M7 3h8l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M15 3v5h5M9 13h6M9 17h4"/>', leaf: '<path d="M20 3c-9-1-16 3-16 10a7 7 0 0 0 7 7C18 20 21 12 20 3Z"/><path d="m4 21 11-12"/>', heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/>', user: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>', spark: '<path d="m12 3 2.6 6.4L21 12l-6.4 2.6L12 21l-2.6-6.4L3 12l6.4-2.6Z"/>', arrow: '<path d="M5 12h14m-5-5 5 5-5 5"/>', close: '<path d="m6 6 12 12M18 6 6 18"/>', bookmark: '<path d="M6 3h12v18l-6-4-6 4z"/>', sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/>', moon: '<path d="M21 13A9 9 0 0 1 11 3 9 9 0 1 0 21 13Z"/>', wind: '<path d="M3 8h12a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h5"/>', scale: '<path d="M4 5h16v16H4z"/><path d="M8 9a5 5 0 0 1 8 0M12 8v3"/>', bowl: '<path d="M3 12h18c0 6-5 8-9 8s-9-2-9-8Z"/><path d="M7 5v3m5-5v5m5-3v3"/>', check: '<path d="m5 12 4 4L19 6"/>', clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', back: '<path d="m14 5-7 7 7 7"/>', book: '<path d="M3 3h6a4 4 0 0 1 3 2 4 4 0 0 1 3-2h6v17h-6a4 4 0 0 0-3 2 4 4 0 0 0-3-2H3zM12 5v17"/>', cup: '<path d="M4 7h13v8a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM17 8h2a3 3 0 0 1 0 6h-2M7 3v1m4-1v1m4-1v1"/>', camera: '<path d="M4 8h3l2-3h6l2 3h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z"/><circle cx="12" cy="13" r="3.2"/>', send: '<path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/>' };
 var icon = (name) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name] || icons.leaf}</svg>`;
 var esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+var dietPages = createDietPages({ getState: () => state, writeStore, toast, navigate, openDetail, icon, esc, render: () => render() });
 var state = emptyState();
 var page = "home";
 var foodTab = "\u5168\u90E8";
@@ -719,10 +1431,48 @@ async function bootStorage() {
   try {
     storage = await openStorage();
     storageError = "";
-    await refreshState();
   } catch {
     storageError = "\u672C\u6D4F\u89C8\u5668\u6682\u65F6\u65E0\u6CD5\u8BFB\u53D6\u6216\u4FDD\u5B58\u672C\u673A\u8BB0\u5F55\u3002\u4F60\u4ECD\u53EF\u6D4F\u89C8\u5185\u5BB9\uFF1B\u8BF7\u91CD\u8BD5\u5B58\u50A8\u6216\u68C0\u67E5\u6D4F\u89C8\u5668\u8BBE\u7F6E\u3002";
-    render();
+  }
+  await dietPages.loadCatalog();
+  if (storage) await refreshState();
+  else render();
+}
+async function readInviteStatus() {
+  try {
+    const response = await fetch("/api/invite/status", { headers: { accept: "application/json" }, cache: "no-store" });
+    if (!response.ok) return { unlocked: false, unavailable: true };
+    const body = await response.json();
+    return { unlocked: body.unlocked === true, unavailable: false };
+  } catch {
+    return { unlocked: false, unavailable: true };
+  }
+}
+function showInvite(message = "") {
+  main.innerHTML = `<section class="invite-gate"><p class="eyebrow">\u77E5\u517B</p><h1>\u8BF7\u8F93\u5165\u9080\u8BF7\u7801</h1><p>\u6838\u5BF9\u4E4B\u540E\u5C31\u53EF\u4EE5\u5F00\u59CB\u8BB0\u5F55\u4ECA\u5929\u5403\u4E86\u4EC0\u4E48\u3002</p><form id="invite-form"><label class="form-label">\u9080\u8BF7\u7801<input name="code" autocomplete="off" autocapitalize="off" spellcheck="false" autofocus></label><p class="invite-error" role="alert">${esc(message)}</p><button class="primary-button" type="submit">\u8FDB\u5165</button></form></section>`;
+}
+async function submitInvite(form) {
+  const error = form.querySelector(".invite-error");
+  const button = form.querySelector("button");
+  const code = String(new FormData(form).get("code") || "").trim();
+  if (!code) {
+    error.textContent = "\u8BF7\u5148\u586B\u5199\u9080\u8BF7\u7801";
+    return;
+  }
+  button.disabled = true;
+  error.textContent = "";
+  try {
+    const response = await fetch("/api/invite", { method: "POST", headers: { "content-type": "application/json", accept: "application/json" }, body: JSON.stringify({ code }) });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok || body.unlocked !== true) {
+      error.textContent = typeof body.error === "string" && body.error ? body.error : "\u9080\u8BF7\u7801\u4E0D\u5BF9\uFF0C\u8BF7\u518D\u8BD5\u4E00\u6B21";
+      return;
+    }
+    location.reload();
+  } catch {
+    error.textContent = "\u6682\u65F6\u65E0\u6CD5\u6838\u5BF9\u9080\u8BF7\u7801\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5";
+  } finally {
+    button.disabled = false;
   }
 }
 var pendingPlans = /* @__PURE__ */ new Map();
@@ -743,9 +1493,14 @@ function toast(s) {
 function paintIcons(root = document) {
   root.querySelectorAll("[data-icon]").forEach((el) => el.innerHTML = icon(el.dataset.icon));
 }
-function heading(title, sub, english = "YOUR WELLNESS SPACE") {
+function chineseDate(now = /* @__PURE__ */ new Date()) {
+  const week = ["\u5468\u65E5", "\u5468\u4E00", "\u5468\u4E8C", "\u5468\u4E09", "\u5468\u56DB", "\u5468\u4E94", "\u5468\u516D"][now.getDay()];
+  return `${now.getMonth() + 1}\u6708${now.getDate()}\u65E5 \xB7 ${week}`;
+}
+function heading2(title, sub, english = "YOUR WELLNESS SPACE") {
   const now = /* @__PURE__ */ new Date();
-  return `<div class="page-heading"><div><p class="eyebrow">${english}</p><h1>${title}</h1><p>${sub}</p></div><div class="date-stamp"><strong>${String(now.getMonth() + 1).padStart(2, "0")}<span>/${String(now.getDate()).padStart(2, "0")}</span></strong><span>\u4ECA\u5929 \xB7 \u597D\u597D\u751F\u6D3B</span></div></div>`;
+  const week = ["\u5468\u65E5", "\u5468\u4E00", "\u5468\u4E8C", "\u5468\u4E09", "\u5468\u56DB", "\u5468\u4E94", "\u5468\u516D"][now.getDay()];
+  return `<div class="page-heading"><div><p class="eyebrow">${english}</p><h1>${title}</h1><p>${sub}</p></div><div class="date-stamp"><strong>${now.getMonth() + 1}\u6708${now.getDate()}\u65E5</strong><span>${week}</span></div></div>`;
 }
 function sectionHead(title, label, button = "") {
   return `<div class="section-heading"><div><span class="eyebrow">${label}</span><h2>${title}</h2></div>${button}</div>`;
@@ -753,49 +1508,47 @@ function sectionHead(title, label, button = "") {
 function recipeCard(r, compact = false) {
   return `<button class="recipe-tile ${compact ? "compact" : ""}" data-recipe="${r.id}">${r.image ? `<img src="${r.image}" alt="${r.title}\u98DF\u7269\u793A\u610F" loading="lazy">` : `<div class="recipe-type-art ${r.id === "breakfast" ? "amber" : ""}">${icon(r.id === "tea" ? "cup" : "bowl")}<span>${r.time}</span></div>`}<div class="recipe-tile-body"><span class="tag">${r.tag}</span><h3>${r.title}</h3><p>${r.desc}</p><div class="recipe-meta"><span>${r.duration}</span><span>\u67E5\u770B\u642D\u914D ${icon("arrow")}</span></div></div></button>`;
 }
-function topicCard(t) {
-  return `<button class="topic-card" data-topic="${t.id}"><span class="topic-symbol ${t.accent}">${icon(t.icon)}</span><span><strong>${t.title}</strong><small>${t.subtitle}</small></span>${icon("arrow")}</button>`;
-}
 function articleCard(a) {
   return `<button class="article-card" data-article="${a.id}"><img src="${a.image}" alt="${a.label}\u914D\u56FE" loading="lazy"><div><span class="article-label">${a.label}</span><h3>${a.title}</h3><span class="small muted">${a.read}\u9605\u8BFB \xB7 \u5185\u5BB9\u793A\u4F8B</span></div></button>`;
 }
-function profileMini() {
-  return `<section class="profile-card"><div class="section-mini"><span>\u6211\u7684\u5065\u5EB7\u6863\u6848</span>${icon("user")}</div><span class="subtle-label">\u4ECE\u8BA4\u8BC6\u81EA\u5DF1\u5F00\u59CB</span><h2>${state.assessments.length ? "\u5DF2\u8BB0\u5F55 " + state.assessments.length + " \u6B21\u611F\u53D7" : "\u6BCF\u4E2A\u4EBA\uFF0C\u90FD\u6709\u81EA\u5DF1\u7684\u8282\u594F\u3002"}</h2><p>\u5F53\u524D\u76EE\u6807\uFF1A${esc(state.profile.goal)}<br>\u6863\u6848\u4E0E\u8BB0\u5F55\uFF0C\u4EC5\u4FDD\u5B58\u5728\u672C\u673A\u3002</p><div class="profile-tags"><span>${esc(state.profile.preference)}</span><span>\u4F53\u8D28\u6D4B\u8BC4 \xB7 \u8BD5\u6D4B\u4E2D</span></div><button class="outline-button" data-page="profile">\u67E5\u770B\u6211\u7684\u6863\u6848 ${icon("arrow")}</button></section>`;
-}
 function home() {
-  return `${heading("\u4ECA\u5929\uFF0C\u4E5F\u597D\u597D\u7167\u987E\u81EA\u5DF1\u3002", "\u4ECE\u4E00\u987F\u597D\u996D\uFF0C\u4E00\u676F\u6E29\u996E\u5F00\u59CB\u3002", "GOOD DAY, GOOD HEALTH")}<div class="hero-grid"><section class="ai-hero"><span class="ai-label">${icon("spark")} \u77E5\u517B AI \xB7 \u4F60\u7684\u98DF\u517B\u52A9\u624B</span><h2>\u6700\u8FD1\u8EAB\u4F53\u600E\u4E48\u6837\uFF1F<br>\u548C\u77E5\u517B\u804A\u4E00\u804A</h2><p>\u996E\u98DF\u3001\u4F53\u91CD\u3001\u4F5C\u606F\uFF0C\u628A\u4F60\u7684\u60F3\u6CD5\u544A\u8BC9\u6211\u3002</p><button class="hero-input" data-chat="">\u6211\u6700\u8FD1\u80D6\u4E86\uFF0C\u4E09\u9910\u5E94\u8BE5\u600E\u4E48\u5403\uFF1F<span>${icon("arrow")}</span></button><div class="hero-prompts"><button data-chat="\u6211\u60F3\u5065\u5EB7\u51CF\u91CD">\u5065\u5EB7\u51CF\u91CD</button><button data-chat="\u6211\u60F3\u5065\u5EB7\u589E\u91CD">\u5065\u5EB7\u589E\u91CD</button><button data-chat="\u63A8\u8350\u4E00\u676F\u517B\u751F\u8336">\u98DF\u517B\u8336\u996E</button><button data-chat="\u6211\u6700\u8FD1\u4F5C\u606F\u6709\u70B9\u4E71">\u4F5C\u606F\u8C03\u6574</button></div></section>${profileMini()}</div><section class="section">${sectionHead("\u4ECA\u5929\uFF0C\u600E\u4E48\u5403\u600E\u4E48\u8FC7", "EVERYDAY NOURISHMENT", `<div class="segmented" aria-label="\u4E09\u9910\u4E0E\u8D77\u5C45"><button class="${homeMode === "\u4E09\u9910" ? "active" : ""}" data-home-mode="\u4E09\u9910">\u4E09\u9910</button><button class="${homeMode === "\u8D77\u5C45" ? "active" : ""}" data-home-mode="\u8D77\u5C45">\u8D77\u5C45</button></div>`)}${homeMode === "\u4E09\u9910" ? `<div class="daily-meals">${[["breakfast", "\u65E9\u9910", "07:30", "\u4E00\u7897\u70ED\u7CA5\uFF0C\u5524\u9192\u65E9\u6668"], ["lunch", "\u5348\u9910", "12:00", "\u8364\u7D20\u642D\u914D\uFF0C\u597D\u597D\u5403\u996D"], ["dinner", "\u665A\u9910", "18:30", "\u5BB6\u5E38\u98DF\u6750\uFF0C\u7B80\u5355\u5403\u597D"]].map(([id, label, time, title], i) => `<button class="daily-meal" data-recipe="${id}"><div class="meal-badge ${i === 1 ? "midday" : i === 2 ? "evening" : ""}">${icon(i === 2 ? "moon" : i === 1 ? "sun" : "bowl")}</div><div><span class="meal-time">${label} <span>\xB7 ${time} \u793A\u4F8B</span></span><h3>${title}</h3><p>${recipes.find((r) => r.id === id).title}</p></div>${icon("arrow")}</button>`).join("")}</div>` : `<div class="routine-card"><span class="routine-icon">${icon("moon")}</span><div><span class="subtle-label">\u665A\u95F4\u8D77\u5C45\u53C2\u8003</span><h3>\u7ED9\u5FD9\u788C\u7684\u4E00\u5929\uFF0C\u7559\u4E00\u70B9\u7A7A\u767D\u3002</h3><p>\u9009\u62E9\u4F60\u81EA\u5DF1\u7684\u7761\u524D\u51C6\u5907\u65F6\u95F4\uFF0C\u5148\u5B8C\u6210\u4E00\u4EF6\u5C0F\u4E8B\u3002</p></div><button class="outline-button" data-lifestyle="sleep">\u67E5\u770B\u5EFA\u8BAE ${icon("arrow")}</button></div>`}</section><div class="home-lower"><section class="section">${sectionHead("\u98DF\u517B\u7075\u611F", "A LITTLE NOURISHMENT", `<button class="text-button" data-page="food">\u5168\u90E8 ${icon("arrow")}</button>`)}<div class="nourish-grid">${recipeCard(recipes.find((r) => r.id === "tea"), true)}${recipeCard(recipes.find((r) => r.id === "lunch"), true)}</div></section><section class="section">${sectionHead("\u6700\u8FD1\uFF0C\u4F60\u5728\u610F\u4EC0\u4E48", "TAKE CARE OF YOURSELF", `<button class="text-button" data-page="care">\u66F4\u591A ${icon("arrow")}</button>`)}<div class="topic-list">${topics.slice(0, 4).map(topicCard).join("")}</div></section></div><section class="section">${sectionHead("\u6162\u6162\u8BFB\uFF0C\u597D\u597D\u517B", "WELLNESS JOURNAL", `<button class="text-button" data-food-tab="\u6587\u7AE0">\u5168\u90E8\u6587\u7AE0 ${icon("arrow")}</button>`)}<div class="article-grid">${articles.map(articleCard).join("")}</div></section>`;
+  return dietPages.record();
+}
+function today() {
+  return dietPages.today();
+}
+function library() {
+  return dietPages.library();
 }
 function food() {
   const options2 = ["\u5168\u90E8", "\u4E09\u9910\u642D\u914D", "\u98DF\u517B\u8336\u996E", "\u8D77\u5C45\u5EFA\u8BAE", "\u6587\u7AE0"];
   const visible = recipes.filter((r) => foodTab === "\u5168\u90E8" || r.category === foodTab);
-  return `${heading("\u4E00\u65E5\u4E09\u9910\uFF0C\u4E00\u70B9\u98DF\u517B\u3002", "\u628A\u9002\u5408\u81EA\u5DF1\u7684\u642D\u914D\uFF0C\u6162\u6162\u653E\u8FDB\u751F\u6D3B\u3002", "FOOD & EVERYDAY LIVING")}<div class="food-banner"><img src="assets/lunch.jpg" alt="\u4E2D\u5F0F\u4E09\u9910\u642D\u914D\u793A\u610F"><div><span class="subtle-label">\u4ECE\u5BB6\u5E38\u996D\u5F00\u59CB</span><h2>\u597D\u597D\u5403\u996D\uFF0C\u662F\u6BCF\u5929\u7684\u5C0F\u4E8B\u3002</h2><p>\u98DF\u8C31\u3001\u8336\u996E\u548C\u8D77\u5C45\u53C2\u8003\uFF0C<br>\u4E5F\u53EF\u4EE5\u4EA4\u7ED9\u77E5\u517B\u4E00\u8D77\u5E2E\u4F60\u9009\u3002</p><button class="primary-button" data-chat="\u5E2E\u6211\u5B89\u6392\u4E00\u65E5\u4E09\u9910">${icon("spark")} \u5E2E\u6211\u5B89\u6392\u4E09\u9910</button></div></div><div class="filter-row" aria-label="\u98DF\u517B\u5206\u7C7B">${options2.map((x) => `<button data-food-tab="${x}" class="filter-chip ${foodTab === x ? "active" : ""}" aria-pressed="${foodTab === x}">${x}</button>`).join("")}</div>${foodTab === "\u4E09\u9910\u642D\u914D" ? `<div class="inline-heading"><h2>${day}\u4E09\u9910\u53C2\u8003</h2><div class="segmented"><button data-day="\u4ECA\u65E5" class="${day === "\u4ECA\u65E5" ? "active" : ""}">\u4ECA\u65E5</button><button data-day="\u660E\u65E5" class="${day === "\u660E\u65E5" ? "active" : ""}">\u660E\u65E5</button></div></div><p class="muted section-note">\u793A\u4F8B\u5B89\u6392\uFF0C\u53EF\u6309\u4F60\u7684\u504F\u597D\u66FF\u6362\uFF1B\u4EFD\u91CF\u672A\u505A\u4E2A\u4EBA\u8BA1\u7B97\u3002</p>` : ""}${foodTab === "\u6587\u7AE0" ? `<div class="article-grid">${articles.map(articleCard).join("")}</div>` : foodTab === "\u8D77\u5C45\u5EFA\u8BAE" ? `<div class="routine-card"><span class="routine-icon">${icon("moon")}</span><div><span class="tag">\u665A\u95F4\u8D77\u5C45</span><h3>${lifestyle.title}</h3><p>${lifestyle.desc}</p></div><button class="primary-button" data-lifestyle="sleep">\u67E5\u770B\u5EFA\u8BAE</button></div>` : `<div class="food-grid">${(foodTab === "\u4E09\u9910\u642D\u914D" && day === "\u660E\u65E5" ? [recipes[0], { ...recipes[2], time: "\u5348\u9910" }, { ...recipes[1], time: "\u665A\u9910" }] : visible).map((r) => recipeCard(r)).join("")}</div>`}<div class="small-notice">${icon("book")} \u672C\u9875\u4E3A\u5185\u5BB9\u4E0E\u4EA4\u4E92\u793A\u4F8B\u3002\u53EF\u5728\u8BE6\u60C5\u4E2D\u67E5\u770B\u53C2\u8003\u6765\u6E90\u548C\u9002\u7528\u8BF4\u660E\u3002</div>`;
+  return `${heading2("\u4E00\u65E5\u4E09\u9910\uFF0C\u4E00\u70B9\u98DF\u517B\u3002", "\u628A\u9002\u5408\u81EA\u5DF1\u7684\u642D\u914D\uFF0C\u6162\u6162\u653E\u8FDB\u751F\u6D3B\u3002", "FOOD & EVERYDAY LIVING")}<div class="food-banner"><img src="assets/lunch.jpg" alt="\u4E2D\u5F0F\u4E09\u9910\u642D\u914D\u793A\u610F"><div><span class="subtle-label">\u4ECE\u5BB6\u5E38\u996D\u5F00\u59CB</span><h2>\u597D\u597D\u5403\u996D\uFF0C\u662F\u6BCF\u5929\u7684\u5C0F\u4E8B\u3002</h2><p>\u98DF\u8C31\u3001\u8336\u996E\u548C\u8D77\u5C45\u53C2\u8003\uFF0C<br>\u4E5F\u53EF\u4EE5\u4EA4\u7ED9\u77E5\u517B\u4E00\u8D77\u5E2E\u4F60\u9009\u3002</p><button class="primary-button" data-chat="\u5E2E\u6211\u5B89\u6392\u4E00\u65E5\u4E09\u9910">${icon("spark")} \u5E2E\u6211\u5B89\u6392\u4E09\u9910</button></div></div><div class="filter-row" aria-label="\u98DF\u517B\u5206\u7C7B">${options2.map((x) => `<button data-food-tab="${x}" class="filter-chip ${foodTab === x ? "active" : ""}" aria-pressed="${foodTab === x}">${x}</button>`).join("")}</div>${foodTab === "\u4E09\u9910\u642D\u914D" ? `<div class="inline-heading"><h2>${day}\u4E09\u9910\u53C2\u8003</h2><div class="segmented"><button data-day="\u4ECA\u65E5" class="${day === "\u4ECA\u65E5" ? "active" : ""}">\u4ECA\u65E5</button><button data-day="\u660E\u65E5" class="${day === "\u660E\u65E5" ? "active" : ""}">\u660E\u65E5</button></div></div><p class="muted section-note">\u793A\u4F8B\u5B89\u6392\uFF0C\u53EF\u6309\u4F60\u7684\u504F\u597D\u66FF\u6362\uFF1B\u4EFD\u91CF\u672A\u505A\u4E2A\u4EBA\u8BA1\u7B97\u3002</p>` : ""}${foodTab === "\u6587\u7AE0" ? `<div class="article-grid">${articles.map(articleCard).join("")}</div>` : foodTab === "\u8D77\u5C45\u5EFA\u8BAE" ? `<div class="routine-card"><span class="routine-icon">${icon("moon")}</span><div><span class="tag">\u665A\u95F4\u8D77\u5C45</span><h3>${lifestyle.title}</h3><p>${lifestyle.desc}</p></div><button class="primary-button" data-lifestyle="sleep">\u67E5\u770B\u5EFA\u8BAE</button></div>` : `<div class="food-grid">${(foodTab === "\u4E09\u9910\u642D\u914D" && day === "\u660E\u65E5" ? [recipes[0], { ...recipes[2], time: "\u5348\u9910" }, { ...recipes[1], time: "\u665A\u9910" }] : visible).map((r) => recipeCard(r)).join("")}</div>`}<div class="small-notice">${icon("book")} \u672C\u9875\u4E3A\u5185\u5BB9\u4E0E\u4EA4\u4E92\u793A\u4F8B\u3002\u53EF\u5728\u8BE6\u60C5\u4E2D\u67E5\u770B\u53C2\u8003\u6765\u6E90\u548C\u9002\u7528\u8BF4\u660E\u3002</div>`;
 }
 function care() {
   const groups = ["\u5168\u90E8", "\u65E5\u5E38\u72B6\u6001", "\u547C\u5438\u4E0E\u54BD\u5589", "\u813E\u80C3\u4E0E\u6D88\u5316", "\u4F5C\u606F\u4E0E\u60C5\u7EEA"];
-  return `${heading("\u8EAB\u4F53\u7684\u5C0F\u4FE1\u53F7\uFF0C\u8BA4\u771F\u542C\u3002", "\u4ECE\u4F60\u7684\u611F\u53D7\u51FA\u53D1\uFF0C\u770B\u770B\u65E5\u5E38\u751F\u6D3B\u53EF\u4EE5\u600E\u6837\u8C03\u6574\u3002", "CARE & DAILY WELLBEING")}<div class="care-intro"><span class="care-intro-icon">${icon("heart")}</span><div><h2>\u65E5\u5E38\u8C03\u517B\uFF0C\u4E5F\u8981\u6709\u5206\u5BF8\u3002</h2><p>\u4EE5\u4E0B\u4E3A\u4E00\u822C\u751F\u6D3B\u3001\u996E\u98DF\u4E0E\u4F11\u606F\u53C2\u8003\uFF0C\u4E0D\u7528\u4E8E\u8BCA\u65AD\u6216\u6CBB\u7597\u3002<br>\u6D89\u53CA\u533B\u7597\u7528\u9014\uFF0C\u8BF7\u54A8\u8BE2\u533B\u751F\uFF1B\u6301\u7EED\u6216\u660E\u663E\u4E0D\u9002\u65F6\uFF0C\u4F18\u5148\u5BFB\u6C42\u4E13\u4E1A\u5E2E\u52A9\u3002</p></div><button class="outline-button" data-chat="\u6211\u60F3\u804A\u804A\u6700\u8FD1\u7684\u8EAB\u4F53\u611F\u53D7">${icon("spark")} \u548C\u52A9\u624B\u804A\u804A</button></div><section class="section">${sectionHead("\u5F53\u4E0B\u70ED\u95E8", "COMMON CONCERNS")}<div class="filter-row">${groups.map((x) => `<button class="filter-chip ${careTab === x ? "active" : ""}" data-care-tab="${x}" aria-pressed="${careTab === x}">${x}</button>`).join("")}</div><div class="care-grid">${topics.filter((t) => careTab === "\u5168\u90E8" || t.group === careTab).map((t) => `<button class="care-tile" data-topic="${t.id}"><span class="topic-symbol ${t.accent}">${icon(t.icon)}</span><span class="small muted">${t.group}</span><h3>${t.title}</h3><p>${t.subtitle}</p><span class="meal-link">\u751F\u6D3B\u5EFA\u8BAE \xB7 \u98DF\u517B\u53C2\u8003 ${icon("arrow")}</span></button>`).join("")}</div></section><div class="feature-line"><div><span class="eyebrow">KNOW YOURSELF</span><h3>\u6E7F\u6C14\u91CD\uFF0C\u5C31\u662F\u75F0\u6E7F\u8D28\u5417\uFF1F</h3><p>\u65E5\u5E38\u611F\u53D7\u4E0E\u6B63\u5F0F\u4F53\u8D28\u5224\u5B9A\u6709\u533A\u522B\u3002\u5148\u4E86\u89E3\u4E5D\u79CD\u57FA\u672C\u7C7B\u578B\u3002</p></div><button class="outline-button" data-action="constitutions">\u4E86\u89E3\u4E5D\u79CD\u4F53\u8D28 ${icon("arrow")}</button></div>`;
-}
-function planCard(p) {
-  return `<article class="saved-plan"><div class="section-mini"><span>${esc(p.goal)} \xB7 \u793A\u4F8B \xB7 \u4FEE\u8BA2 ${p.revision}</span><button class="icon-button" data-remove-plan="${esc(p.id)}" aria-label="\u79FB\u9664${esc(p.title)}">${icon("close")}</button></div><h3>${esc(p.title)}</h3><dl>${p.meals.map((m) => `<div><dt>${esc(m.label)}</dt><dd>${esc(m.value)}</dd></div>`).join("")}</dl><p class="small muted">${esc(p.note)}</p><button class="text-button" data-adjust-plan="${esc(p.id)}">\u548C\u52A9\u624B\u4E00\u8D77\u8C03\u6574 ${icon("arrow")}</button></article>`;
+  return `${heading2("\u8EAB\u4F53\u7684\u5C0F\u4FE1\u53F7\uFF0C\u8BA4\u771F\u542C\u3002", "\u4ECE\u4F60\u7684\u611F\u53D7\u51FA\u53D1\uFF0C\u770B\u770B\u65E5\u5E38\u751F\u6D3B\u53EF\u4EE5\u600E\u6837\u8C03\u6574\u3002", "CARE & DAILY WELLBEING")}<div class="care-intro"><span class="care-intro-icon">${icon("heart")}</span><div><h2>\u65E5\u5E38\u8C03\u517B\uFF0C\u4E5F\u8981\u6709\u5206\u5BF8\u3002</h2><p>\u4EE5\u4E0B\u4E3A\u4E00\u822C\u751F\u6D3B\u3001\u996E\u98DF\u4E0E\u4F11\u606F\u53C2\u8003\uFF0C\u4E0D\u7528\u4E8E\u8BCA\u65AD\u6216\u6CBB\u7597\u3002<br>\u6D89\u53CA\u533B\u7597\u7528\u9014\uFF0C\u8BF7\u54A8\u8BE2\u533B\u751F\uFF1B\u6301\u7EED\u6216\u660E\u663E\u4E0D\u9002\u65F6\uFF0C\u4F18\u5148\u5BFB\u6C42\u4E13\u4E1A\u5E2E\u52A9\u3002</p></div><button class="outline-button" data-chat="\u6211\u60F3\u804A\u804A\u6700\u8FD1\u7684\u8EAB\u4F53\u611F\u53D7">${icon("spark")} \u548C\u52A9\u624B\u804A\u804A</button></div><section class="section">${sectionHead("\u5F53\u4E0B\u70ED\u95E8", "COMMON CONCERNS")}<div class="filter-row">${groups.map((x) => `<button class="filter-chip ${careTab === x ? "active" : ""}" data-care-tab="${x}" aria-pressed="${careTab === x}">${x}</button>`).join("")}</div><div class="care-grid">${topics.filter((t) => careTab === "\u5168\u90E8" || t.group === careTab).map((t) => `<button class="care-tile" data-topic="${t.id}"><span class="topic-symbol ${t.accent}">${icon(t.icon)}</span><span class="small muted">${t.group}</span><h3>${t.title}</h3><p>${t.subtitle}</p><span class="meal-link">\u751F\u6D3B\u5EFA\u8BAE \xB7 \u98DF\u517B\u53C2\u8003 ${icon("arrow")}</span></button>`).join("")}</div></section><div class="feature-line"><div><span class="eyebrow">KNOW YOURSELF</span><h3>\u6E7F\u6C14\u91CD\uFF0C\u5C31\u662F\u75F0\u6E7F\u8D28\u5417\uFF1F</h3><p>\u65E5\u5E38\u611F\u53D7\u4E0E\u6B63\u5F0F\u4F53\u8D28\u5224\u5B9A\u6709\u533A\u522B\u3002\u5148\u4E86\u89E3\u4E5D\u79CD\u57FA\u672C\u7C7B\u578B\u3002</p></div><button class="outline-button" data-action="constitutions">\u4E86\u89E3\u4E5D\u79CD\u4F53\u8D28 ${icon("arrow")}</button></div>`;
 }
 function profile() {
-  const p = state.profile;
-  return `${heading("\u66F4\u4E86\u89E3\u4F60\uFF0C\u624D\u80FD\u66F4\u8D34\u8FD1\u4F60\u3002", "\u4F60\u7684\u6863\u6848\u3001\u6536\u85CF\u548C\u65B9\u6848\uFF0C\u653E\u5728\u4E00\u8D77\u3002", "MY WELLNESS SPACE")}<section class="profile-overview"><span class="big-avatar">${esc((p.name || "\u517B").slice(0, 1))}</span><div><span class="subtle-label">\u4E2A\u4EBA\u6863\u6848 \xB7 \u4EC5\u5728\u672C\u673A</span><h2>${esc(p.name)}</h2><p>${esc(p.goal)} \xB7 ${esc(p.habit)}</p></div><button class="outline-button" data-action="edit-profile">\u7F16\u8F91\u6863\u6848</button></section><div class="profile-sections"><section class="constitution-panel"><div class="section-mini"><span>\u4F53\u8D28\u4E0E\u65E5\u5E38\u611F\u53D7</span><span class="tag">\u65B0\u95EE\u5377 \xB7 \u8BD5\u6D4B\u9636\u6BB5</span></div><h2>\u8BA4\u8BC6\u81EA\u5DF1\uFF0C\u6162\u6162\u6765\u3002</h2><p>32 \u9053\u5019\u9009\u9898\uFF0C\u8BB0\u5F55\u8FC7\u53BB\u4E00\u5E74\u7684\u65E5\u5E38\u611F\u53D7\u3002\u652F\u6301\u672C\u673A\u8349\u7A3F\u548C\u591A\u6B21\u8BB0\u5F55\uFF1B\u5F53\u524D\u4E0D\u4F5C\u6B63\u5F0F\u4F53\u8D28\u5224\u5B9A\u3002</p><div class="button-row"><button class="primary-button" data-action="quiz">${state.draft ? "\u7EE7\u7EED\u6216\u5F00\u59CB\u8BD5\u6D4B" : "\u5F00\u59CB\u65E5\u5E38\u611F\u53D7\u8BD5\u6D4B"} ${icon("arrow")}</button><button class="text-button" data-action="constitutions">\u4E5D\u79CD\u4F53\u8D28\u79D1\u666E</button></div><span class="small muted">\u9898\u76EE\u4E0E\u5224\u5B9A\u89C4\u5219\u4ECD\u9700\u4E13\u4E1A\u5BA1\u6838\u548C\u9A8C\u8BC1\u3002</span></section><section class="preferences-panel"><span class="subtle-label">\u6211\u5E0C\u671B\uFF0C\u517B\u6210\u8FD9\u6837\u7684\u751F\u6D3B</span><h3>${esc(p.goal)}</h3><div class="preference-row"><span>\u7528\u9910\u4E60\u60EF</span><strong>${esc(p.habit)}</strong></div><div class="preference-row"><span>\u996E\u98DF\u504F\u597D</span><strong>${esc(p.preference)}</strong></div><button class="text-button" data-action="edit-profile">\u8C03\u6574\u6211\u7684\u504F\u597D ${icon("arrow")}</button></section></div><section class="section">${assessmentHistory()}${sectionHead("\u6211\u7684\u65B9\u6848", "MY PLANS", `<span class="count-label">${state.plans.length} \u4EFD</span>`)}${state.plans.length ? `<div class="plans-grid">${state.plans.map(planCard).join("")}</div>` : `<div class="empty-state">${icon("spark")}<div><h3>\u4ECE\u4E00\u6B21\u54A8\u8BE2\u5F00\u59CB</h3><p>\u8BA9\u52A9\u624B\u7ED9\u51FA\u65B9\u6848\uFF0C\u70B9\u51FB\u4FDD\u5B58\uFF0C\u5C31\u80FD\u5728\u8FD9\u91CC\u7EE7\u7EED\u67E5\u770B\u3002</p></div><button class="outline-button" data-chat="\u6211\u60F3\u5065\u5EB7\u51CF\u91CD">\u4F53\u9A8C\u4E00\u6B21\u54A8\u8BE2</button></div>`}</section><section class="section">${sectionHead("\u6211\u7684\u6536\u85CF", "SAVED FOR LATER", `<span class="count-label">${state.saved.length} \u9879</span>`)}${state.saved.length ? `<div class="saved-grid">${state.saved.map((key) => {
-    const [type, id] = key.split(":");
-    const item = (type === "recipe" ? recipes : articles).find((x) => x.id === id);
-    return item ? `<button class="saved-item" data-${type}="${id}">${icon(type === "recipe" ? "bowl" : "book")}<span>${esc(item.title)}</span>${icon("arrow")}</button>` : "";
-  }).join("")}</div>` : `<p class="empty-copy">\u559C\u6B22\u7684\u98DF\u8C31\u3001\u8336\u996E\u548C\u6587\u7AE0\uFF0C\u53EF\u4EE5\u5148\u6536\u85CF\uFF0C\u6162\u6162\u770B\u3002</p>`}</section><div class="privacy-line"><p>\u6863\u6848\u3001\u6536\u85CF\u3001\u65B9\u6848\u548C\u6D4B\u8BC4\u53EA\u5B58\u5728\u5F53\u524D\u6D4F\u89C8\u5668\uFF0C\u6362\u8BBE\u5907\u4E0D\u4F1A\u540C\u6B65\u3002\u53D1\u9001\u54A8\u8BE2\u4F1A\u628A\u672C\u6B21\u95EE\u9898\u4E0E\u5F53\u524D\u5BF9\u8BDD\u53D1\u7ED9\u670D\u52A1\u7AEF\uFF1B\u52FE\u9009\u540E\u624D\u9644\u5E26\u996E\u98DF\u504F\u597D\u3002\u8BF7\u4F7F\u7528\u865A\u6784\u4FE1\u606F\u4F53\u9A8C\u3002</p><button class="text-button" data-action="reset">\u6E05\u9664\u672C\u5730\u6F14\u793A\u6570\u636E</button></div>`;
+  return dietPages.settings();
 }
 function render() {
   document.querySelectorAll("[data-page]").forEach((b) => {
     b.classList.toggle("active", b.dataset.page === page && b.classList.contains("nav-item"));
     if (b.classList.contains("nav-item")) b.setAttribute("aria-current", b.dataset.page === page ? "page" : "false");
   });
-  main.innerHTML = (storageError ? `<div class="storage-error" role="alert">${esc(storageError)} <button class="text-button" data-action="retry-storage">\u91CD\u8BD5\u5B58\u50A8</button></div>` : "") + ({ home, food, care, profile }[page] || home)();
-  document.querySelector(".topbar-label").textContent = matchMedia("(max-width:760px)").matches ? "\u77E5\u517B" : "\u4F60\u7684\u65E5\u5E38\u98DF\u517B\u7A7A\u95F4";
+  main.classList.remove("is-entering");
+  main.innerHTML = (storageError ? `<div class="storage-error" role="alert">${esc(storageError)} <button class="text-button" data-action="retry-storage">\u91CD\u8BD5\u5B58\u50A8</button></div>` : "") + ({ home, today, library, food, care, profile }[page] || home)();
+  const label = document.querySelector(".topbar-label");
+  if (label) label.textContent = "\u77E5\u517B";
+  const slot = document.getElementById("date-slot");
+  if (slot) slot.textContent = chineseDate();
+  void main.offsetWidth;
+  main.classList.add("is-entering");
   paintIcons();
 }
 function navigate(next, replace = false) {
-  if (!["home", "food", "care", "profile"].includes(next)) return;
+  if (!["home", "today", "library", "profile"].includes(next)) return;
   page = next;
   render();
   historyAPI(replace);
@@ -806,7 +1559,7 @@ function historyAPI(replace) {
 }
 window.addEventListener("popstate", () => {
   page = location.hash.slice(1) || "home";
-  if (!["home", "food", "care", "profile"].includes(page)) page = "home";
+  if (!["home", "today", "library", "profile"].includes(page)) page = "home";
   render();
 });
 function detailHeader(label) {
@@ -845,11 +1598,8 @@ function editProfile() {
 function constitutionList() {
   openDetail(`<div class="detail-body"><span class="tag">\u4F53\u8D28\u79D1\u666E</span><h2>\u8BA4\u8BC6\u4E2D\u533B\u4E5D\u79CD\u4F53\u8D28</h2><p class="detail-lead">\u4EE5\u4E0B\u662F\u4E5D\u79CD\u57FA\u672C\u7C7B\u578B\u3002\u4E0B\u9762\u7684\u63D0\u793A\u8BCD\u4EC5\u5E2E\u52A9\u6D4F\u89C8\uFF0C\u4E0D\u662F\u8BCA\u65AD\u4F9D\u636E\uFF0C\u4E5F\u4E0D\u80FD\u9760\u5355\u4E2A\u611F\u53D7\u7ED9\u81EA\u5DF1\u5B9A\u578B\u3002</p><div class="constitution-grid">${constitutions.map(([n, d], i) => `<div class="constitution-type"><span>${String(i + 1).padStart(2, "0")}</span><h3>${n}</h3><p>${d}</p></div>`).join("")}</div><p class="gentle-note">\u201C\u6E7F\u6C14\u91CD\u201D\u662F\u65E5\u5E38\u63CF\u8FF0\uFF0C\u4E0D\u7B49\u4E8E\u5DF2\u7ECF\u5224\u5B9A\u4E3A\u201C\u75F0\u6E7F\u8D28\u201D\u3002\u6B63\u5F0F\u5224\u5B9A\u5E94\u4F7F\u7528\u5B8C\u6574\u6807\u51C6\u91CF\u8868\u53CA\u76F8\u5E94\u8BA1\u5206\u65B9\u6CD5\u3002</p>${sourceHtml("constitution")}<button class="primary-button full-button" data-action="quiz">\u5F00\u59CB\u65E5\u5E38\u611F\u53D7\u8BD5\u6D4B ${icon("arrow")}</button></div>`, "\u4E2D\u533B\u4E5D\u79CD\u4F53\u8D28");
 }
-function assessmentHistory() {
-  return `<div class="assessment-history">${sectionHead("\u6211\u7684\u611F\u53D7\u8BB0\u5F55", "MY RECORDS", `<span class="count-label">${state.assessments.length} \u4EFD</span>`)}${state.assessments.length ? state.assessments.map((r) => `<div class="record-row"><button class="text-button" data-view-assessment="${esc(r.id)}">${esc(new Date(r.createdAt).toLocaleString("zh-CN"))} \xB7 \u8BD5\u6D4B\u53C2\u8003 \u2192</button><button class="text-button" data-delete-assessment="${esc(r.id)}">\u5220\u9664</button></div>`).join("") : '<p class="empty-copy">\u5B8C\u6210\u8BD5\u6D4B\u5E76\u81EA\u613F\u4FDD\u5B58\u540E\uFF0C\u53EF\u4EE5\u5728\u8FD9\u91CC\u56DE\u770B\u3002\u4E0D\u4F1A\u81EA\u52A8\u5224\u5B9A\u4F53\u8D28\u3002</p>'}</div>`;
-}
 function about() {
-  openDetail(`<div class="detail-body"><span class="tag">\u77E5\u517B \xB7 \u53EF\u4EA4\u4E92\u539F\u578B</span><h2>\u5148\u4F53\u9A8C\uFF0C\u518D\u6162\u6162\u517B\u6210\u3002</h2><p class="detail-lead">\u9996\u9875\u3001\u98DF\u517B\u5185\u5BB9\u3001\u8C03\u517B\u4E13\u9898\u3001\u6863\u6848\u3001\u8BD5\u6D4B\u548C\u65B9\u6848\u8C03\u6574\u5DF2\u53EF\u4F53\u9A8C\u3002</p><div class="about-list"><p><strong>\u54A8\u8BE2\u52A9\u624B\uFF1A</strong>\u771F\u5B9E\u6A21\u578B\u5C1A\u672A\u63A5\u5165\u3002\u5F53\u524D\u901A\u8FC7\u670D\u52A1\u7AEF\u9884\u8BBE\u573A\u666F\u6F14\u793A\u8FFD\u95EE\u3001\u65B9\u6848\u548C\u98CE\u9669\u89C4\u5219\uFF1B\u81EA\u7531\u95EE\u7B54\u80FD\u529B\u4ECD\u5F85\u63A5\u5165\u3002</p><p><strong>\u4F53\u8D28\u6D4B\u8BC4\uFF1A</strong>32 \u9053\u91CD\u65B0\u8BBE\u8BA1\u7684\u5019\u9009\u9898\uFF0C\u53EF\u7EE7\u7EED\u8349\u7A3F\u3001\u8BB0\u5F55\u56DE\u7B54\u3002\u672A\u5B8C\u6210\u6D4B\u91CF\u9A8C\u8BC1\uFF0C\u4E0D\u7ED9\u51FA\u4E2A\u4EBA\u4F53\u8D28\u5224\u5B9A\u3002</p><p><strong>\u672C\u673A\u8BB0\u5F55\uFF1A</strong>\u6863\u6848\u3001\u6536\u85CF\u3001\u65B9\u6848\u3001\u8349\u7A3F\u548C\u6D4B\u8BC4\u4EC5\u5728\u5F53\u524D\u6D4F\u89C8\u5668\u3002\u804A\u5929\u53EA\u4FDD\u7559\u4E8E\u672C\u6B21\u9875\u9762\uFF0C\u5237\u65B0\u540E\u6E05\u7A7A\u3002\u53EF\u5728\u201C\u6211\u7684\u201D\u6E05\u9664\u8BB0\u5F55\u3002</p><p><strong>\u53D1\u9001\u54A8\u8BE2\uFF1A</strong>\u95EE\u9898\u4E0E\u5F53\u524D\u5BF9\u8BDD\u4F1A\u53D1\u9001\u7ED9\u672C\u7F51\u7AD9\u670D\u52A1\u7AEF\uFF1B\u4F60\u53EF\u4EE5\u9009\u62E9\u662F\u5426\u9644\u5E26\u996E\u98DF\u504F\u597D\u3002\u539F\u59CB\u6D4B\u8BC4\u7B54\u6848\u4E0D\u4F1A\u81EA\u52A8\u53D1\u9001\u3002</p><p><strong>\u5065\u5EB7\u5185\u5BB9\uFF1A</strong>\u5F85\u4E13\u4E1A\u5BA1\u6838\u7684\u793A\u4F8B\uFF1B\u4E0D\u63D0\u4F9B\u533B\u5B66\u8BCA\u65AD\u3001\u6CBB\u7597\u6216\u81EA\u884C\u914D\u836F\u5EFA\u8BAE\u3002\u56FE\u7247\u4E3A AI \u751F\u6210\u793A\u610F\u3002</p></div><button class="primary-button full-button" data-close="detail">\u5F00\u59CB\u4F53\u9A8C</button></div>`, "\u5173\u4E8E\u77E5\u517B");
+  openDetail(`<div class="detail-body"><div class="about-list"><p>\u8BB0\u5F55\u53EA\u5B58\u5728\u8FD9\u53F0\u624B\u673A\u7684\u6D4F\u89C8\u5668\u91CC\u3002\u6362\u4E00\u53F0\u8BBE\u5907\uFF0C\u6216\u6E05\u9664\u6D4F\u89C8\u5668\u6570\u636E\u540E\uFF0C\u5C31\u627E\u4E0D\u5230\u4E86\u3002</p><p>\u4F60\u5199\u4E0B\u7684\u6587\u5B57\u548C\u62CD\u7684\u7167\u7247\uFF0C\u4F1A\u53D1\u9001\u7ED9\u7B2C\u4E09\u65B9\u670D\u52A1\uFF0C\u7528\u6765\u8BC6\u522B\u5403\u4E86\u4EC0\u4E48\u3001\u5927\u7EA6\u591A\u5C11\u514B\u3002</p><p>\u98DF\u7269\u540D\u79F0\u4F1A\u7528\u4E8E\u5728\u8584\u8377\u5065\u5EB7\u67E5\u8BE2\u8425\u517B\u3002\u67E5\u4E0D\u5230\u7684\uFF0C\u5C31\u6807\u6210\u6682\u65F6\u7B97\u4E0D\u51FA\u6765\uFF0C\u4E0D\u4F1A\u7F16\u4E00\u4E2A\u6570\u5B57\u3002</p><p>\u9875\u9762\u4E0A\u7684\u300C\u7EA6 X \u5343\u5361\u300D\u662F\u4F30\u7B97\u3002</p><p>\u8FD9\u4E9B\u5185\u5BB9\u4E0D\u7528\u4E8E\u8BCA\u65AD\u6216\u6CBB\u7597\u3002\u8EAB\u4F53\u4E0D\u8212\u670D\u65F6\uFF0C\u8BF7\u5BFB\u6C42\u4E13\u4E1A\u5E2E\u52A9\u3002</p><p>\u70B9\u5F00\u98DF\u7269\u4E0A\u7684\u300C\u6570\u636E\u6765\u6E90\u300D\uFF0C\u53EF\u4EE5\u770B\u5230\u5B83\u6765\u81EA\u77E5\u517B\u98DF\u7269\u5E93\u8FD8\u662F\u8584\u8377\u5065\u5EB7\uFF0C\u4EE5\u53CA\u66F4\u7EC6\u7684\u7F16\u53F7\u3002</p></div><button class="primary-button full-button" data-close="detail">\u77E5\u9053\u4E86</button></div>`, "\u9690\u79C1\u4E0E\u8BF4\u660E");
 }
 async function toggleSave(key) {
   const was = state.saved.includes(key);
@@ -908,7 +1658,7 @@ async function send(text) {
   document.getElementById("chat-cancel").hidden = false;
   const loading = appendMessage("assistant", '<span class="typing"><i></i><i></i><i></i></span>');
   loading.classList.add("is-loading");
-  const current = chatVersion, requestId = crypto.randomUUID();
+  const current = chatVersion, requestId = createId();
   requestController = new AbortController();
   const ownController = requestController;
   const timeout = setTimeout(() => ownController.abort(), 15e3);
@@ -970,12 +1720,13 @@ async function savePlan(id) {
   toast("\u5DF2\u4FDD\u5B58\uFF0C\u53EF\u5728\u201C\u6211\u7684\u65B9\u6848\u201D\u4E2D\u7EE7\u7EED\u8C03\u6574");
 }
 document.addEventListener("click", async (e) => {
-  const b = e.target.closest("button,a.brand");
+  const b = e.target.closest("button,a.brand,a.topbar-brand");
   if (!b) return;
   const d = b.dataset;
   if (await assessment.action(b)) return;
   try {
-    if (b.classList.contains("brand")) {
+    if (await dietPages.onClick(b)) return;
+    if (b.classList.contains("brand") || b.classList.contains("topbar-brand")) {
       e.preventDefault();
       navigate("home");
     } else if (d.page) navigate(d.page);
@@ -1035,7 +1786,15 @@ document.addEventListener("click", async (e) => {
     } else if (d.action) {
       switch (d.action) {
         case "about":
+        case "privacy":
           about();
+          break;
+        case "ack-privacy":
+          try {
+            localStorage.setItem("zhiyang-privacy-ack", "1");
+          } catch {
+          }
+          document.getElementById("first-run").hidden = true;
           break;
         case "edit-profile":
           editProfile();
@@ -1058,7 +1817,7 @@ document.addEventListener("click", async (e) => {
           await bootStorage();
           break;
         case "reset":
-          openDetail('<div class="detail-body"><h2>\u6E05\u9664\u672C\u673A\u8BB0\u5F55\uFF1F</h2><p class="detail-lead">\u5C06\u6E05\u9664\u5F53\u524D\u6D4F\u89C8\u5668\u4E2D\u7684\u6863\u6848\u3001\u6536\u85CF\u3001\u65B9\u6848\u3001\u6D4B\u8BC4\u3001\u8349\u7A3F\u53CA\u65E7\u7248\u6F14\u793A\u6570\u636E\uFF0C\u5E76\u7ED3\u675F\u5F53\u524D\u5BF9\u8BDD\u3002\u6B64\u64CD\u4F5C\u65E0\u6CD5\u6062\u590D\u3002</p><div class="button-row"><button class="outline-button" data-close="detail">\u5148\u4FDD\u7559</button><button class="primary-button" data-action="confirm-reset">\u786E\u8BA4\u6E05\u9664</button></div></div>', "\u6E05\u9664\u672C\u673A\u8BB0\u5F55");
+          openDetail('<div class="detail-body"><h2>\u6E05\u9664\u672C\u673A\u8BB0\u5F55\uFF1F</h2><p class="detail-lead">\u5C06\u6E05\u9664\u8FD9\u53F0\u624B\u673A\u4E0A\u7684\u996E\u98DF\u8BB0\u5F55\u548C\u6BCF\u65E5\u76EE\u6807\u3002\u6E05\u9664\u540E\u627E\u4E0D\u56DE\u6765\u3002</p><div class="button-row"><button class="outline-button" data-close="detail">\u5148\u4FDD\u7559</button><button class="primary-button" data-action="confirm-reset">\u786E\u8BA4\u6E05\u9664</button></div></div>', "\u6E05\u9664\u672C\u673A\u8BB0\u5F55");
           break;
         case "confirm-reset": {
           if (!storage) throw new Error("\u672C\u673A\u5B58\u50A8\u4E0D\u53EF\u7528\uFF0C\u65E0\u6CD5\u786E\u8BA4\u5DF2\u6E05\u9664");
@@ -1074,7 +1833,7 @@ document.addEventListener("click", async (e) => {
             state = emptyState();
             detail.close();
             navigate("profile");
-            toast("\u672C\u673A\u8BB0\u5F55\u548C\u5F53\u524D\u5BF9\u8BDD\u5DF2\u6E05\u9664");
+            toast("\u8FD9\u53F0\u624B\u673A\u4E0A\u7684\u8BB0\u5F55\u5DF2\u6E05\u9664");
           } finally {
             clearing = false;
             b.disabled = false;
@@ -1084,10 +1843,21 @@ document.addEventListener("click", async (e) => {
       }
     }
   } catch (error) {
-    toast(error.message || "\u672C\u6B21\u64CD\u4F5C\u672A\u5B8C\u6210\uFF0C\u8BF7\u91CD\u8BD5");
+    toast(friendlyMessage(error.message, "\u8FD9\u6B21\u6CA1\u6709\u5B8C\u6210\uFF0C\u8BF7\u518D\u8BD5\u4E00\u6B21"));
   }
 });
 document.addEventListener("submit", async (e) => {
+  if (e.target.id === "invite-form") {
+    e.preventDefault();
+    await submitInvite(e.target);
+    return;
+  }
+  try {
+    if (await dietPages.onSubmit(e)) return;
+  } catch (error) {
+    toast(error.message || "\u6CA1\u6709\u4FDD\u5B58");
+    return;
+  }
   if (e.target.id === "profile-form") {
     e.preventDefault();
     const form = e.target, button = form.querySelector("[type=submit]"), f = new FormData(form);
@@ -1121,31 +1891,41 @@ for (const dialog of [detail, chat]) dialog.addEventListener("click", (e) => {
 var width = innerWidth;
 window.addEventListener("resize", () => {
   if (width <= 760 !== innerWidth <= 760) {
-    document.querySelector(".topbar-label").textContent = innerWidth <= 760 ? "\u77E5\u517B" : "\u4F60\u7684\u65E5\u5E38\u98DF\u517B\u7A7A\u95F4";
+    document.querySelector(".topbar-label").textContent = "\u77E5\u517B";
   }
   width = innerWidth;
 });
-page = ["home", "food", "care", "profile"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "home";
-render();
-historyAPI(true);
-await bootStorage();
-var context = document.modelContext;
-if (context?.registerTool) {
-  const life = new AbortController();
-  const tools = [{ name: "get_wellness_demo_overview", title: "\u8BFB\u53D6\u77E5\u517B\u6F14\u793A\u6982\u89C8", description: "Read the current demo page and counts of saved plans and content. Does not expose chat or personal profile data.", inputSchema: { type: "object", properties: {}, additionalProperties: false }, annotations: { readOnlyHint: true, untrustedContentHint: false }, execute(input) {
-    if (!input || typeof input !== "object" || Object.keys(input).length) throw new Error("Expected an empty object");
-    return { page, mode: "mock", savedPlans: state.plans.length, savedItems: state.saved.length };
-  } }, { name: "navigate_wellness_demo", title: "\u5207\u6362\u77E5\u517B\u6F14\u793A\u9875\u9762", description: "Navigate to an existing demo page. Does not send a message, assess health, or save a plan.", inputSchema: { type: "object", properties: { page: { type: "string", enum: ["home", "food", "care", "profile"] } }, required: ["page"], additionalProperties: false }, annotations: { readOnlyHint: false, untrustedContentHint: false }, execute(input) {
-    if (!input || Object.keys(input).length !== 1 || !["home", "food", "care", "profile"].includes(input.page)) throw new Error("Invalid page");
-    navigate(input.page);
-    return { page };
-  } }];
-  for (const tool of tools) {
-    try {
-      Promise.resolve(context.registerTool(tool, { signal: life.signal })).catch(() => {
-      });
-    } catch {
-    }
+var invite = await readInviteStatus();
+if (!invite.unlocked) {
+  document.body.classList.add("is-locked");
+  showInvite(invite.unavailable ? "\u6682\u65F6\u65E0\u6CD5\u786E\u8BA4\u5165\u53E3\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5" : "");
+} else {
+  page = ["home", "today", "library", "profile"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "home";
+  render();
+  try {
+    if (!localStorage.getItem("zhiyang-privacy-ack")) document.getElementById("first-run").hidden = false;
+  } catch {
   }
-  window.addEventListener("pagehide", () => life.abort(), { once: true });
+  historyAPI(true);
+  await bootStorage();
+  const context = document.modelContext;
+  if (context?.registerTool) {
+    const life = new AbortController();
+    const tools = [{ name: "get_wellness_demo_overview", title: "\u8BFB\u53D6\u5F53\u524D\u9875\u9762\u6982\u89C8", description: "Read the current page and counts of saved plans and content. Does not expose chat or personal profile data.", inputSchema: { type: "object", properties: {}, additionalProperties: false }, annotations: { readOnlyHint: true, untrustedContentHint: false }, execute(input) {
+      if (!input || typeof input !== "object" || Object.keys(input).length) throw new Error("Expected an empty object");
+      return { page, mode: "mock", savedPlans: state.plans.length, savedItems: state.saved.length };
+    } }, { name: "navigate_wellness_demo", title: "\u5207\u6362\u9875\u9762", description: "Navigate to an existing page. Does not send a message, assess health, or save a plan.", inputSchema: { type: "object", properties: { page: { type: "string", enum: ["home", "today", "library", "food", "care", "profile"] } }, required: ["page"], additionalProperties: false }, annotations: { readOnlyHint: false, untrustedContentHint: false }, execute(input) {
+      if (!input || Object.keys(input).length !== 1 || !["home", "today", "library", "food", "care", "profile"].includes(input.page)) throw new Error("Invalid page");
+      navigate(input.page);
+      return { page };
+    } }];
+    for (const tool of tools) {
+      try {
+        Promise.resolve(context.registerTool(tool, { signal: life.signal })).catch(() => {
+        });
+      } catch {
+      }
+    }
+    window.addEventListener("pagehide", () => life.abort(), { once: true });
+  }
 }
