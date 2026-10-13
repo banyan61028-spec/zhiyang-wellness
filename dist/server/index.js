@@ -1374,6 +1374,77 @@ var catalog_default = {
       }
     },
     {
+      id: "pepper-green",
+      name: "\u9752\u6912",
+      aliases: [
+        "\u751C\u9752\u6912",
+        "\u9752\u751C\u6912"
+      ],
+      per100g: {
+        kcal: 20,
+        protein: 0.9,
+        fat: 0.2,
+        carb: 4.6
+      },
+      source: "USDA FoodData Central",
+      sourceNote: "\u53C2\u8003 USDA FoodData Central SR Legacy FDC 170427\uFF08Peppers sweet green raw\uFF09\u6BCF100\u514B\u3002\u86CB\u767D\u8D28 0.86 \u56DB\u820D\u4E94\u5165\u4E3A 0.9\uFF0C\u8102\u80AA 0.17 \u4E3A 0.2\uFF0C\u78B3\u6C34 4.64 \u4E3A 4.6\u3002\u8FD9\u662F\u751F\u751C\u9752\u6912\uFF0C\u4E0D\u662F\u5E72\u8FA3\u6912\uFF0C\u7092\u83DC\u7528\u6CB9\u53E6\u5916\u8BA1\u3002\u516C\u5F00\u9886\u57DF\u6570\u636E\uFF0C\u4E0D\u662F\u4E2D\u56FD\u98DF\u7269\u6210\u5206\u8868\u3002\u5F85\u5BA1\u6838\u3002",
+      version: "usda-fdc-2026-10-13",
+      calculable: true,
+      example: true,
+      portion: {
+        small: 50,
+        medium: 100,
+        large: 150
+      }
+    },
+    {
+      id: "onion",
+      name: "\u6D0B\u8471",
+      aliases: [
+        "\u8471\u5934"
+      ],
+      per100g: {
+        kcal: 40,
+        protein: 1.1,
+        fat: 0.1,
+        carb: 9.3
+      },
+      source: "USDA FoodData Central",
+      sourceNote: "\u53C2\u8003 USDA FoodData Central SR Legacy FDC 170000\uFF08Onions raw\uFF09\u6BCF100\u514B\u3002\u80FD\u91CF 40\uFF0C\u86CB\u767D\u8D28 1.1\uFF0C\u8102\u80AA 0.1\uFF0C\u78B3\u6C34 9.34 \u56DB\u820D\u4E94\u5165\u4E3A 9.3\u3002\u8FD9\u662F\u751F\u6D0B\u8471\u3002\u516C\u5F00\u9886\u57DF\u6570\u636E\uFF0C\u4E0D\u662F\u4E2D\u56FD\u98DF\u7269\u6210\u5206\u8868\u3002\u5F85\u5BA1\u6838\u3002",
+      version: "usda-fdc-2026-10-13",
+      calculable: true,
+      example: true,
+      portion: {
+        small: 40,
+        medium: 80,
+        large: 120
+      }
+    },
+    {
+      id: "pak-choi",
+      name: "\u5C0F\u767D\u83DC",
+      aliases: [
+        "\u9752\u83DC",
+        "\u4E0A\u6D77\u9752"
+      ],
+      per100g: {
+        kcal: 13,
+        protein: 1.5,
+        fat: 0.2,
+        carb: 2.2
+      },
+      source: "USDA FoodData Central",
+      sourceNote: "\u53C2\u8003 USDA FoodData Central SR Legacy FDC 170390\uFF08Cabbage chinese pak-choi raw\uFF09\u6BCF100\u514B\u3002\u80FD\u91CF 13\uFF0C\u86CB\u767D\u8D28 1.5\uFF0C\u8102\u80AA 0.2\uFF0C\u78B3\u6C34 2.18 \u56DB\u820D\u4E94\u5165\u4E3A 2.2\u3002\u8FD9\u662F\u751F\u5C0F\u767D\u83DC\uFF0C\u4E0D\u662F\u5927\u767D\u83DC\u3002\u516C\u5F00\u9886\u57DF\u6570\u636E\uFF0C\u4E0D\u662F\u4E2D\u56FD\u98DF\u7269\u6210\u5206\u8868\u3002\u5F85\u5BA1\u6838\u3002",
+      version: "usda-fdc-2026-10-13",
+      calculable: true,
+      example: true,
+      portion: {
+        small: 80,
+        medium: 150,
+        large: 220
+      }
+    },
+    {
       id: "millet-porridge",
       name: "\u5C0F\u7C73\u7CA5",
       aliases: [],
@@ -2080,6 +2151,606 @@ var catalog_default = {
       ],
       note: "\u6E05\u6DE1\u5C0F\u4EFD\uFF0C\u9002\u5408\u4ECA\u5929\u70ED\u91CF\u5DF2\u7ECF\u4E0D\u4F4E\u7684\u65F6\u5019\u3002\u4E3B\u98DF\u6CA1\u7B97\u8FDB\u53BB\u3002",
       avoid: [],
+      sourceNote: "\u5F85\u5BA1\u6838\u8349\u7A3F\u3002\u5BB6\u5E38\u505A\u6CD5\u7B80\u8FF0\u3002\u70ED\u91CF\u7531\u539F\u6599\u514B\u6570\u548C\u98DF\u7269\u8868\u8BA1\u7B97\uFF0C\u4E0D\u5728\u8FD9\u91CC\u624B\u5199\u3002",
+      example: true
+    },
+    {
+      id: "corn-scramble",
+      name: "\u751C\u7389\u7C73\u7092\u86CB",
+      meal: "breakfast",
+      ingredients: [
+        {
+          foodId: "corn-cooked",
+          grams: 120
+        },
+        {
+          foodId: "egg-whole",
+          grams: 60
+        },
+        {
+          foodId: "oil",
+          grams: 4
+        }
+      ],
+      steps: [
+        "\u751C\u7389\u7C73\u7528\u716E\u597D\u7684\u7389\u7C73\u7C92\u3002",
+        "\u9E21\u86CB\u5C11\u6CB9\u7092\u6563\uFF0C\u518D\u628A\u7389\u7C73\u62CC\u5300\u3002"
+      ],
+      note: "\u5BB6\u5E38\u65E9\u9910\u3002\u7389\u7C73\u662F\u716E\u751C\u7389\u7C73\uFF0C\u4E0D\u662F\u7389\u7C73\u9762\u3002",
+      avoid: [],
+      sourceNote: "\u5F85\u5BA1\u6838\u8349\u7A3F\u3002\u5BB6\u5E38\u505A\u6CD5\u7B80\u8FF0\u3002\u70ED\u91CF\u7531\u539F\u6599\u514B\u6570\u548C\u98DF\u7269\u8868\u8BA1\u7B97\uFF0C\u4E0D\u5728\u8FD9\u91CC\u624B\u5199\u3002",
+      example: true
+    },
+    {
+      id: "banana-oat-milk",
+      name: "\u9999\u8549\u71D5\u9EA6\u725B\u5976",
+      meal: "breakfast",
+      ingredients: [
+        {
+          foodId: "banana",
+          grams: 100
+        },
+        {
+          foodId: "oat-cooked",
+          grams: 180
+        },
+        {
+          foodId: "milk",
+          grams: 200
+        }
+      ],
+      steps: [
+        "\u71D5\u9EA6\u716E\u8F6F\u3002",
+        "\u653E\u6E29\u540E\u62CC\u5165\u725B\u5976\u548C\u9999\u8549\u7247\uFF0C\u4E0D\u52A0\u7CD6\u3002"
+      ],
+      note: "\u71D5\u9EA6\u662F\u52A0\u6C34\u716E\u8F6F\u7684\u3002\u9ED8\u8BA4\u4E0D\u52A0\u7CD6\u3002",
+      avoid: [],
+      sourceNote: "\u5F85\u5BA1\u6838\u8349\u7A3F\u3002\u5BB6\u5E38\u505A\u6CD5\u7B80\u8FF0\u3002\u70ED\u91CF\u7531\u539F\u6599\u514B\u6570\u548C\u98DF\u7269\u8868\u8BA1\u7B97\uFF0C\u4E0D\u5728\u8FD9\u91CC\u624B\u5199\u3002",
+      example: true
+    },
+    {
+      id: "pumpkin-soy-egg",
+      name: "\u5357\u74DC\u8C46\u6D46\u9E21\u86CB",
+      meal: "breakfast",
+      ingredients: [
+        {
+          foodId: "pumpkin",
+          grams: 150
+        },
+        {
+          foodId: "soy-milk",
+          grams: 250
+        },
+        {
+          foodId: "egg-whole",
+          grams: 50
+        }
+      ],
+      steps: [
+        "\u5357\u74DC\u84B8\u719F\u6216\u716E\u8F6F\u3002",
+        "\u9E21\u86CB\u716E\u719F\uFF0C\u914D\u4E00\u676F\u70ED\u7684\u65E0\u7CD6\u8C46\u6D46\u3002"
+      ],
+      note: "\u6E05\u6DE1\u65E9\u9910\u3002\u8C46\u6D46\u9ED8\u8BA4\u4E0D\u52A0\u7CD6\u3002",
+      avoid: [],
+      sourceNote: "\u5F85\u5BA1\u6838\u8349\u7A3F\u3002\u5BB6\u5E38\u505A\u6CD5\u7B80\u8FF0\u3002\u70ED\u91CF\u7531\u539F\u6599\u514B\u6570\u548C\u98DF\u7269\u8868\u8BA1\u7B97\uFF0C\u4E0D\u5728\u8FD9\u91CC\u624B\u5199\u3002",
+      example: true
+    },
+    {
+      id: "apple-oat-yogurt",
+      name: "\u82F9\u679C\u71D5\u9EA6\u9178\u5976",
+      meal: "breakfast",
+      ingredients: [
+        {
+          foodId: "apple",
+          grams: 100
+        },
+        {
+          foodId: "oat-cooked",
+          grams: 160
+        },
+        {
+          foodId: "yogurt",
+          grams: 150
+        }
+      ],
+      steps: [
+        "\u71D5\u9EA6\u716E\u8F6F\u653E\u6E29\u3002",
+        "\u82F9\u679C\u5207\u5757\uFF0C\u62CC\u4E0A\u539F\u5473\u9178\u5976\uFF0C\u4E0D\u52A0\u7CD6\u3002"
+      ],
+      note: "\u60F3\u5403\u5F97\u6E05\u6DE1\u4E00\u70B9\u7684\u65E9\u6668\u3002\u71D5\u9EA6\u662F\u52A0\u6C34\u716E\u8F6F\u7684\u3002",
+      avoid: [],
+      sourceNote: "\u5F85\u5BA1\u6838\u8349\u7A3F\u3002\u5BB6\u5E38\u505A\u6CD5\u7B80\u8FF0\u3002\u70ED\u91CF\u7531\u539F\u6599\u514B\u6570\u548C\u98DF\u7269\u8868\u8BA1\u7B97\uFF0C\u4E0D\u5728\u8FD9\u91CC\u624B\u5199\u3002",
+      example: true
+    },
+    {
+      id: "sweet-potato-soy",
+      name: "\u70E4\u7EA2\u85AF\u914D\u8C46\u6D46",
+      meal: "breakfast",
+      ingredients: [
+        {
+          foodId: "sweet-potato",
+          grams: 200
+        },
+        {
+          foodId: "soy-milk",
+          grams: 250
+        }
+      ],
+      steps: [
+        "\u7EA2\u85AF\u70E4\u719F\u3002",
+        "\u914D\u4E00\u676F\u4E0D\u52A0\u7CD6\u7684\u70ED\u8C46\u6D46\u3002"
+      ],
+      note: "\u597D\u505A\u3002\u4E3B\u98DF\u662F\u70E4\u7EA2\u85AF\u3002",
+      avoid: [],
+      sourceNote: "\u5F85\u5BA1\u6838\u8349\u7A3F\u3002\u5BB6\u5E38\u505A\u6CD5\u7B80\u8FF0\u3002\u70ED\u91CF\u7531\u539F\u6599\u514B\u6570\u548C\u98DF\u7269\u8868\u8BA1\u7B97\uFF0C\u4E0D\u5728\u8FD9\u91CC\u624B\u5199\u3002",
+      example: true
+    },
+    {
+      id: "orange-milk-egg",
+      name: "\u6A59\u5B50\u725B\u5976\u716E\u86CB",
+      meal: "breakfast",
+      ingredients: [
+        {
+          foodId: "orange",
+          grams: 150
+        },
+        {
+          foodId: "milk",
+          grams: 200
+        },
+        {
+          foodId: "egg-whole",
+          grams: 50
+        }
+      ],
+      steps: [
+        "\u9E21\u86CB\u716E\u719F\u3002",
+        "\u6A59\u5B50\u5265\u5F00\uFF0C\u914D\u4E00\u676F\u725B\u5976\uFF0C\u4E0D\u52A0\u7CD6\u3002"
+      ],
+      note: "\u6C34\u679C\u3001\u5976\u548C\u86CB\u90FD\u6709\u7684\u65E9\u6668\u3002",
+      avoid: [],
+      sourceNote: "\u5F85\u5BA1\u6838\u8349\u7A3F\u3002\u5BB6\u5E38\u505A\u6CD5\u7B80\u8FF0\u3002\u70ED\u91CF\u7531\u539F\u6599\u514B\u6570\u548C\u98DF\u7269\u8868\u8BA1\u7B97\uFF0C\u4E0D\u5728\u8FD9\u91CC\u624B\u5199\u3002",
+      example: true
+    },
+    {
+      id: "pepper-pork-rice",
+      name: "\u9752\u6912\u8089\u4E1D\u996D",
+      meal: "lunch",
+      ingredients: [
+        {
+          foodId: "pepper-green",
+          grams: 150
+        },
+        {
+          foodId: "pork-lean",
+          grams: 70
+        },
+        {
+          foodId: "rice-cooked",
+          grams: 150
+        },
+        {
+          foodId: "oil",
+          grams: 8
+        }
+      ],
+      steps: [
+        "\u7626\u8089\u548C\u9752\u6912\u5207\u4E1D\u3002",
+        "\u5C11\u6CB9\u7092\u719F\uFF0C\u914D\u7C73\u996D\u3002"
+      ],
+      note: "\u5BB6\u5E38\u5348\u996D\u3002\u9752\u6912\u5207\u4E1D\u548C\u7626\u8089\u4E00\u8D77\u7092\u3002",
+      avoid: [],
+      sourceNote: "\u5F85\u5BA1\u6838\u8349\u7A3F\u3002\u5BB6\u5E38\u505A\u6CD5\u7B80\u8FF0\u3002\u70ED\u91CF\u7531\u539F\u6599\u514B\u6570\u548C\u98DF\u7269\u8868\u8BA1\u7B97\uFF0C\u4E0D\u5728\u8FD9\u91CC\u624B\u5199\u3002",
+      example: true
+    },
+    {
+      id: "onion-egg-rice",
+      name: "\u6D0B\u8471\u7092\u86CB\u996D",
+      meal: "lunch",
+      ingredients: [
+        {
+          foodId: "onion",
+          grams: 120
+        },
+        {
+          foodId: "egg-whole",
+          grams: 100
+        },
+        {
+          foodId: "rice-cooked",
+          grams: 150
+        },
+        {
+          foodId: "oil",
+          grams: 6
+        }
+      ],
+      steps: [
+        "\u6D0B\u8471\u5207\u7247\u7092\u8F6F\u3002",
+        "\u5012\u5165\u9E21\u86CB\u7092\u5300\uFF0C\u5C11\u653E\u6CB9\uFF0C\u76D6\u5728\u7C73\u996D\u4E0A\u3002"
+      ],
+      note: "\u5BB6\u5E38\u5348\u996D\u3002\u6D0B\u8471\u548C\u9E21\u86CB\u76D6\u5728\u7C73\u996D\u4E0A\u3002",
+      avoid: [],
+      sourceNote: "\u5F85\u5BA1\u6838\u8349\u7A3F\u3002\u5BB6\u5E38\u505A\u6CD5\u7B80\u8FF0\u3002\u70ED\u91CF\u7531\u539F\u6599\u514B\u6570\u548C\u98DF\u7269\u8868\u8BA1\u7B97\uFF0C\u4E0D\u5728\u8FD9\u91CC\u624B\u5199\u3002",
+      example: true
+    },
+    {
+      id: "mushroom-chicken-rice",
+      name: "\u9999\u83C7\u9E21\u80F8\u996D",
+      meal: "lunch",
+      ingredients: [
+        {
+          foodId: "shiitake",
+          grams: 80
+        },
+        {
+          foodId: "chicken-breast",
+          grams: 100
+        },
+        {
+          foodId: "rice-cooked",
+          grams: 150
+        },
+        {
+          foodId: "oil",
+          grams: 5
+        }
+      ],
+      steps: [
+        "\u9E21\u80F8\u8089\u716E\u719F\u6216\u5C11\u6CB9\u714E\u719F\u3002",
+        "\u9999\u83C7\u5207\u7247\u4E00\u8D77\u7092\u5300\uFF0C\u914D\u7C73\u996D\u3002"
+      ],
+      note: "\u86CB\u767D\u8D28\u8F83\u9AD8\uFF0C\u9002\u5408\u4ECA\u5929\u86CB\u767D\u8D28\u8FD8\u5DEE\u4E00\u622A\u7684\u65F6\u5019\u3002",
+      avoid: [
+        "kidney_high_protein"
+      ],
+      sourceNote: "\u5F85\u5BA1\u6838\u8349\u7A3F\u3002\u5BB6\u5E38\u505A\u6CD5\u7B80\u8FF0\u3002\u70ED\u91CF\u7531\u539F\u6599\u514B\u6570\u548C\u98DF\u7269\u8868\u8BA1\u7B97\uFF0C\u4E0D\u5728\u8FD9\u91CC\u624B\u5199\u3002",
+      example: true
+    },
+    {
+      id: "salmon-broccoli",
+      name: "\u4E09\u6587\u9C7C\u897F\u5170\u82B1\u996D",
+      meal: "lunch",
+      ingredients: [
+        {
+          foodId: "salmon",
+          grams: 100
+        },
+        {
+          foodId: "broccoli",
+          grams: 120
+        },
+        {
+          foodId: "rice-cooked",
+          grams: 150
+        },
+        {
+          foodId: "oil",
+          grams: 5
+        }
+      ],
+      steps: [
+        "\u4E09\u6587\u9C7C\u5C11\u6CB9\u714E\u719F\u6216\u70E4\u719F\u3002",
+        "\u897F\u5170\u82B1\u712F\u719F\uFF0C\u914D\u7C73\u996D\u3002"
+      ],
+      note: "\u60F3\u5403\u9C7C\u7684\u5348\u996D\u3002\u86CB\u767D\u8D28\u8F83\u9AD8\uFF0C\u6CB9\u53EA\u7B97\u8FD9\u4E00\u5C0F\u4EFD\u3002",
+      avoid: [
+        "kidney_high_protein"
+      ],
+      sourceNote: "\u5F85\u5BA1\u6838\u8349\u7A3F\u3002\u5BB6\u5E38\u505A\u6CD5\u7B80\u8FF0\u3002\u70ED\u91CF\u7531\u539F\u6599\u514B\u6570\u548C\u98DF\u7269\u8868\u8BA1\u7B97\uFF0C\u4E0D\u5728\u8FD9\u91CC\u624B\u5199\u3002",
+      example: true
+    },
+    {
+      id: "tomato-beef-noodle",
+      name: "\u756A\u8304\u725B\u8089\u9762",
+      meal: "lunch",
+      ingredients: [
+        {
+          foodId: "noodle-cooked",
+          grams: 200
+        },
+        {
+          foodId: "beef-cooked",
+          grams: 60
+        },
+        {
+          foodId: "tomato",
+          grams: 120
+        },
+        {
+          foodId: "onion",
+          grams: 50
+        },
+        {
+          foodId: "oil",
+          grams: 6
+        }
+      ],
+      steps: [
+        "\u725B\u8089\u548C\u6D0B\u8471\u3001\u756A\u8304\u4E00\u8D77\u7092\u8F6F\u3002",
+        "\u716E\u9E21\u86CB\u9762\u716E\u597D\uFF0C\u6D47\u4E0A\u8FD9\u4E00\u4EFD\u3002"
+      ],
+      note: "\u5BB6\u5E38\u9762\u3002\u9762\u6761\u6309\u716E\u9E21\u86CB\u9762\u6765\u505A\uFF0C\u4E0D\u662F\u6C64\u9762\u3002",
+      avoid: [],
+      sourceNote: "\u5F85\u5BA1\u6838\u8349\u7A3F\u3002\u5BB6\u5E38\u505A\u6CD5\u7B80\u8FF0\u3002\u70ED\u91CF\u7531\u539F\u6599\u514B\u6570\u548C\u98DF\u7269\u8868\u8BA1\u7B97\uFF0C\u4E0D\u5728\u8FD9\u91CC\u624B\u5199\u3002",
+      example: true
+    },
+    {
+      id: "bokchoy-shrimp-rice",
+      name: "\u5C0F\u767D\u83DC\u867E\u4EC1\u996D",
+      meal: "lunch",
+      ingredients: [
+        {
+          foodId: "pak-choi",
+          grams: 160
+        },
+        {
+          foodId: "shrimp",
+          grams: 100
+        },
+        {
+          foodId: "rice-cooked",
+          grams: 150
+        },
+        {
+          foodId: "oil",
+          grams: 6
+        }
+      ],
+      steps: [
+        "\u867E\u4EC1\u716E\u719F\u3002",
+        "\u5C0F\u767D\u83DC\u7092\u8F6F\uFF0C\u5C11\u653E\u6CB9\uFF0C\u914D\u7C73\u996D\u3002"
+      ],
+      note: "\u86CB\u767D\u8D28\u4E3B\u8981\u6765\u81EA\u867E\u4EC1\uFF0C\u8102\u80AA\u4E0D\u9AD8\u3002\u86CB\u767D\u8D28\u8F83\u9AD8\u3002",
+      avoid: [
+        "kidney_high_protein"
+      ],
+      sourceNote: "\u5F85\u5BA1\u6838\u8349\u7A3F\u3002\u5BB6\u5E38\u505A\u6CD5\u7B80\u8FF0\u3002\u70ED\u91CF\u7531\u539F\u6599\u514B\u6570\u548C\u98DF\u7269\u8868\u8BA1\u7B97\uFF0C\u4E0D\u5728\u8FD9\u91CC\u624B\u5199\u3002",
+      example: true
+    },
+    {
+      id: "eggplant-pork-rice",
+      name: "\u8304\u5B50\u7092\u8089\u996D",
+      meal: "lunch",
+      ingredients: [
+        {
+          foodId: "eggplant",
+          grams: 180
+        },
+        {
+          foodId: "pork-lean",
+          grams: 60
+        },
+        {
+          foodId: "rice-cooked",
+          grams: 150
+        },
+        {
+          foodId: "oil",
+          grams: 8
+        }
+      ],
+      steps: [
+        "\u8304\u5B50\u5207\u5757\u7092\u719F\u7092\u8F6F\u3002",
+        "\u7626\u8089\u4E00\u8D77\u7092\u5300\uFF0C\u914D\u7C73\u996D\u3002"
+      ],
+      note: "\u5BB6\u5E38\u5348\u996D\u3002\u8304\u5B50\u8981\u7092\u719F\u3002",
+      avoid: [],
+      sourceNote: "\u5F85\u5BA1\u6838\u8349\u7A3F\u3002\u5BB6\u5E38\u505A\u6CD5\u7B80\u8FF0\u3002\u70ED\u91CF\u7531\u539F\u6599\u514B\u6570\u548C\u98DF\u7269\u8868\u8BA1\u7B97\uFF0C\u4E0D\u5728\u8FD9\u91CC\u624B\u5199\u3002",
+      example: true
+    },
+    {
+      id: "pepper-potato-rice",
+      name: "\u9752\u6912\u571F\u8C46\u4E1D\u914D\u996D",
+      meal: "dinner",
+      ingredients: [
+        {
+          foodId: "pepper-green",
+          grams: 120
+        },
+        {
+          foodId: "potato-cooked",
+          grams: 180
+        },
+        {
+          foodId: "rice-cooked",
+          grams: 100
+        },
+        {
+          foodId: "oil",
+          grams: 8
+        }
+      ],
+      steps: [
+        "\u571F\u8C46\u5207\u4E1D\uFF0C\u548C\u9752\u6912\u4E00\u8D77\u7092\u719F\u3002",
+        "\u914D\u5C11\u91CF\u7C73\u996D\uFF0C\u6CB9\u6309\u8FD9\u4E00\u5C0F\u4EFD\u8BA1\u7B97\u3002"
+      ],
+      note: "\u5BB6\u5E38\u665A\u996D\u3002\u571F\u8C46\u6309\u716E\u719F\u7684\u53EF\u98DF\u90E8\u6765\u7092\u3002\u86CB\u767D\u8D28\u4E0D\u591A\u3002",
+      avoid: [],
+      sourceNote: "\u5F85\u5BA1\u6838\u8349\u7A3F\u3002\u5BB6\u5E38\u505A\u6CD5\u7B80\u8FF0\u3002\u70ED\u91CF\u7531\u539F\u6599\u514B\u6570\u548C\u98DF\u7269\u8868\u8BA1\u7B97\uFF0C\u4E0D\u5728\u8FD9\u91CC\u624B\u5199\u3002",
+      example: true
+    },
+    {
+      id: "bokchoy-tofu",
+      name: "\u5C0F\u767D\u83DC\u8C46\u8150",
+      meal: "dinner",
+      ingredients: [
+        {
+          foodId: "pak-choi",
+          grams: 180
+        },
+        {
+          foodId: "tofu-firm",
+          grams: 150
+        },
+        {
+          foodId: "rice-cooked",
+          grams: 100
+        },
+        {
+          foodId: "oil",
+          grams: 6
+        }
+      ],
+      steps: [
+        "\u5C0F\u767D\u83DC\u548C\u8C46\u8150\u5C11\u6CB9\u716E\u719F\u6216\u7092\u719F\u3002",
+        "\u914D\u5C11\u91CF\u7C73\u996D\u3002"
+      ],
+      note: "\u665A\u996D\u53EF\u4EE5\u6E05\u6DE1\u4E00\u4E9B\uFF0C\u70ED\u91CF\u7559\u5F97\u6BD4\u8F83\u4F4E\u3002",
+      avoid: [],
+      sourceNote: "\u5F85\u5BA1\u6838\u8349\u7A3F\u3002\u5BB6\u5E38\u505A\u6CD5\u7B80\u8FF0\u3002\u70ED\u91CF\u7531\u539F\u6599\u514B\u6570\u548C\u98DF\u7269\u8868\u8BA1\u7B97\uFF0C\u4E0D\u5728\u8FD9\u91CC\u624B\u5199\u3002",
+      example: true
+    },
+    {
+      id: "melon-egg",
+      name: "\u51AC\u74DC\u7092\u86CB",
+      meal: "dinner",
+      ingredients: [
+        {
+          foodId: "winter-melon",
+          grams: 200
+        },
+        {
+          foodId: "egg-whole",
+          grams: 80
+        },
+        {
+          foodId: "oil",
+          grams: 5
+        }
+      ],
+      steps: [
+        "\u51AC\u74DC\u716E\u8F6F\u3002",
+        "\u9E21\u86CB\u7092\u6563\u653E\u8FDB\u53BB\uFF0C\u5C11\u653E\u6CB9\u3002"
+      ],
+      note: "\u6E05\u6DE1\u5C0F\u4EFD\uFF0C\u8FD9\u4E00\u9910\u6CA1\u6709\u628A\u4E3B\u98DF\u7B97\u8FDB\u53BB\u3002",
+      avoid: [],
+      sourceNote: "\u5F85\u5BA1\u6838\u8349\u7A3F\u3002\u5BB6\u5E38\u505A\u6CD5\u7B80\u8FF0\u3002\u70ED\u91CF\u7531\u539F\u6599\u514B\u6570\u548C\u98DF\u7269\u8868\u8BA1\u7B97\uFF0C\u4E0D\u5728\u8FD9\u91CC\u624B\u5199\u3002",
+      example: true
+    },
+    {
+      id: "edamame-chicken",
+      name: "\u6BDB\u8C46\u9E21\u80F8",
+      meal: "dinner",
+      ingredients: [
+        {
+          foodId: "edamame",
+          grams: 80
+        },
+        {
+          foodId: "chicken-breast",
+          grams: 100
+        },
+        {
+          foodId: "rice-cooked",
+          grams: 120
+        },
+        {
+          foodId: "oil",
+          grams: 5
+        }
+      ],
+      steps: [
+        "\u9E21\u80F8\u8089\u716E\u719F\u6216\u5C11\u6CB9\u714E\u719F\u3002",
+        "\u6BDB\u8C46\u716E\u719F\u62CC\u5728\u4E00\u8D77\uFF0C\u914D\u7C73\u996D\u3002"
+      ],
+      note: "\u86CB\u767D\u8D28\u8F83\u9AD8\u3002\u914D\u4E00\u5C0F\u7897\u7C73\u996D\u3002",
+      avoid: [
+        "kidney_high_protein"
+      ],
+      sourceNote: "\u5F85\u5BA1\u6838\u8349\u7A3F\u3002\u5BB6\u5E38\u505A\u6CD5\u7B80\u8FF0\u3002\u70ED\u91CF\u7531\u539F\u6599\u514B\u6570\u548C\u98DF\u7269\u8868\u8BA1\u7B97\uFF0C\u4E0D\u5728\u8FD9\u91CC\u624B\u5199\u3002",
+      example: true
+    },
+    {
+      id: "spinach-egg-rice",
+      name: "\u83E0\u83DC\u7092\u86CB\u996D",
+      meal: "dinner",
+      ingredients: [
+        {
+          foodId: "spinach",
+          grams: 150
+        },
+        {
+          foodId: "egg-whole",
+          grams: 80
+        },
+        {
+          foodId: "rice-cooked",
+          grams: 120
+        },
+        {
+          foodId: "oil",
+          grams: 6
+        }
+      ],
+      steps: [
+        "\u83E0\u83DC\u712F\u4E00\u4E0B\uFF0C\u548C\u9E21\u86CB\u5C11\u6CB9\u7092\u5300\u3002",
+        "\u914D\u7C73\u996D\u3002"
+      ],
+      note: "\u5BB6\u5E38\u665A\u996D\u3002",
+      avoid: [],
+      sourceNote: "\u5F85\u5BA1\u6838\u8349\u7A3F\u3002\u5BB6\u5E38\u505A\u6CD5\u7B80\u8FF0\u3002\u70ED\u91CF\u7531\u539F\u6599\u514B\u6570\u548C\u98DF\u7269\u8868\u8BA1\u7B97\uFF0C\u4E0D\u5728\u8FD9\u91CC\u624B\u5199\u3002",
+      example: true
+    },
+    {
+      id: "buckwheat-shrimp",
+      name: "\u835E\u9EA6\u867E\u4EC1",
+      meal: "dinner",
+      ingredients: [
+        {
+          foodId: "buckwheat-cooked",
+          grams: 180
+        },
+        {
+          foodId: "shrimp",
+          grams: 90
+        },
+        {
+          foodId: "broccoli",
+          grams: 100
+        }
+      ],
+      steps: [
+        "\u835E\u9EA6\u716E\u719F\u3002",
+        "\u867E\u4EC1\u716E\u719F\uFF0C\u914D\u712F\u719F\u7684\u897F\u5170\u82B1\u3002"
+      ],
+      note: "\u4E3B\u98DF\u6362\u6210\u835E\u9EA6\u3002\u86CB\u767D\u8D28\u8F83\u9AD8\uFF0C\u4E0D\u53E6\u52A0\u6CB9\u3002",
+      avoid: [
+        "kidney_high_protein"
+      ],
+      sourceNote: "\u5F85\u5BA1\u6838\u8349\u7A3F\u3002\u5BB6\u5E38\u505A\u6CD5\u7B80\u8FF0\u3002\u70ED\u91CF\u7531\u539F\u6599\u514B\u6570\u548C\u98DF\u7269\u8868\u8BA1\u7B97\uFF0C\u4E0D\u5728\u8FD9\u91CC\u624B\u5199\u3002",
+      example: true
+    },
+    {
+      id: "lamb-carrot",
+      name: "\u80E1\u841D\u535C\u7096\u7F8A\u8089",
+      meal: "dinner",
+      ingredients: [
+        {
+          foodId: "lamb-cooked",
+          grams: 80
+        },
+        {
+          foodId: "carrot",
+          grams: 100
+        },
+        {
+          foodId: "potato-cooked",
+          grams: 150
+        },
+        {
+          foodId: "oil",
+          grams: 6
+        }
+      ],
+      steps: [
+        "\u719F\u7F8A\u8089\u548C\u80E1\u841D\u535C\u3001\u716E\u571F\u8C46\u4E00\u8D77\u7096\u8F6F\u3002",
+        "\u6CB9\u6309\u8FD9\u4E00\u5C0F\u4EFD\u8BA1\u7B97\u3002"
+      ],
+      note: "\u5317\u65B9\u5BB6\u5E38\u7096\u83DC\u3002\u86CB\u767D\u8D28\u4E0D\u4F4E\u3002",
+      avoid: [
+        "kidney_high_protein"
+      ],
       sourceNote: "\u5F85\u5BA1\u6838\u8349\u7A3F\u3002\u5BB6\u5E38\u505A\u6CD5\u7B80\u8FF0\u3002\u70ED\u91CF\u7531\u539F\u6599\u514B\u6570\u548C\u98DF\u7269\u8868\u8BA1\u7B97\uFF0C\u4E0D\u5728\u8FD9\u91CC\u624B\u5199\u3002",
       example: true
     }
