@@ -26,7 +26,20 @@ const requestId = () => crypto.randomUUID();
 test('example tables parse, keep sources, and do not invent recipe calories', () => {
   assert.deepEqual(parsed.errors, []);
   assert.ok(parsed.catalog.foods.length >= 30);
-  assert.equal(source.recipes.length, 20);
+  assert.equal(source.recipes.length, 40);
+  assert.equal(source.getRecipe('pepper-pork-rice').name, '青椒肉丝饭');
+  assert.equal(source.getRecipe('pepper-pork-rice').nutrition.kcal, 434);
+  assert.equal(source.getRecipe('pepper-pork-rice').nutrition.protein, 24);
+  assert.equal(source.getFood('pepper-green').per100g.kcal, 20);
+  assert.match(source.getFood('pepper-green').sourceNote, /FDC 170427/);
+  assert.match(source.getFood('onion').sourceNote, /FDC 170000/);
+  assert.match(source.getFood('pak-choi').sourceNote, /FDC 170390/);
+  for (const id of ['mushroom-chicken-rice', 'salmon-broccoli', 'bokchoy-shrimp-rice', 'edamame-chicken', 'buckwheat-shrimp', 'lamb-carrot']) {
+    assert.equal(source.getRecipe(id).avoid.includes('kidney_high_protein'), true, id);
+  }
+  for (const id of ['pepper-pork-rice', 'tomato-beef-noodle', 'eggplant-pork-rice', 'corn-scramble']) {
+    assert.equal(source.getRecipe(id).avoid.includes('kidney_high_protein'), false, id);
+  }
   for (const recipe of source.recipes) {
     const photo = readFileSync(`public/recipes/${recipe.id}.jpg`);
     assert.equal(photo[0], 0xff, recipe.id);
