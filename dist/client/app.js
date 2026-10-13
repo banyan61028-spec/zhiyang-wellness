@@ -174,6 +174,12 @@ function allocateAfterGramEdit(kcal, ratios, key, grams) {
   }
   return { grams: out, ratios: ratiosFromGrams(out) };
 }
+function mergeTargetEdit(live = {}, snapshot, editedName) {
+  if (!snapshot || !editedName || editedName === "kcal") return live;
+  const fields = { ...snapshot, kcal: live.kcal };
+  fields[editedName] = live[editedName];
+  return fields;
+}
 function previewMacroTargets(fields = {}, editedName) {
   const kcal = parseIntField(fields.kcal);
   if (kcal == null || kcal > KCAL_MAX) return { ready: false };
@@ -1098,6 +1104,9 @@ function createDietPages(ctx) {
     if (el instanceof HTMLTextAreaElement && el.name === "text" && el.closest("#meal-form")) composeText = el.value;
     if (el instanceof HTMLInputElement) onTargetInput(el);
   });
+  document.addEventListener("focusin", (event) => {
+    if (event.target instanceof HTMLInputElement) rememberTargetEdit(event.target);
+  });
   document.addEventListener("focusout", (event) => {
     if (event.target instanceof HTMLInputElement) onTargetBlur(event.target);
   });
@@ -1684,18 +1693,27 @@ function onTargetInput(el) {
   }
   applyMacroPreview(el.form, el.name, false);
 }
+function rememberTargetEdit(el) {
+  if (!TARGET_FIELDS.has(el.name) || el.name === "kcal" || !el.closest("#target-form")) return;
+  const form = el.form;
+  if (!form || form.dataset.editField === el.name && form.dataset.ratioSnapshot) return;
+  form.dataset.editField = el.name;
+  form.dataset.ratioSnapshot = JSON.stringify(readTargetFields(form));
+}
 function onTargetBlur(el) {
   if (!TARGET_FIELDS.has(el.name) || !el.closest("#target-form")) return;
   if (!/^\d+$/.test(el.value) && el.dataset.last != null) el.value = el.dataset.last;
   if (!/^\d+$/.test(el.value)) {
     if (el.name === "kcal") applyMacroPreview(el.form, "kcal", true);
-    return;
+  } else applyMacroPreview(el.form, el.name, true);
+  if (el.form) {
+    delete el.form.dataset.editField;
+    delete el.form.dataset.ratioSnapshot;
   }
-  applyMacroPreview(el.form, el.name, true);
 }
 function applyMacroPreview(form, editedName, rewriteActive) {
   if (!form) return;
-  const preview = previewMacroTargets(readTargetFields(form), editedName);
+  const preview = previewMacroTargets(fieldsForPreview(form, editedName), editedName);
   setMacroPlanReady(form, preview.ready);
   if (!preview.inputs) return;
   for (const [name, value] of Object.entries(preview.inputs)) {
@@ -1705,6 +1723,15 @@ function applyMacroPreview(form, editedName, rewriteActive) {
     if (active && !rewriteActive && !preview.clamp?.[name]) continue;
     input.value = value;
     input.dataset.last = value;
+  }
+}
+function fieldsForPreview(form, editedName) {
+  const live = readTargetFields(form);
+  if (!form.dataset.ratioSnapshot) return live;
+  try {
+    return mergeTargetEdit(live, JSON.parse(form.dataset.ratioSnapshot), editedName);
+  } catch {
+    return live;
   }
 }
 function readTargetFields(form) {

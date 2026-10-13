@@ -121,6 +121,13 @@ export function allocateAfterGramEdit(kcal, ratios, key, grams) {
   return { grams: out, ratios: ratiosFromGrams(out) };
 }
 
+export function mergeTargetEdit(live = {}, snapshot, editedName) {
+  if (!snapshot || !editedName || editedName === 'kcal') return live;
+  const fields = { ...snapshot, kcal: live.kcal };
+  fields[editedName] = live[editedName];
+  return fields;
+}
+
 export function previewMacroTargets(fields = {}, editedName) {
   const kcal = parseIntField(fields.kcal);
   if (kcal == null || kcal > KCAL_MAX) return { ready: false };

@@ -7,6 +7,7 @@ import {
   allocateAfterGramEdit,
   allocateAfterRatioEdit,
   macroEnergy,
+  mergeTargetEdit,
   previewMacroTargets,
   settleDailyTargets,
 } from '../src/shared/nutrition/targets.js';
@@ -84,6 +85,12 @@ test('preview follows the field the person is editing', () => {
   const moved = previewMacroTargets({ ...base, kcal: '1800' }, 'kcal');
   assert.equal(moved.inputs.protein, '90');
   assert.equal(moved.inputs['ratio-protein'], '20');
+  const snapshot = { ...base };
+  const typed = previewMacroTargets(mergeTargetEdit({ ...base, protein: '120', 'ratio-fat': '23', 'ratio-carb': '53' }, snapshot, 'protein'), 'protein');
+  assert.equal(typed.inputs.protein, '120');
+  assert.equal(typed.inputs.fat, '53');
+  assert.equal(typed.inputs.carb, '261');
+  assert.equal(typed.inputs['ratio-fat'], '24');
 });
 
 test('saved targets stay on the calorie anchor, including older partial goals', () => {
