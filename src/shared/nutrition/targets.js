@@ -1,5 +1,8 @@
 // Calories stay the anchor. Default energy shares are protein 20%, fat 25%, carb 55%.
 // Grams use 4 kcal/g for protein and carb, 9 kcal/g for fat, and stay within 2 kcal.
+// A macro the person edits is fixed (up to two). One fixed macro leaves the other two
+// to split the remaining calories by their last shares. Two fixed macros leave the
+// third to the leftover calories. Changing calories keeps fixed grams when they fit.
 
 export const KCAL_PER_GRAM = { protein: 4, carb: 4, fat: 9 };
 export const DEFAULT_ENERGY_RATIOS = { protein: 20, fat: 25, carb: 55 };
@@ -16,6 +19,7 @@ export function emptyTargets(confirmed = false) {
     fat: null,
     carb: null,
     ratios: { protein: null, fat: null, carb: null },
+    fixed: [],
     source: 'user',
     confirmed: confirmed === true,
   };
@@ -35,15 +39,16 @@ export function settleDailyTargets(targets = {}) {
   };
   if (kcal == null) return emptyTargets(confirmed);
   const ratioInput = readRatioInput(targets?.ratios);
+  const fixed = readFixedOrder(targets, gramsInput);
   const anyGram = MACRO_KEYS.some(key => gramsInput[key] != null);
-  if (!anyGram) return pack(kcal, gramsFromRatios(kcal, ratioInput || DEFAULT_ENERGY_RATIOS), confirmed);
+  if (!anyGram) return pack(kcal, gramsFromRatios(kcal, ratioInput || DEFAULT_ENERGY_RATIOS), confirmed, fixed);
   if (ratioInput && MACRO_KEYS.every(key => gramsInput[key] != null)) {
     const allocated = gramsFromRatios(kcal, ratioInput);
-    if (MACRO_KEYS.every(key => gramsInput[key] === allocated.grams[key])) return pack(kcal, allocated, confirmed);
+    if (MACRO_KEYS.every(key => gramsInput[key] === allocated.grams[key])) return pack(kcal, allocated, confirmed, fixed);
   }
   const partial = MACRO_KEYS.some(key => gramsInput[key] == null);
   const settled = partial ? settlePartial(kcal, gramsInput) : settleComplete(kcal, gramsInput);
-  return pack(kcal, settled, confirmed);
+  return pack(kcal, settled, confirmed, fixed);
 }
 
 export function gramsFromRatios(kcal, ratios) {
@@ -121,29 +126,49 @@ export function allocateAfterGramEdit(kcal, ratios, key, grams) {
   return { grams: out, ratios: ratiosFromGrams(out) };
 }
 
+export function allocateFixedMacros(kcal, ratios, locks = {}, order = [], preserveKey = null) {
+  const fixed = normalizeOrder(order).filter(key => Number.isInteger(locks?.[key]));
+  if (fixed.length === 0) return gramsFromRatios(kcal, ratios);
+  if (fixed.length === 1) return allocateAfterGramEdit(kcal, ratios, fixed[0], locks[fixed[0]]);
+  return allocateTwo(kcal, fixed.slice(0, 2), locks, preserveKey);
+}
+
 export function mergeTargetEdit(live = {}, snapshot, editedName) {
-  if (!snapshot || !editedName || editedName === 'kcal') return live;
+  if (!snapshot || !editedName) return live;
+  if (editedName === 'kcal' || editedName === 'rebalance') return { ...snapshot, kcal: live.kcal };
   const fields = { ...snapshot, kcal: live.kcal };
   fields[editedName] = live[editedName];
   return fields;
 }
 
-export function previewMacroTargets(fields = {}, editedName) {
+export function previewMacroTargets(fields = {}, editedName, fixed = {}) {
   const kcal = parseIntField(fields.kcal);
   if (kcal == null || kcal > KCAL_MAX) return { ready: false };
-  if (editedName === 'protein' || editedName === 'fat' || editedName === 'carb') {
+  const ratios = fieldRatios(fields);
+  const order = normalizeOrder(fixed.order);
+  const locks = {};
+  for (const key of order) {
+    const value = Number(fixed.locks?.[key]);
+    if (Number.isInteger(value) && value >= 0) locks[key] = value;
+  }
+  const macro = macroKeyFromField(editedName);
+  if (editedName === 'rebalance') {
+    return present(allocateFixedMacros(kcal, DEFAULT_ENERGY_RATIOS, locks, order), null, null);
+  }
+  if (macro) {
     const typed = parseIntField(fields[editedName]);
     if (typed == null) return { ready: true, skip: true };
-    return present(allocateAfterGramEdit(kcal, fieldRatios(fields), editedName, typed), editedName, typed);
+    if (!order.includes(macro) && order.length >= 2) return { ready: true, skip: true };
+    const nextOrder = order.includes(macro) ? order : [...order, macro];
+    const ratioEdit = editedName.startsWith('ratio-');
+    if (ratioEdit && nextOrder.length === 1) {
+      return present(allocateAfterRatioEdit(kcal, ratios, macro, typed), editedName, typed);
+    }
+    const nextLocks = { ...locks };
+    nextLocks[macro] = ratioEdit ? gramsFromShare(kcal, macro, typed) : typed;
+    return present(allocateFixedMacros(kcal, ratios, nextLocks, nextOrder, macro), editedName, typed);
   }
-  if (typeof editedName === 'string' && editedName.startsWith('ratio-')) {
-    const key = editedName.slice('ratio-'.length);
-    if (!MACRO_KEYS.includes(key)) return { ready: true, skip: true };
-    const typed = parseIntField(fields[editedName]);
-    if (typed == null) return { ready: true, skip: true };
-    return present(allocateAfterRatioEdit(kcal, fieldRatios(fields), key, typed), editedName, typed);
-  }
-  return present(gramsFromRatios(kcal, fieldRatios(fields)), null, null);
+  return present(allocateFixedMacros(kcal, ratios, locks, order), null, null);
 }
 
 function present(allocated, editedName, typed) {
@@ -158,6 +183,99 @@ function present(allocated, editedName, typed) {
   const clamp = {};
   if (editedName && typed != null && inputs[editedName] !== String(typed)) clamp[editedName] = true;
   return { ready: true, inputs, clamp };
+}
+
+function allocateTwo(kcal, fixedKeys, locks, preserveKey) {
+  const auto = MACRO_KEYS.find(key => !fixedKeys.includes(key));
+  const grams = { protein: 0, fat: 0, carb: 0 };
+  for (const key of fixedKeys) {
+    const per = KCAL_PER_GRAM[key];
+    grams[key] = clamp(Math.round(locks[key]), 0, Math.min(GRAM_MAX[key], Math.floor(kcal / per)));
+  }
+  let used = fixedKeys.reduce((sum, key) => sum + grams[key] * KCAL_PER_GRAM[key], 0);
+  if (used > kcal) {
+    const scaled = scaleFixed(kcal, fixedKeys, grams);
+    for (const key of fixedKeys) grams[key] = scaled[key];
+    used = fixedKeys.reduce((sum, key) => sum + grams[key] * KCAL_PER_GRAM[key], 0);
+  }
+  grams[auto] = absorb(Math.max(0, kcal - used), KCAL_PER_GRAM[auto], GRAM_MAX[auto]);
+  tightenEnergy(kcal, grams, auto, fixedKeys, preserveKey);
+  return { grams, ratios: ratiosFromGrams(grams) };
+}
+
+function scaleFixed(kcal, keys, grams) {
+  const energy = keys.reduce((sum, key) => sum + grams[key] * KCAL_PER_GRAM[key], 0);
+  const scale = energy > 0 ? kcal / energy : 0;
+  const next = {};
+  for (const key of keys) next[key] = Math.floor(grams[key] * scale);
+  let left = kcal - keys.reduce((sum, key) => sum + next[key] * KCAL_PER_GRAM[key], 0);
+  const ranked = [...keys].sort((a, b) => {
+    const fracA = grams[a] * scale - next[a];
+    const fracB = grams[b] * scale - next[b];
+    return fracB - fracA || MACRO_KEYS.indexOf(a) - MACRO_KEYS.indexOf(b);
+  });
+  let progressed = true;
+  while (left > 0 && progressed) {
+    progressed = false;
+    for (const key of ranked) {
+      const step = KCAL_PER_GRAM[key];
+      if (left >= step && next[key] < grams[key]) {
+        next[key] += 1;
+        left -= step;
+        progressed = true;
+      }
+    }
+  }
+  return next;
+}
+
+function tightenEnergy(kcal, grams, auto, fixedKeys, preserveKey) {
+  if (Math.abs(macroEnergy(grams) - kcal) <= ENERGY_TOLERANCE) return;
+  const adjustable = [
+    ...fixedKeys.filter(key => key !== preserveKey && KCAL_PER_GRAM[key] === 4),
+    ...fixedKeys.filter(key => key === preserveKey && KCAL_PER_GRAM[key] === 4),
+  ];
+  for (const key of adjustable) {
+    for (const delta of [-1, 1]) {
+      const trial = { ...grams, [key]: grams[key] + delta };
+      if (trial[key] < 0 || trial[key] > GRAM_MAX[key]) continue;
+      const used = fixedKeys.reduce((sum, name) => sum + trial[name] * KCAL_PER_GRAM[name], 0);
+      if (used > kcal) continue;
+      trial[auto] = absorb(kcal - used, KCAL_PER_GRAM[auto], GRAM_MAX[auto]);
+      if (Math.abs(macroEnergy(trial) - kcal) <= ENERGY_TOLERANCE) {
+        Object.assign(grams, trial);
+        return;
+      }
+    }
+  }
+}
+
+function gramsFromShare(kcal, key, percent) {
+  const share = clamp(Math.round(Number(percent)), 0, 100);
+  const per = KCAL_PER_GRAM[key];
+  let grams = clamp(Math.round(kcal * share / 100 / per), 0, GRAM_MAX[key]);
+  const maxByKcal = Math.floor(kcal / per);
+  if (grams > maxByKcal) grams = maxByKcal;
+  return grams;
+}
+
+function macroKeyFromField(name) {
+  if (name === 'protein' || name === 'fat' || name === 'carb') return name;
+  if (typeof name === 'string' && name.startsWith('ratio-')) {
+    const key = name.slice('ratio-'.length);
+    if (MACRO_KEYS.includes(key)) return key;
+  }
+  return null;
+}
+
+function normalizeOrder(order) {
+  const next = [];
+  for (const key of Array.isArray(order) ? order : []) {
+    if (!MACRO_KEYS.includes(key) || next.includes(key)) continue;
+    next.push(key);
+    if (next.length === 2) break;
+  }
+  return next;
 }
 
 function fieldRatios(fields) {
@@ -256,6 +374,18 @@ function readCleanTarget(value, max) {
   return number;
 }
 
+function readFixedOrder(targets, grams) {
+  if (!Array.isArray(targets?.fixed)) return [];
+  const order = [];
+  for (const key of targets.fixed) {
+    if (typeof key !== 'string' || !MACRO_KEYS.includes(key) || order.includes(key)) continue;
+    if (grams[key] == null) continue;
+    order.push(key);
+    if (order.length === 2) break;
+  }
+  return order;
+}
+
 function readRatioInput(ratios) {
   if (!ratios || typeof ratios !== 'object') return null;
   const out = {};
@@ -270,13 +400,14 @@ function readRatioInput(ratios) {
   return out;
 }
 
-function pack(kcal, allocated, confirmed) {
+function pack(kcal, allocated, confirmed, fixed = []) {
   return {
     kcal,
     protein: allocated.grams.protein,
     fat: allocated.grams.fat,
     carb: allocated.grams.carb,
     ratios: { ...allocated.ratios },
+    fixed: normalizeOrder(fixed),
     source: 'user',
     confirmed,
   };

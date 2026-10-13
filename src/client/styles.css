@@ -327,7 +327,8 @@ body{background:radial-gradient(680px 240px at 88% -40px,rgba(168,197,181,.38),t
 .macro-plan{margin-top:4px}
 .macro-plan-head,.macro-plan-row{display:grid;grid-template-columns:4.4em minmax(0,1fr) minmax(0,1fr);gap:8px;align-items:center}
 .macro-plan-head{margin:14px 0 6px;color:var(--color-hint);font-size:12px}
-.macro-plan-name{color:var(--color-ink);font-size:15px;font-weight:650}
+.macro-plan-name{display:flex;flex-direction:column;gap:2px;color:var(--color-ink);font-size:15px;font-weight:650;line-height:1.2}
+.macro-set{color:var(--color-primary);font-size:11px;font-weight:650}
 .macro-plan-field{margin:0}
 .macro-plan-row+.macro-plan-row{margin-top:8px}
 .macro-plan-input{display:flex;align-items:center;gap:4px;margin-top:6px;padding-right:12px;border-radius:16px;background:#F4F0EA}

@@ -1,7 +1,7 @@
 import { calculateItems, fetchCatalog, recognizeMeal, requestRecommendation, requestReport } from './diet-client.js';
 import { createId } from '../shared/id.js';
 import { localDateString, validateMeal } from '../shared/meals.js';
-import { DEFAULT_ENERGY_RATIOS, GRAM_MAX, KCAL_MAX, KCAL_PER_GRAM, mergeTargetEdit, previewMacroTargets } from '../shared/nutrition/targets.js';
+import { DEFAULT_ENERGY_RATIOS, GRAM_MAX, KCAL_MAX, mergeTargetEdit, previewMacroTargets } from '../shared/nutrition/targets.js';
 
 const mealNames = { breakfast: '早餐', lunch: '午餐', dinner: '晚餐', snack: '加餐' };
 const mealOrder = ['breakfast', 'lunch', 'dinner', 'snack'];
@@ -431,6 +431,7 @@ export function createDietPages(ctx) {
           fat: blank(data.get('ratio-fat')),
           carb: blank(data.get('ratio-carb')),
         },
+        fixed: readFixed(form).order,
         source: 'user',
         confirmed: true,
       },
@@ -593,13 +594,31 @@ const TARGET_FIELDS = new Set(['kcal', 'protein', 'fat', 'carb', 'ratio-protein'
 export function dailyGoalsCard(targets = {}) {
   const ratios = targets.ratios || {};
   const ready = Number.isInteger(targets.kcal);
-  const row = (label, key, gramMax) => `<div class="macro-plan-row"><span class="macro-plan-name">${label}</span><label class="macro-plan-field"><span class="sr-only">${label}能量占比</span><span class="macro-plan-input"><input ${targetInputAttrs(`ratio-${key}`, ratios[key], 100)}><span>%</span></span></label><label class="macro-plan-field"><span class="sr-only">${label}克数</span><span class="macro-plan-input"><input ${targetInputAttrs(key, targets[key], gramMax)}><span>克</span></span></label></div>`;
-  return `<section class="diet-card"><h2>每日目标</h2><p class="small muted">先填每天想吃多少热量。蛋白质、脂肪和碳水会按这个热量算出来。</p><form id="target-form"><label class="form-label">每天热量（千卡）<input ${targetInputAttrs('kcal', targets.kcal, KCAL_MAX)}></label><div class="macro-plan" data-macro-plan ${ready ? '' : 'hidden'}><p class="small muted">${macroPlanNote()}</p><div class="macro-plan-head" aria-hidden="true"><span></span><span>能量占比</span><span>克数</span></div>${row('蛋白质', 'protein', GRAM_MAX.protein)}${row('脂肪', 'fat', GRAM_MAX.fat)}${row('碳水', 'carb', GRAM_MAX.carb)}</div><p class="small muted" data-macro-empty ${ready ? 'hidden' : ''}>填好热量后，会显示蛋白质、脂肪和碳水各多少克。</p><label class="check-line"><input type="checkbox" name="confirm" ${targets.confirmed ? 'checked' : ''}> 把这些数字当作我的每日目标</label><button class="primary-button" type="submit">保存目标</button></form></section>`;
+  const fixed = fixedFromTargets(targets);
+  const row = (label, key, gramMax) => `<div class="macro-plan-row"><span class="macro-plan-name">${label}<span class="macro-set" data-macro-set="${key}"${fixed.order.includes(key) ? '' : ' hidden'}>已设定</span></span><label class="macro-plan-field"><span class="sr-only">${label}能量占比</span><span class="macro-plan-input"><input ${targetInputAttrs(`ratio-${key}`, ratios[key], 100)}><span>%</span></span></label><label class="macro-plan-field"><span class="sr-only">${label}克数</span><span class="macro-plan-input"><input ${targetInputAttrs(key, targets[key], gramMax)}><span>克</span></span></label></div>`;
+  return `<section class="diet-card"><h2>每日目标</h2><p class="small muted">先填每天想吃多少热量。蛋白质、脂肪和碳水会按这个热量算出来。</p><form id="target-form"${fixedFormAttrs(fixed)}><label class="form-label">每天热量（千卡）<input ${targetInputAttrs('kcal', targets.kcal, KCAL_MAX)}></label><div class="macro-plan" data-macro-plan ${ready ? '' : 'hidden'}><p class="small muted">${macroPlanNote()}</p><div class="macro-plan-head" aria-hidden="true"><span></span><span>能量占比</span><span>克数</span></div>${row('蛋白质', 'protein', GRAM_MAX.protein)}${row('脂肪', 'fat', GRAM_MAX.fat)}${row('碳水', 'carb', GRAM_MAX.carb)}</div><p class="small muted" data-macro-empty ${ready ? 'hidden' : ''}>填好热量后，会显示蛋白质、脂肪和碳水各多少克。</p><label class="check-line"><input type="checkbox" name="confirm" ${targets.confirmed ? 'checked' : ''}> 把这些数字当作我的每日目标</label><button class="primary-button" type="submit">保存目标</button></form></section>`;
 }
 
 function macroPlanNote() {
   const ratios = DEFAULT_ENERGY_RATIOS;
-  return `默认是蛋白质 ${ratios.protein}%、脂肪 ${ratios.fat}%、碳水 ${ratios.carb}%。改占比，另外两项会按原来的高低一起缩放。改克数，这一项保持你填的数，剩下的热量分给另外两项。1 克蛋白质或碳水大约 ${KCAL_PER_GRAM.protein} 千卡，1 克脂肪大约 ${KCAL_PER_GRAM.fat} 千卡。`;
+  return `改一项时，另外两项会自动配齐；改两项时，第三项按剩余热量自动算出。清空已设定的数字，可以重新分配。没改过的项目，一开始按蛋白质 ${ratios.protein}%、脂肪 ${ratios.fat}%、碳水 ${ratios.carb}% 来配。`;
+}
+
+function fixedFromTargets(targets) {
+  const order = [];
+  const locks = {};
+  for (const key of Array.isArray(targets.fixed) ? targets.fixed : []) {
+    if (!['protein', 'fat', 'carb'].includes(key) || order.includes(key) || !Number.isInteger(targets[key])) continue;
+    order.push(key);
+    locks[key] = targets[key];
+    if (order.length === 2) break;
+  }
+  return { order, locks };
+}
+
+function fixedFormAttrs(fixed) {
+  const locks = fixed.order.map(key => ` data-lock-${key}="${fixed.locks[key]}"`).join('');
+  return ` data-fixed="${fixed.order.join(',')}"${locks}`;
 }
 
 function targetInputAttrs(name, value, max) {
@@ -618,28 +637,44 @@ function onTargetInput(el) {
 }
 
 function rememberTargetEdit(el) {
-  if (!TARGET_FIELDS.has(el.name) || el.name === 'kcal' || !el.closest('#target-form')) return;
+  if (!TARGET_FIELDS.has(el.name) || !el.closest('#target-form')) return;
   const form = el.form;
   if (!form || (form.dataset.editField === el.name && form.dataset.ratioSnapshot)) return;
   form.dataset.editField = el.name;
   form.dataset.ratioSnapshot = JSON.stringify(readTargetFields(form));
+  form.dataset.fixedSnapshot = JSON.stringify(readFixed(form));
 }
 
 function onTargetBlur(el) {
   if (!TARGET_FIELDS.has(el.name) || !el.closest('#target-form')) return;
-  if (!/^\d+$/.test(el.value) && el.dataset.last != null) el.value = el.dataset.last;
-  if (!/^\d+$/.test(el.value)) {
-    if (el.name === 'kcal') applyMacroPreview(el.form, 'kcal', true);
-  } else applyMacroPreview(el.form, el.name, true);
-  if (el.form) {
-    delete el.form.dataset.editField;
-    delete el.form.dataset.ratioSnapshot;
+  const form = el.form;
+  const macro = macroKeyFromField(el.name);
+  const complete = /^\d+$/.test(el.value);
+  if (!complete && el.name === 'kcal' && el.dataset.last != null) el.value = el.dataset.last;
+  const starting = readSnapshotFixed(form) || readFixed(form);
+  if (el.name === 'kcal') {
+    applyMacroPreview(form, 'kcal', true, starting);
+    if (/^\d+$/.test(form.elements.namedItem('kcal')?.value || '')) syncDisplayedLocks(form, starting);
+  } else if (macro && !complete) {
+    const next = removeMacro(starting, macro);
+    const released = Array.isArray(starting.order) && starting.order.includes(macro);
+    applyMacroPreview(form, released ? 'rebalance' : 'refill', true, next);
+    syncDisplayedLocks(form, next);
+  } else if (macro) {
+    const next = addMacro(starting, macro);
+    applyMacroPreview(form, next.order.includes(macro) ? el.name : 'refill', true, next);
+    syncDisplayedLocks(form, next);
   }
+  updateSetBadges(form);
+  delete form.dataset.editField;
+  delete form.dataset.ratioSnapshot;
+  delete form.dataset.fixedSnapshot;
 }
 
-function applyMacroPreview(form, editedName, rewriteActive) {
+function applyMacroPreview(form, editedName, rewriteActive, fixedOverride) {
   if (!form) return;
-  const preview = previewMacroTargets(fieldsForPreview(form, editedName), editedName);
+  const packed = fieldsForPreview(form, editedName);
+  const preview = previewMacroTargets(packed.fields, editedName, fixedOverride || packed.fixed);
   setMacroPlanReady(form, preview.ready);
   if (!preview.inputs) return;
   for (const [name, value] of Object.entries(preview.inputs)) {
@@ -654,9 +689,102 @@ function applyMacroPreview(form, editedName, rewriteActive) {
 
 function fieldsForPreview(form, editedName) {
   const live = readTargetFields(form);
-  if (!form.dataset.ratioSnapshot) return live;
-  try { return mergeTargetEdit(live, JSON.parse(form.dataset.ratioSnapshot), editedName); }
-  catch { return live; }
+  const fixed = readFixed(form);
+  if (!form.dataset.ratioSnapshot) return { fields: live, fixed };
+  try {
+    return {
+      fields: mergeTargetEdit(live, JSON.parse(form.dataset.ratioSnapshot), editedName),
+      fixed: form.dataset.fixedSnapshot ? JSON.parse(form.dataset.fixedSnapshot) : fixed,
+    };
+  } catch {
+    return { fields: live, fixed };
+  }
+}
+
+function readSnapshotFixed(form) {
+  if (!form?.dataset.fixedSnapshot) return null;
+  try {
+    const parsed = JSON.parse(form.dataset.fixedSnapshot);
+    return parsed && Array.isArray(parsed.order) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function addMacro(fixed, macro) {
+  const order = Array.isArray(fixed?.order) ? fixed.order.filter(key => key === 'protein' || key === 'fat' || key === 'carb') : [];
+  const locks = { ...(fixed?.locks || {}) };
+  if (order.includes(macro) || order.length >= 2) return { order: order.slice(0, 2), locks };
+  return { order: [...order.slice(0, 2), macro], locks };
+}
+
+function removeMacro(fixed, macro) {
+  const order = (fixed?.order || []).filter(key => key !== macro);
+  const locks = { ...(fixed?.locks || {}) };
+  delete locks[macro];
+  return { order, locks };
+}
+
+function syncDisplayedLocks(form, fixed) {
+  const locks = {};
+  for (const key of fixed.order || []) {
+    const value = form.elements.namedItem(key)?.value;
+    if (/^\d+$/.test(value || '')) locks[key] = Number(value);
+    else if (Number.isInteger(fixed.locks?.[key])) locks[key] = fixed.locks[key];
+  }
+  writeFixed(form, { order: fixed.order || [], locks });
+}
+
+function updateSetBadges(form) {
+  const order = new Set(readFixed(form).order);
+  for (const key of ['protein', 'fat', 'carb']) {
+    const badge = form.querySelector(`[data-macro-set="${key}"]`);
+    if (badge) badge.hidden = !order.has(key);
+  }
+}
+
+const MACRO_FIELD_KEYS = ['protein', 'fat', 'carb'];
+
+function macroKeyFromField(name) {
+  if (MACRO_FIELD_KEYS.includes(name)) return name;
+  if (typeof name === 'string' && name.startsWith('ratio-')) {
+    const key = name.slice('ratio-'.length);
+    if (MACRO_FIELD_KEYS.includes(key)) return key;
+  }
+  return null;
+}
+
+function lockDatasetName(key) {
+  return `lock${key[0].toUpperCase()}${key.slice(1)}`;
+}
+
+function readFixed(form) {
+  const order = [];
+  const locks = {};
+  for (const key of String(form?.dataset.fixed || '').split(',')) {
+    const name = key.trim();
+    if (!MACRO_FIELD_KEYS.includes(name) || order.includes(name) || order.length >= 2) continue;
+    const raw = form.dataset[lockDatasetName(name)];
+    if (!/^\d+$/.test(String(raw ?? ''))) continue;
+    order.push(name);
+    locks[name] = Number(raw);
+  }
+  return { order, locks };
+}
+
+function writeFixed(form, fixed) {
+  const order = [];
+  for (const key of fixed.order || []) {
+    if (!MACRO_FIELD_KEYS.includes(key) || order.includes(key)) continue;
+    order.push(key);
+    if (order.length === 2) break;
+  }
+  form.dataset.fixed = order.join(',');
+  for (const key of MACRO_FIELD_KEYS) {
+    const name = lockDatasetName(key);
+    if (order.includes(key) && Number.isInteger(fixed.locks?.[key])) form.dataset[name] = String(fixed.locks[key]);
+    else delete form.dataset[name];
+  }
 }
 
 function readTargetFields(form) {

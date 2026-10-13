@@ -38,6 +38,7 @@ function emptyTargets(confirmed = false) {
     fat: null,
     carb: null,
     ratios: { protein: null, fat: null, carb: null },
+    fixed: [],
     source: "user",
     confirmed: confirmed === true
   };
@@ -55,15 +56,16 @@ function settleDailyTargets(targets = {}) {
   };
   if (kcal == null) return emptyTargets(confirmed);
   const ratioInput = readRatioInput(targets?.ratios);
+  const fixed = readFixedOrder(targets, gramsInput);
   const anyGram = MACRO_KEYS.some((key) => gramsInput[key] != null);
-  if (!anyGram) return pack(kcal, gramsFromRatios(kcal, ratioInput || DEFAULT_ENERGY_RATIOS), confirmed);
+  if (!anyGram) return pack(kcal, gramsFromRatios(kcal, ratioInput || DEFAULT_ENERGY_RATIOS), confirmed, fixed);
   if (ratioInput && MACRO_KEYS.every((key) => gramsInput[key] != null)) {
     const allocated = gramsFromRatios(kcal, ratioInput);
-    if (MACRO_KEYS.every((key) => gramsInput[key] === allocated.grams[key])) return pack(kcal, allocated, confirmed);
+    if (MACRO_KEYS.every((key) => gramsInput[key] === allocated.grams[key])) return pack(kcal, allocated, confirmed, fixed);
   }
   const partial = MACRO_KEYS.some((key) => gramsInput[key] == null);
   const settled = partial ? settlePartial(kcal, gramsInput) : settleComplete(kcal, gramsInput);
-  return pack(kcal, settled, confirmed);
+  return pack(kcal, settled, confirmed, fixed);
 }
 function gramsFromRatios(kcal, ratios) {
   const normalized = normalizeRatios(ratios);
@@ -104,6 +106,15 @@ function normalizeRatios(input) {
     return { protein: raw.protein, fat: raw.fat, carb: raw.carb };
   }
   return largestRemainderSum(MACRO_KEYS.map((key) => ({ key, exact: raw[key] / sum * 100 })), 100);
+}
+function normalizeOrder(order) {
+  const next = [];
+  for (const key of Array.isArray(order) ? order : []) {
+    if (!MACRO_KEYS.includes(key) || next.includes(key)) continue;
+    next.push(key);
+    if (next.length === 2) break;
+  }
+  return next;
 }
 function settlePartial(kcal, gramsInput) {
   const provided = MACRO_KEYS.filter((key) => gramsInput[key] != null);
@@ -185,6 +196,17 @@ function readCleanTarget(value, max) {
   if (!Number.isInteger(number) || number < 0 || number > max) throw new Error("\u6BCF\u65E5\u76EE\u6807\u6570\u5B57\u65E0\u6548");
   return number;
 }
+function readFixedOrder(targets, grams) {
+  if (!Array.isArray(targets?.fixed)) return [];
+  const order = [];
+  for (const key of targets.fixed) {
+    if (typeof key !== "string" || !MACRO_KEYS.includes(key) || order.includes(key)) continue;
+    if (grams[key] == null) continue;
+    order.push(key);
+    if (order.length === 2) break;
+  }
+  return order;
+}
 function readRatioInput(ratios) {
   if (!ratios || typeof ratios !== "object") return null;
   const out = {};
@@ -198,13 +220,14 @@ function readRatioInput(ratios) {
   if (out.protein + out.fat + out.carb <= 0) return null;
   return out;
 }
-function pack(kcal, allocated, confirmed) {
+function pack(kcal, allocated, confirmed, fixed = []) {
   return {
     kcal,
     protein: allocated.grams.protein,
     fat: allocated.grams.fat,
     carb: allocated.grams.carb,
     ratios: { ...allocated.ratios },
+    fixed: normalizeOrder(fixed),
     source: "user",
     confirmed
   };
