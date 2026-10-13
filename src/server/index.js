@@ -6,6 +6,36 @@ const MAX_BYTES = 48 * 1024;
 const buckets = new Map();
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' } });
 
+function headerHost(value) {
+  return String(value ?? '').split(',')[0].trim();
+}
+
+function canonicalHost(value) {
+  const raw = headerHost(value);
+  if (!raw || raw.length > 255 || !/^[A-Za-z0-9.:[\]-]+$/.test(raw)) return '';
+  try {
+    const parsed = new URL(`http://${raw}`);
+    const hostname = parsed.hostname.toLowerCase();
+    if (!hostname) return '';
+    if (!parsed.port || parsed.port === '80' || parsed.port === '443') return hostname;
+    return `${hostname}:${parsed.port}`;
+  } catch {
+    return '';
+  }
+}
+
+function originAllowed(request, url) {
+  const origin = request.headers.get('origin');
+  if (!origin) return true;
+  let parsed;
+  try { parsed = new URL(origin); } catch { return false; }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
+  const originHost = canonicalHost(parsed.host);
+  if (!originHost) return false;
+  return [url.host, request.headers.get('host'), request.headers.get('x-forwarded-host')]
+    .some(candidate => canonicalHost(candidate) === originHost);
+}
+
 function takeRateLimit(request) {
   const key = request.headers.get('cf-connecting-ip') || 'local';
   const now = Date.now();
@@ -43,7 +73,7 @@ export default {
     const diet = url.pathname.startsWith('/api/diet');
     const invite = url.pathname === '/api/invite' || url.pathname === '/api/invite/status';
     if (!diet && !invite && url.pathname !== '/api/agent') return env.ASSETS ? env.ASSETS.fetch(request) : new Response('Not found', { status: 404 });
-    if (request.headers.get('origin') && request.headers.get('origin') !== url.origin) return json({ error: '请求来源不匹配' }, 403);
+    if (!originAllowed(request, url)) return json({ error: '请求来源不匹配' }, 403);
     if (invite) {
       const limited = takeRateLimit(request);
       if (limited) return limited;

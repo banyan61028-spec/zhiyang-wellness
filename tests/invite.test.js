@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import worker from '../src/server/index.js';
 import { codeAccepted, parseInviteCodes, readInviteConfig, safeEqual, signInviteToken, verifyInviteToken, COOKIE, MAX_AGE_SECONDS } from '../src/server/invite.js';
+import { previewRequestUrl } from '../scripts/preview-bind.mjs';
 
 const CODE = 'friend-door-9f3a';
 const SECRET = 'test-invite-secret-value';
@@ -118,6 +119,70 @@ test('Secure is set for https and forwarded https, and omitted on plain http', a
   assert.doesNotMatch(local.headers.get('set-cookie'), /Secure/);
   const forwarded = await postInvite(CODE, 'http://127.0.0.1:8765/api/invite', { 'x-forwarded-proto': 'https' });
   assert.match(forwarded.headers.get('set-cookie'), /Secure/);
+});
+
+test('public site origin unlocks, a missing origin stays allowed, and a foreign origin is rejected', async () => {
+  const publicHost = 'zhiyang-web-production.up.railway.app';
+  const publicOrigin = `https://${publicHost}`;
+  const internalHost = '10.0.0.8:8080';
+  const internalUrl = previewRequestUrl(8080, '/api/invite', internalHost);
+  assert.equal(internalUrl, `http://${internalHost}/api/invite`);
+  const proxyHeaders = {
+    host: internalHost,
+    'x-forwarded-host': publicHost,
+    'x-forwarded-proto': 'https',
+  };
+
+  const browser = await postInvite(CODE, internalUrl, { ...proxyHeaders, origin: publicOrigin });
+  assert.equal(browser.status, 200);
+  assert.deepEqual(await browser.json(), { unlocked: true });
+  assert.match(browser.headers.get('set-cookie'), new RegExp(`^${COOKIE}=`));
+  assert.match(browser.headers.get('set-cookie'), /Secure/);
+
+  const publicUrl = previewRequestUrl(8080, '/api/invite', publicHost);
+  assert.equal(new URL(publicUrl).origin, `http://${publicHost}`);
+  const schemeOnly = await postInvite(CODE, publicUrl, {
+    host: publicHost,
+    'x-forwarded-proto': 'https',
+    origin: publicOrigin,
+  });
+  assert.equal(schemeOnly.status, 200);
+  assert.deepEqual(await schemeOnly.json(), { unlocked: true });
+
+  const defaultPort = await postInvite(CODE, `http://${publicHost}:443/api/invite`, { origin: publicOrigin });
+  assert.equal(defaultPort.status, 200);
+  assert.deepEqual(await defaultPort.json(), { unlocked: true });
+
+  const serverSide = await postInvite(CODE, internalUrl, proxyHeaders);
+  assert.equal(serverSide.status, 200);
+  assert.deepEqual(await serverSide.json(), { unlocked: true });
+
+  const sameSite = await postInvite(CODE, 'https://example.test/api/invite', { origin: 'https://Example.Test' });
+  assert.equal(sameSite.status, 200);
+
+  const foreign = await postInvite(CODE, internalUrl, { ...proxyHeaders, origin: 'https://evil.test' });
+  assert.equal(foreign.status, 403);
+  assert.equal((await foreign.json()).error, '请求来源不匹配');
+  const foreignPublic = await postInvite(CODE, publicUrl, {
+    host: publicHost,
+    'x-forwarded-host': publicHost,
+    'x-forwarded-proto': 'https',
+    origin: 'https://evil.test',
+  });
+  assert.equal(foreignPublic.status, 403);
+  const otherPort = await postInvite(CODE, 'http://127.0.0.1:8765/api/invite', { origin: 'http://127.0.0.1:9999' });
+  assert.equal(otherPort.status, 403);
+
+  const diet = await worker.fetch(new Request('http://10.0.0.8:8080/api/diet/catalog', {
+    headers: { ...proxyHeaders, origin: publicOrigin },
+  }), lockedEnv);
+  assert.equal(diet.status, 401);
+  const agent = await worker.fetch(new Request('http://10.0.0.8:8080/api/agent', {
+    method: 'POST',
+    headers: { ...proxyHeaders, origin: publicOrigin, 'content-type': 'application/json' },
+    body: JSON.stringify({ message: '你好', profile: null }),
+  }), lockedEnv);
+  assert.equal(agent.status, 401);
 });
 
 test('static pages still load while diet stays locked, and a foreign origin is rejected', async () => {
