@@ -405,3 +405,40 @@ body.is-locked #main{max-width:440px;min-height:100vh;display:grid;place-items:c
 .invite-gate input{border-radius:14px;background:var(--color-bg);border-color:transparent;min-height:48px}
 .invite-error{min-height:1.4em;margin:10px 0 0;color:var(--color-over);font-size:14px}
 .invite-gate .primary-button{width:100%;margin-top:12px;border-radius:999px}
+
+/* Press and focus: no rectangular click outline; keyboard keeps a soft ink-green ring. */
+:root{--press:170ms cubic-bezier(.22,.8,.3,1)}
+button,a,input,select,textarea,summary,label{-webkit-tap-highlight-color:transparent}
+button,a,select,summary,.meal-chip{touch-action:manipulation}
+button:focus,a:focus,input:focus,select:focus,textarea:focus,summary:focus,button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:none}
+html.using-pointer :is(button,a,input,select,textarea,summary):focus,html.using-pointer :is(button,a,input,select,textarea,summary):focus-visible{outline:none}
+html:not(.using-pointer) :is(button,a,summary,input,textarea,select):focus-visible:not(.composer-photo-remove){outline:none;box-shadow:0 0 0 3px rgba(255,252,250,.96),0 0 0 6px rgba(31,77,58,.2)}
+html:not(.using-pointer) .composer-box textarea:focus-visible,html:not(.using-pointer) .chat-compose textarea:focus-visible,.composer-box textarea:focus,.chat-compose textarea:focus,html:not(.using-pointer) .icon-hit input:focus-visible,.icon-hit input:focus,.icon-hit input:focus-visible{outline:none;box-shadow:none}
+.hero-card .composer-box:focus-within,.composer-box:focus-within{box-shadow:0 10px 28px rgba(31,77,58,.06),0 0 0 4px rgba(216,232,223,.9)}
+html:not(.using-pointer) .icon-hit:focus-within{box-shadow:0 0 0 3px rgba(255,252,250,.96),0 0 0 6px rgba(31,77,58,.2)}
+html.using-pointer .composer-photo-remove:focus,html.using-pointer .composer-photo-remove:focus-visible{outline:none;box-shadow:0 2px 8px rgba(31,77,58,.16)}
+html:not(.using-pointer) .composer-photo-remove:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(255,252,250,.96),0 0 0 6px rgba(31,77,58,.22)}
+button,.nav-item,.filter-chip,.pill-link,.meal-chip-trigger,.meal-option,.recipe-row,.settings-row,.meal-tile,.icon-hit,.icon-button,.text-button,.outline-button,.primary-button,.secondary-button,.segmented button,.portion-row button,.quiz-options button,.topic-card,.care-tile,.article-card,.daily-meal,.saved-item,.hero-prompts button,.chat-choices button,.welcome-grid button{transition:transform var(--press),background var(--press),box-shadow var(--press),color var(--press),opacity var(--press),border-color var(--press)}
+button:active:not(:disabled){transform:scale(.975)}
+.navigation .nav-item:active{transform:scale(.96)}
+.filter-chip,.pill-link,.portion-row button,.segmented button,.hero-prompts button,.chat-choices button{box-shadow:0 5px 14px rgba(31,77,58,.045)}
+.filter-row .filter-chip:active,.pill-link:active:not(:disabled),.portion-row button:active,.segmented button:active,.recipe-row:active,.settings-row:active,.meal-tile:active,.topic-card:active,.care-tile:active,.article-card:active,.daily-meal:active,.saved-item:active{transform:scale(.97);box-shadow:0 2px 6px rgba(31,77,58,.04)}
+.icon-hit:active:not(:disabled),.icon-button:active:not(:disabled),.composer-photo-remove:active{transform:scale(.92)}
+.text-button:active,a.brand:active,a.topbar-brand:active{opacity:.62}
+.hero-card .meal-chip{display:flex;flex-direction:column;align-items:flex-start;width:100%;margin:0 0 10px;padding:0;border:0;background:transparent;box-shadow:none}
+.meal-chip-trigger{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 12px 0 14px;border-radius:999px;background:rgba(255,252,250,.92);color:var(--color-primary);font-weight:650;box-shadow:0 8px 18px rgba(31,77,58,.06)}
+.meal-chip-trigger:active:not(:disabled),.meal-chip.is-open .meal-chip-trigger:active:not(:disabled){transform:scale(.96);background:#fff;box-shadow:0 2px 8px rgba(31,77,58,.05)}
+.meal-chip.is-open .meal-chip-trigger{background:#fff;box-shadow:0 10px 24px rgba(31,77,58,.08)}
+.meal-chip-caret{width:14px;height:14px;transition:transform var(--press)}
+.meal-chip.is-open .meal-chip-caret{transform:rotate(180deg)}
+.meal-menu{display:flex;width:100%;gap:6px;margin-top:8px}
+.meal-menu[hidden]{display:none}
+.meal-option{flex:1;min-height:38px;padding:0 8px;border-radius:999px;background:rgba(255,252,250,.78);color:var(--color-primary);font-size:13px;font-weight:650;box-shadow:0 4px 12px rgba(31,77,58,.04);animation:meal-row-in 200ms cubic-bezier(.22,.8,.3,1) backwards}
+.meal-option:nth-child(2){animation-delay:28ms}
+.meal-option:nth-child(3){animation-delay:56ms}
+.meal-option:nth-child(4){animation-delay:84ms}
+.meal-option.is-selected{background:var(--color-primary);color:#fff;box-shadow:0 8px 16px rgba(31,77,58,.14)}
+.meal-option:active:not(:disabled){transform:scale(.96)}
+@keyframes meal-row-in{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+@media(max-width:760px){.navigation .nav-item.active{box-shadow:0 6px 14px rgba(31,77,58,.06)}.navigation .nav-item:active{background:var(--color-primary-soft)}}
+@media(prefers-reduced-motion:reduce){button:active:not(:disabled),.navigation .nav-item:active,.filter-chip:active,.pill-link:active,.meal-chip-trigger:active,.meal-option:active,.icon-hit:active{transform:none}}
