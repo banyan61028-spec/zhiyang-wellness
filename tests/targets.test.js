@@ -6,6 +6,7 @@ import {
   ENERGY_TOLERANCE,
   allocateAfterGramEdit,
   allocateAfterRatioEdit,
+  allocateFixedMacros,
   macroEnergy,
   mergeTargetEdit,
   previewMacroTargets,
@@ -21,6 +22,7 @@ test('calorie target allocates default energy shares into grams', () => {
     fat: 50,
     carb: 247,
     ratios: { protein: 20, fat: 25, carb: 55 },
+    fixed: [],
     source: 'user',
     confirmed: true,
   });
@@ -133,9 +135,11 @@ test('confirmed calorie targets are compared for every macro', () => {
 test('goals screen asks for calories first and shows the derived macros', () => {
   const empty = dailyGoalsCard({ kcal: null, protein: null, fat: null, carb: null, ratios: { protein: null, fat: null, carb: null }, confirmed: false });
   assert.match(empty, /先填每天想吃多少热量/);
+  assert.match(empty, /改一项时，另外两项会自动配齐；改两项时，第三项按剩余热量自动算出/);
   assert.match(empty, /data-macro-plan hidden/);
   assert.match(empty, /填好热量后，会显示蛋白质、脂肪和碳水各多少克/);
   assert.equal(empty.includes('留空的项目不参与对比'), false);
+  assert.equal(empty.includes('Demo'), false);
   const filled = dailyGoalsCard(settleDailyTargets({ kcal: 1800, confirmed: true }));
   assert.match(filled, /name="kcal"[^>]*value="1800"/);
   assert.match(filled, /name="ratio-protein"[^>]*value="20"/);
@@ -144,4 +148,188 @@ test('goals screen asks for calories first and shows the derived macros', () => 
   assert.match(filled, /name="carb"[^>]*value="247"/);
   assert.equal(filled.includes('data-macro-plan hidden'), false);
   assert.match(filled, /data-macro-empty hidden/);
+  assert.match(filled, /data-macro-set="protein" hidden/);
+  const held = dailyGoalsCard({ ...settleDailyTargets({ kcal: 1800, protein: 120, fat: 40, carb: 240, fixed: ['protein', 'fat'], confirmed: true }), protein: 120, fat: 40, carb: 240 });
+  assert.match(held, /data-fixed="protein,fat"/);
+  assert.match(held, /data-lock-protein="120"/);
+  assert.match(held, /data-lock-fat="40"/);
+  assert.match(held, /data-macro-set="protein">已设定/);
+  assert.match(held, /data-macro-set="carb" hidden/);
 });
+
+test('setting one macro fills the other two from their remaining share', () => {
+  const next = previewMacroTargets(fieldsAt1800({ protein: '120' }), 'protein');
+  assert.equal(next.inputs.protein, '120');
+  assert.equal(next.inputs.fat, '46');
+  assert.equal(next.inputs.carb, '226');
+  assert.equal(next.inputs['ratio-protein'], '27');
+  assert.ok(Math.abs(energyOf(next.inputs) - 1800) <= ENERGY_TOLERANCE);
+  const byShare = previewMacroTargets(fieldsAt1800({ 'ratio-protein': '30' }), 'ratio-protein');
+  assert.equal(byShare.inputs['ratio-protein'], '30');
+  assert.equal(byShare.inputs.protein, '135');
+  assert.equal(byShare.inputs.fat, '44');
+  assert.equal(byShare.inputs.carb, '216');
+  assert.ok(Math.abs(energyOf(byShare.inputs) - 1800) <= ENERGY_TOLERANCE);
+});
+
+test('setting two macros fills the third from leftover calories', () => {
+  const proteinFixed = { order: ['protein'], locks: { protein: 120 } };
+  const next = previewMacroTargets(fieldsAt1800({
+    protein: '120',
+    fat: '40',
+    carb: '226',
+    'ratio-protein': '27',
+    'ratio-fat': '23',
+    'ratio-carb': '50',
+  }), 'fat', proteinFixed);
+  assert.equal(next.inputs.protein, '120');
+  assert.equal(next.inputs.fat, '40');
+  assert.equal(next.inputs.carb, '240');
+  assert.equal(next.inputs['ratio-protein'], '27');
+  assert.equal(next.inputs['ratio-fat'], '20');
+  assert.equal(next.inputs['ratio-carb'], '53');
+  assert.ok(Math.abs(energyOf(next.inputs) - 1800) <= ENERGY_TOLERANCE);
+  const blocked = previewMacroTargets(fieldsAt1800({ carb: '10' }), 'carb', {
+    order: ['protein', 'fat'],
+    locks: { protein: 120, fat: 40 },
+  });
+  assert.equal(blocked.skip, true);
+  const direct = allocateFixedMacros(1800, { protein: 27, fat: 20, carb: 53 }, { protein: 120, fat: 40 }, ['protein', 'fat']);
+  assert.deepEqual(direct.grams, { protein: 120, fat: 40, carb: 240 });
+});
+
+test('changing calories keeps two fixed macros and updates the third', () => {
+  const fixed = { order: ['protein', 'fat'], locks: { protein: 120, fat: 40 } };
+  const current = fieldsAt1800({
+    protein: '120',
+    fat: '40',
+    carb: '240',
+    'ratio-protein': '27',
+    'ratio-fat': '20',
+    'ratio-carb': '53',
+  });
+  const moved = previewMacroTargets({ ...current, kcal: '1600' }, 'kcal', fixed);
+  assert.equal(moved.inputs.protein, '120');
+  assert.equal(moved.inputs.fat, '40');
+  assert.equal(moved.inputs.carb, '190');
+  assert.equal(moved.inputs['ratio-protein'], '30');
+  assert.ok(Math.abs(energyOf(moved.inputs) - 1600) <= ENERGY_TOLERANCE);
+  const capped = previewMacroTargets({ ...current, kcal: '600' }, 'kcal', fixed);
+  assert.equal(capped.inputs.protein, '87');
+  assert.equal(capped.inputs.fat, '28');
+  assert.equal(capped.inputs.carb, '0');
+  assert.ok(Number(capped.inputs.protein) < 120);
+  assert.ok(Number(capped.inputs.fat) < 40);
+  assert.ok(Math.abs(energyOf(capped.inputs) - 600) <= ENERGY_TOLERANCE);
+  const saved = settleDailyTargets({
+    kcal: 1800,
+    protein: 120,
+    fat: 40,
+    carb: 240,
+    ratios: { protein: 27, fat: 20, carb: 53 },
+    fixed: ['protein', 'fat', 'carb'],
+    confirmed: true,
+  });
+  assert.deepEqual(saved.fixed, ['protein', 'fat']);
+  assert.equal(saved.protein, 120);
+  assert.equal(saved.fat, 40);
+  assert.equal(saved.carb, 240);
+});
+
+test('clearing a set macro returns the open items to the default split', () => {
+  const afterProtein = previewMacroTargets(fieldsAt1800({
+    protein: '120',
+    fat: '46',
+    carb: '226',
+    'ratio-protein': '27',
+    'ratio-fat': '23',
+    'ratio-carb': '50',
+  }), 'rebalance', { order: [], locks: {} });
+  assert.equal(afterProtein.inputs.protein, '90');
+  assert.equal(afterProtein.inputs.fat, '50');
+  assert.equal(afterProtein.inputs.carb, '247');
+  const afterOneOfTwo = previewMacroTargets(fieldsAt1800({
+    protein: '120',
+    fat: '40',
+    carb: '240',
+    'ratio-protein': '27',
+    'ratio-fat': '20',
+    'ratio-carb': '53',
+  }), 'rebalance', { order: ['fat'], locks: { fat: 40 } });
+  assert.equal(afterOneOfTwo.inputs.fat, '40');
+  assert.equal(afterOneOfTwo.inputs.protein, '96');
+  assert.equal(afterOneOfTwo.inputs.carb, '264');
+  assert.ok(Math.abs(energyOf(afterOneOfTwo.inputs) - 1800) <= ENERGY_TOLERANCE);
+});
+
+test('typing mid-field keeps the original shares instead of sibling updates', () => {
+  const snapshot = fieldsAt1800();
+  const fixed = { order: [], locks: {} };
+  const afterOne = previewMacroTargets(mergeTargetEdit({ ...snapshot, protein: '1' }, snapshot, 'protein'), 'protein', fixed);
+  const stable = previewMacroTargets(mergeTargetEdit({ ...snapshot, protein: '12' }, snapshot, 'protein'), 'protein', fixed);
+  const fedBack = previewMacroTargets({
+    ...snapshot,
+    protein: '12',
+    fat: afterOne.inputs.fat,
+    carb: afterOne.inputs.carb,
+    'ratio-protein': afterOne.inputs['ratio-protein'],
+    'ratio-fat': afterOne.inputs['ratio-fat'],
+    'ratio-carb': afterOne.inputs['ratio-carb'],
+  }, 'protein', fixed);
+  assert.equal(stable.inputs.protein, '12');
+  assert.equal(stable.inputs.fat, '61');
+  assert.equal(stable.inputs.carb, '301');
+  assert.notEqual(fedBack.inputs.fat, stable.inputs.fat);
+  const calorieSnapshot = {
+    kcal: '2000',
+    protein: '100',
+    fat: '56',
+    carb: '274',
+    'ratio-protein': '20',
+    'ratio-fat': '25',
+    'ratio-carb': '55',
+  };
+  const calorieEdit = previewMacroTargets(
+    mergeTargetEdit({ ...calorieSnapshot, kcal: '1800', 'ratio-protein': '50', 'ratio-fat': '25', 'ratio-carb': '25' }, calorieSnapshot, 'kcal'),
+    'kcal',
+  );
+  assert.equal(calorieEdit.inputs.protein, '90');
+  assert.equal(calorieEdit.inputs['ratio-protein'], '20');
+  const second = previewMacroTargets(
+    mergeTargetEdit({ ...snapshot, protein: '120', fat: '4', 'ratio-fat': '1' }, snapshot, 'fat'),
+    'fat',
+    { order: ['protein'], locks: { protein: 120 } },
+  );
+  assert.equal(second.inputs.protein, '120');
+  assert.equal(second.inputs.fat, '4');
+  const finished = previewMacroTargets(
+    mergeTargetEdit({ ...snapshot, protein: '120', fat: '40', 'ratio-fat': '9' }, snapshot, 'fat'),
+    'fat',
+    { order: ['protein'], locks: { protein: 120 } },
+  );
+  assert.equal(finished.inputs.protein, '120');
+  assert.equal(finished.inputs.fat, '40');
+  assert.equal(finished.inputs.carb, '240');
+  assert.notEqual(finished.inputs.carb, second.inputs.carb);
+});
+
+function fieldsAt1800(overrides = {}) {
+  return {
+    kcal: '1800',
+    protein: '90',
+    fat: '50',
+    carb: '247',
+    'ratio-protein': '20',
+    'ratio-fat': '25',
+    'ratio-carb': '55',
+    ...overrides,
+  };
+}
+
+function energyOf(inputs) {
+  return macroEnergy({
+    protein: Number(inputs.protein),
+    fat: Number(inputs.fat),
+    carb: Number(inputs.carb),
+  });
+}
