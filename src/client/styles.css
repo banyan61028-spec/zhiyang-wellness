@@ -201,7 +201,7 @@ body{background:radial-gradient(680px 240px at 88% -40px,rgba(168,197,181,.38),t
 #main.is-entering{animation:page-rise .22s ease}
 @keyframes page-rise{from{opacity:.2;transform:translateY(6px)}to{opacity:1;transform:none}}
 .primary-button,.outline-button,.pill-link,.filter-chip,.recipe-row,.icon-hit,.settings-row,.meal-tile{transition:transform var(--ease),background var(--ease),box-shadow var(--ease),color var(--ease)}
-.primary-button:active,.pill-link:active,.filter-chip:active,.recipe-row:active,.icon-hit:active,.settings-row:active{transform:scale(.98)}
+.primary-button:active,.pill-link:active,.filter-chip:active,.icon-hit:active,.settings-row:active{transform:scale(.98)}
 .primary-button{border-radius:999px;background:var(--color-primary);color:#fff}
 .primary-button:hover{background:var(--color-primary-strong)}
 .toast{background:var(--color-primary);border-radius:999px}
@@ -292,15 +292,15 @@ body{background:radial-gradient(680px 240px at 88% -40px,rgba(168,197,181,.38),t
 .next-meal-art.recipe-photo img{position:absolute;inset:0;width:100%;height:100%}
 .recipe-cover{display:block;width:100%;height:232px;overflow:hidden;background:#E7F0E4}
 .recipe-cover img{width:100%;height:232px;object-fit:cover}
-.detail-dialog{overflow:hidden}
+.detail-dialog{overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain}
 .next-wait{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
 .next-wait .pill-link{margin-top:4px}
 
 .diet-library-page .filter-row{display:flex;gap:8px;margin:0 0 14px;overflow-x:auto;padding-bottom:2px}
 .diet-library-page .filter-chip{flex:0 0 auto;min-height:40px;padding:8px 16px;border:0;border-radius:999px;background:#E7EFE8;color:var(--color-primary);font-size:14px;font-weight:650}
 .diet-library-page .filter-chip.active{background:var(--color-primary);color:#fff}
-.recipe-list{display:flex;flex-direction:column;gap:12px}
-.recipe-row{display:flex;align-items:center;gap:12px;width:100%;padding:12px;border:0;border-radius:22px;background:var(--color-surface);box-shadow:var(--shadow-sm);text-align:left}
+.recipe-list{display:flex;flex-direction:column;gap:12px;touch-action:pan-y}
+.recipe-row{display:flex;align-items:center;gap:12px;width:100%;padding:12px;border:0;border-radius:22px;background:var(--color-surface);box-shadow:var(--shadow-sm);text-align:left;touch-action:pan-y}
 .recipe-swatch{width:84px;height:84px;flex:0 0 auto;background:linear-gradient(160deg,#E7F0E4,#D5E6D4)}
 .recipe-swatch.meal-breakfast,.next-meal-art.meal-breakfast{background:linear-gradient(160deg,#F8E7D6,#F0D2BC)}
 .recipe-swatch.meal-lunch,.next-meal-art.meal-lunch{background:linear-gradient(160deg,#E7F0DC,#C9DEB4)}
