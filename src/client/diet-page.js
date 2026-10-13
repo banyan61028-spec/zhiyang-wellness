@@ -57,6 +57,36 @@ export function createDietPages(ctx) {
     if (el.dataset.dietGrams != null) void changeGrams(el.dataset.dietGrams, el.value).catch(error => ctx.toast(friendlyMessage(error.message, '这次没有改成，请再试一次')));
   });
 
+  document.addEventListener('pointerdown', event => {
+    const chip = document.querySelector('.meal-chip.is-open');
+    if (!chip || !(event.target instanceof Node) || chip.contains(event.target)) return;
+    closeMealMenu();
+  }, true);
+  document.addEventListener('keydown', event => {
+    const chip = document.querySelector('#meal-form .meal-chip');
+    if (!chip) return;
+    const open = chip.classList.contains('is-open');
+    if (event.key === 'Escape' && open) { event.preventDefault(); closeMealMenu(true); return; }
+    const options = [...chip.querySelectorAll('.meal-option')];
+    if (!(document.activeElement instanceof Node) || !chip.contains(document.activeElement)) return;
+    if (!open) {
+      if (document.activeElement === chip.querySelector('.meal-chip-trigger') && event.key === 'ArrowDown') {
+        event.preventDefault();
+        setMealMenu(chip, true);
+        chip.querySelector('.meal-option.is-selected')?.focus({ preventScroll: true });
+      }
+      return;
+    }
+    if (!['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key) || !options.length) return;
+    event.preventDefault();
+    let index = options.findIndex(option => option === document.activeElement);
+    if (event.key === 'Home') index = 0;
+    else if (event.key === 'End') index = options.length - 1;
+    else if (index < 0) index = event.key === 'ArrowUp' || event.key === 'ArrowLeft' ? options.length - 1 : Math.max(options.findIndex(option => option.classList.contains('is-selected')), 0);
+    else if (event.key === 'ArrowDown' || event.key === 'ArrowRight') index = (index + 1) % options.length;
+    else index = (index <= 0 ? options.length : index) - 1;
+    options[index].focus({ preventScroll: true });
+  });
   document.addEventListener('pointerdown', onPhotoPointerDown, { passive: false });
   document.addEventListener('pointermove', onPhotoPointerMove, { passive: false });
   document.addEventListener('pointerup', finishPhotoDrag);
@@ -82,9 +112,7 @@ export function createDietPages(ctx) {
         <div class="hero-wash" aria-hidden="true"></div>
         <div class="hero-copy"><h1>记下这一餐</h1><p>拍一张，或写一句话</p></div>
         <form id="meal-form" class="composer ${busy ? 'is-busy' : ''}" data-photo-count="${pendingPhotos.length}">
-          <label class="meal-chip"><span class="sr-only">这一餐</span>
-            <select name="meal" aria-label="这一餐">${mealOrder.map(key => `<option value="${key}" ${key === meal ? 'selected' : ''}>${mealNames[key]}</option>`).join('')}</select>
-          </label>
+          ${mealPicker(meal)}
           <div class="composer-box${pendingPhotos.length ? ' has-photos' : ''}">
             ${photoTrayHtml(pendingPhotos, photoPlace, ctx.esc)}
             <textarea name="text" maxlength="1500" rows="2" placeholder="记录食物、感受或拍照…" aria-label="写下吃了什么">${ctx.esc(composeText)}</textarea>
@@ -133,7 +161,9 @@ export function createDietPages(ctx) {
   async function onClick(button) {
     const action = button.dataset.dietAction;
     if (!action) return false;
-    if (action === 'portion') await changePortion(button.dataset.dietItem, button.dataset.dietSize);
+    if (action === 'toggle-meal') { toggleMealMenu(button); }
+    else if (action === 'pick-meal') pickMeal(button.dataset.meal);
+    else if (action === 'portion') await changePortion(button.dataset.dietItem, button.dataset.dietSize);
     else if (action === 'save-draft') await saveDraft();
     else if (action === 'discard') { draft = null; urgent = null; ctx.render(); }
     else if (action === 'delete-meal') { await ctx.writeStore(storage => storage.removeMeal(button.dataset.dietId)); invalidateToday(); ctx.toast('已删除这一餐'); }
@@ -324,7 +354,7 @@ export function createDietPages(ctx) {
     const form = document.querySelector('#meal-form');
     const field = form?.querySelector('textarea');
     if (field) composeText = field.value;
-    const meal = form?.querySelector('select[name="meal"]');
+    const meal = form?.querySelector('[name="meal"]');
     if (meal) composeMeal = meal.value;
     if (drag.single && card && tray) {
       const trayRect = tray.getBoundingClientRect();
@@ -656,6 +686,43 @@ export function createDietPages(ctx) {
   }
 
   function invalidateToday() { report = null; recommendation = null; excludeIds = []; inflight = ''; }
+  function setMealMenu(chip, open) {
+    chip.classList.toggle('is-open', open);
+    const trigger = chip.querySelector('.meal-chip-trigger');
+    const menu = chip.querySelector('.meal-menu');
+    if (trigger) trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (menu) menu.hidden = !open;
+  }
+  function closeMealMenu(focusTrigger = false) {
+    const chip = document.querySelector('.meal-chip.is-open');
+    if (!chip) return;
+    setMealMenu(chip, false);
+    if (focusTrigger) chip.querySelector('.meal-chip-trigger')?.focus({ preventScroll: true });
+  }
+  function toggleMealMenu(button) {
+    const chip = button.closest('.meal-chip');
+    if (!chip) return;
+    const open = !chip.classList.contains('is-open');
+    setMealMenu(chip, open);
+    if (open && !document.documentElement.classList.contains('using-pointer')) {
+      chip.querySelector('.meal-option.is-selected')?.focus({ preventScroll: true });
+    }
+  }
+  function pickMeal(value) {
+    if (!mealNames[value]) return;
+    composeMeal = value;
+    const chip = document.querySelector('#meal-form .meal-chip');
+    const field = chip?.querySelector('[name="meal"]');
+    if (field) field.value = value;
+    const label = chip?.querySelector('.meal-chip-label');
+    if (label) label.textContent = mealNames[value];
+    chip?.querySelectorAll('.meal-option').forEach(option => {
+      const on = option.dataset.meal === value;
+      option.classList.toggle('is-selected', on);
+      option.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    closeMealMenu();
+  }
   function cacheKey() {
     const state = ctx.getState();
     const meals = mealsOn(state, localDateString());
@@ -667,6 +734,14 @@ export function createDietPages(ctx) {
 
 function mealsOn(state, date) {
   return (state.meals || []).filter(meal => meal.date === date).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+}
+function mealPicker(meal) {
+  const current = mealNames[meal] ? meal : 'dinner';
+  const options = mealOrder.map(key => {
+    const on = key === current;
+    return `<button type="button" class="meal-option${on ? ' is-selected' : ''}" role="option" data-diet-action="pick-meal" data-meal="${key}" aria-selected="${on ? 'true' : 'false'}">${mealNames[key]}</button>`;
+  }).join('');
+  return `<div class="meal-chip"><button type="button" class="meal-chip-trigger" data-diet-action="toggle-meal" aria-haspopup="listbox" aria-expanded="false" aria-controls="meal-menu"><span class="meal-chip-label">${mealNames[current]}</span><svg class="meal-chip-caret" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6.2 8 10l4-3.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><input type="hidden" name="meal" value="${current}"><div id="meal-menu" class="meal-menu" role="listbox" aria-label="这一餐" hidden>${options}</div></div>`;
 }
 function defaultMeal() {
   const hour = new Date().getHours();

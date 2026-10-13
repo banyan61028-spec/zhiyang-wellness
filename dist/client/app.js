@@ -1319,6 +1319,40 @@ function createDietPages(ctx) {
     if (el.dataset.dietFood != null) void changeFood(el.dataset.dietFood, el.value).catch((error) => ctx.toast(friendlyMessage(error.message, "\u8FD9\u6B21\u6CA1\u6709\u6539\u6210\uFF0C\u8BF7\u518D\u8BD5\u4E00\u6B21")));
     if (el.dataset.dietGrams != null) void changeGrams(el.dataset.dietGrams, el.value).catch((error) => ctx.toast(friendlyMessage(error.message, "\u8FD9\u6B21\u6CA1\u6709\u6539\u6210\uFF0C\u8BF7\u518D\u8BD5\u4E00\u6B21")));
   });
+  document.addEventListener("pointerdown", (event) => {
+    const chip = document.querySelector(".meal-chip.is-open");
+    if (!chip || !(event.target instanceof Node) || chip.contains(event.target)) return;
+    closeMealMenu();
+  }, true);
+  document.addEventListener("keydown", (event) => {
+    const chip = document.querySelector("#meal-form .meal-chip");
+    if (!chip) return;
+    const open = chip.classList.contains("is-open");
+    if (event.key === "Escape" && open) {
+      event.preventDefault();
+      closeMealMenu(true);
+      return;
+    }
+    const options2 = [...chip.querySelectorAll(".meal-option")];
+    if (!(document.activeElement instanceof Node) || !chip.contains(document.activeElement)) return;
+    if (!open) {
+      if (document.activeElement === chip.querySelector(".meal-chip-trigger") && event.key === "ArrowDown") {
+        event.preventDefault();
+        setMealMenu(chip, true);
+        chip.querySelector(".meal-option.is-selected")?.focus({ preventScroll: true });
+      }
+      return;
+    }
+    if (!["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key) || !options2.length) return;
+    event.preventDefault();
+    let index = options2.findIndex((option) => option === document.activeElement);
+    if (event.key === "Home") index = 0;
+    else if (event.key === "End") index = options2.length - 1;
+    else if (index < 0) index = event.key === "ArrowUp" || event.key === "ArrowLeft" ? options2.length - 1 : Math.max(options2.findIndex((option) => option.classList.contains("is-selected")), 0);
+    else if (event.key === "ArrowDown" || event.key === "ArrowRight") index = (index + 1) % options2.length;
+    else index = (index <= 0 ? options2.length : index) - 1;
+    options2[index].focus({ preventScroll: true });
+  });
   document.addEventListener("pointerdown", onPhotoPointerDown, { passive: false });
   document.addEventListener("pointermove", onPhotoPointerMove, { passive: false });
   document.addEventListener("pointerup", finishPhotoDrag);
@@ -1345,9 +1379,7 @@ function createDietPages(ctx) {
         <div class="hero-wash" aria-hidden="true"></div>
         <div class="hero-copy"><h1>\u8BB0\u4E0B\u8FD9\u4E00\u9910</h1><p>\u62CD\u4E00\u5F20\uFF0C\u6216\u5199\u4E00\u53E5\u8BDD</p></div>
         <form id="meal-form" class="composer ${busy ? "is-busy" : ""}" data-photo-count="${pendingPhotos.length}">
-          <label class="meal-chip"><span class="sr-only">\u8FD9\u4E00\u9910</span>
-            <select name="meal" aria-label="\u8FD9\u4E00\u9910">${mealOrder.map((key) => `<option value="${key}" ${key === meal ? "selected" : ""}>${mealNames[key]}</option>`).join("")}</select>
-          </label>
+          ${mealPicker(meal)}
           <div class="composer-box${pendingPhotos.length ? " has-photos" : ""}">
             ${photoTrayHtml(pendingPhotos, photoPlace, ctx.esc)}
             <textarea name="text" maxlength="1500" rows="2" placeholder="\u8BB0\u5F55\u98DF\u7269\u3001\u611F\u53D7\u6216\u62CD\u7167\u2026" aria-label="\u5199\u4E0B\u5403\u4E86\u4EC0\u4E48">${ctx.esc(composeText)}</textarea>
@@ -1390,7 +1422,10 @@ function createDietPages(ctx) {
   async function onClick(button) {
     const action = button.dataset.dietAction;
     if (!action) return false;
-    if (action === "portion") await changePortion(button.dataset.dietItem, button.dataset.dietSize);
+    if (action === "toggle-meal") {
+      toggleMealMenu(button);
+    } else if (action === "pick-meal") pickMeal(button.dataset.meal);
+    else if (action === "portion") await changePortion(button.dataset.dietItem, button.dataset.dietSize);
     else if (action === "save-draft") await saveDraft();
     else if (action === "discard") {
       draft = null;
@@ -1611,7 +1646,7 @@ function createDietPages(ctx) {
     const form = document.querySelector("#meal-form");
     const field = form?.querySelector("textarea");
     if (field) composeText = field.value;
-    const meal = form?.querySelector('select[name="meal"]');
+    const meal = form?.querySelector('[name="meal"]');
     if (meal) composeMeal = meal.value;
     if (drag.single && card && tray) {
       const trayRect = tray.getBoundingClientRect();
@@ -1936,6 +1971,43 @@ function createDietPages(ctx) {
     excludeIds = [];
     inflight = "";
   }
+  function setMealMenu(chip, open) {
+    chip.classList.toggle("is-open", open);
+    const trigger = chip.querySelector(".meal-chip-trigger");
+    const menu = chip.querySelector(".meal-menu");
+    if (trigger) trigger.setAttribute("aria-expanded", open ? "true" : "false");
+    if (menu) menu.hidden = !open;
+  }
+  function closeMealMenu(focusTrigger = false) {
+    const chip = document.querySelector(".meal-chip.is-open");
+    if (!chip) return;
+    setMealMenu(chip, false);
+    if (focusTrigger) chip.querySelector(".meal-chip-trigger")?.focus({ preventScroll: true });
+  }
+  function toggleMealMenu(button) {
+    const chip = button.closest(".meal-chip");
+    if (!chip) return;
+    const open = !chip.classList.contains("is-open");
+    setMealMenu(chip, open);
+    if (open && !document.documentElement.classList.contains("using-pointer")) {
+      chip.querySelector(".meal-option.is-selected")?.focus({ preventScroll: true });
+    }
+  }
+  function pickMeal(value) {
+    if (!mealNames[value]) return;
+    composeMeal = value;
+    const chip = document.querySelector("#meal-form .meal-chip");
+    const field = chip?.querySelector('[name="meal"]');
+    if (field) field.value = value;
+    const label = chip?.querySelector(".meal-chip-label");
+    if (label) label.textContent = mealNames[value];
+    chip?.querySelectorAll(".meal-option").forEach((option) => {
+      const on = option.dataset.meal === value;
+      option.classList.toggle("is-selected", on);
+      option.setAttribute("aria-selected", on ? "true" : "false");
+    });
+    closeMealMenu();
+  }
   function cacheKey() {
     const state2 = ctx.getState();
     const meals = mealsOn(state2, localDateString());
@@ -1945,6 +2017,14 @@ function createDietPages(ctx) {
 }
 function mealsOn(state2, date) {
   return (state2.meals || []).filter((meal) => meal.date === date).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+}
+function mealPicker(meal) {
+  const current = mealNames[meal] ? meal : "dinner";
+  const options2 = mealOrder.map((key) => {
+    const on = key === current;
+    return `<button type="button" class="meal-option${on ? " is-selected" : ""}" role="option" data-diet-action="pick-meal" data-meal="${key}" aria-selected="${on ? "true" : "false"}">${mealNames[key]}</button>`;
+  }).join("");
+  return `<div class="meal-chip"><button type="button" class="meal-chip-trigger" data-diet-action="toggle-meal" aria-haspopup="listbox" aria-expanded="false" aria-controls="meal-menu"><span class="meal-chip-label">${mealNames[current]}</span><svg class="meal-chip-caret" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6.2 8 10l4-3.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><input type="hidden" name="meal" value="${current}"><div id="meal-menu" class="meal-menu" role="listbox" aria-label="\u8FD9\u4E00\u9910" hidden>${options2}</div></div>`;
 }
 function defaultMeal() {
   const hour = (/* @__PURE__ */ new Date()).getHours();
@@ -2252,6 +2332,14 @@ function hasMacroTarget(target) {
 }
 
 // src/client/app.js
+var modalityRoot = document.documentElement;
+var markPointer = () => modalityRoot.classList.add("using-pointer");
+var markKeyboard = (event) => {
+  if (event.metaKey || event.ctrlKey || event.altKey) return;
+  if (event.key === "Tab" || event.key.startsWith("Arrow")) modalityRoot.classList.remove("using-pointer");
+};
+window.addEventListener("pointerdown", markPointer, true);
+window.addEventListener("keydown", markKeyboard, true);
 var icons = { home: '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21v-8h6v8"/>', note: '<path d="M7 3h8l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M15 3v5h5M9 13h6M9 17h4"/>', leaf: '<path d="M20 3c-9-1-16 3-16 10a7 7 0 0 0 7 7C18 20 21 12 20 3Z"/><path d="m4 21 11-12"/>', heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/>', user: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>', spark: '<path d="m12 3 2.6 6.4L21 12l-6.4 2.6L12 21l-2.6-6.4L3 12l6.4-2.6Z"/>', arrow: '<path d="M5 12h14m-5-5 5 5-5 5"/>', close: '<path d="m6 6 12 12M18 6 6 18"/>', bookmark: '<path d="M6 3h12v18l-6-4-6 4z"/>', sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/>', moon: '<path d="M21 13A9 9 0 0 1 11 3 9 9 0 1 0 21 13Z"/>', wind: '<path d="M3 8h12a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h5"/>', scale: '<path d="M4 5h16v16H4z"/><path d="M8 9a5 5 0 0 1 8 0M12 8v3"/>', bowl: '<path d="M3 12h18c0 6-5 8-9 8s-9-2-9-8Z"/><path d="M7 5v3m5-5v5m5-3v3"/>', check: '<path d="m5 12 4 4L19 6"/>', clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', back: '<path d="m14 5-7 7 7 7"/>', book: '<path d="M3 3h6a4 4 0 0 1 3 2 4 4 0 0 1 3-2h6v17h-6a4 4 0 0 0-3 2 4 4 0 0 0-3-2H3zM12 5v17"/>', cup: '<path d="M4 7h13v8a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM17 8h2a3 3 0 0 1 0 6h-2M7 3v1m4-1v1m4-1v1"/>', camera: '<path d="M4 8h3l2-3h6l2 3h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z"/><circle cx="12" cy="13" r="3.2"/>', send: '<path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/>' };
 var icon = (name) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name] || icons.leaf}</svg>`;
 var esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
