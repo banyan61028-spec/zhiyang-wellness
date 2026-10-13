@@ -324,6 +324,16 @@ body{background:radial-gradient(680px 240px at 88% -40px,rgba(168,197,181,.38),t
 .diet-settings .form-label{color:var(--color-muted);font-size:13px}
 .diet-settings .form-label input,.diet-settings .grams-field input{border:0;border-radius:16px;background:#F4F0EA;min-height:52px}
 .diet-settings .primary-button{width:100%;min-height:48px;margin-top:8px}
+.macro-plan{margin-top:4px}
+.macro-plan-head,.macro-plan-row{display:grid;grid-template-columns:4.4em minmax(0,1fr) minmax(0,1fr);gap:8px;align-items:center}
+.macro-plan-head{margin:14px 0 6px;color:var(--color-hint);font-size:12px}
+.macro-plan-name{color:var(--color-ink);font-size:15px;font-weight:650}
+.macro-plan-field{margin:0}
+.macro-plan-row+.macro-plan-row{margin-top:8px}
+.macro-plan-input{display:flex;align-items:center;gap:4px;margin-top:6px;padding-right:12px;border-radius:16px;background:#F4F0EA}
+.diet-settings .macro-plan-input input{min-width:0;border:0;border-radius:16px;background:transparent;min-height:52px;padding-right:0}
+.macro-plan-input span{color:var(--color-muted);font-size:13px;flex:0 0 auto}
+.macro-plan [hidden],.diet-settings [hidden]{display:none}
 .draft-editor .button-row,.diet-card .primary-button{scroll-margin-bottom:120px}
 .settings-list{display:flex;flex-direction:column;gap:10px}
 .settings-row{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:72px;padding:14px 16px;border:0;border-radius:20px;background:var(--color-surface);box-shadow:var(--shadow-sm);text-align:left}

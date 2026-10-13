@@ -146,7 +146,7 @@ export async function buildReport(body, env, source, requestId) {
       const content = await qwenChat({
         config,
         model: config.textModel,
-        messages: [{ role: 'system', content: '你只根据给定的合计写一两句中文建议。不要新增数字、食物或菜谱。不要鼓励极端少吃，不要提供治疗方案。只返回 JSON：{"advice":"..."}' }, { role: 'user', content: JSON.stringify({ totals, targets: targets.confirmed ? targets : null, caution }) }],
+        messages: [{ role: 'system', content: '你只根据给定的合计写一两句中文建议。不要新增数字、食物或菜谱。不要鼓励极端少吃，不要提供治疗方案。只返回 JSON：{"advice":"..."}' }, { role: 'user', content: JSON.stringify({ totals, targets: modelTargets(targets), caution }) }],
         fetchImpl: env.qwenFetch,
       });
       const checked = sanitizeAdvice(extractJson(content).advice, allowed);
@@ -199,7 +199,7 @@ export async function buildRecommendation(body, env, source, requestId) {
       const content = await qwenChat({
         config,
         model: config.textModel,
-        messages: [{ role: 'system', content: '食谱已经选定。只用一两句话解释为什么是这道。不要提到其他菜名，不要编造做法或营养数字。只返回 JSON：{"reason":"..."}' }, { role: 'user', content: JSON.stringify({ recipe: { id: recipe.id, name: recipe.name, nutrition: recipe.nutrition }, totals, targets: targets.confirmed ? targets : null, caution }) }],
+        messages: [{ role: 'system', content: '食谱已经选定。只用一两句话解释为什么是这道。不要提到其他菜名，不要编造做法或营养数字。只返回 JSON：{"reason":"..."}' }, { role: 'user', content: JSON.stringify({ recipe: { id: recipe.id, name: recipe.name, nutrition: recipe.nutrition }, totals, targets: modelTargets(targets), caution }) }],
         fetchImpl: env.qwenFetch,
       });
       const checked = sanitizeReason(extractJson(content).reason, recipe, source.recipes, allowed);
@@ -299,6 +299,18 @@ function publicRecipe(recipe, source) {
 function cleanTargets(input) {
   try { return cleanDietSettings({ targets: input, flagsConfirmed: false }).targets; }
   catch { throw new Error('目标无效'); }
+}
+
+function modelTargets(targets) {
+  if (!targets?.confirmed) return null;
+  return {
+    kcal: targets.kcal,
+    protein: targets.protein,
+    fat: targets.fat,
+    carb: targets.carb,
+    source: targets.source,
+    confirmed: true,
+  };
 }
 
 function collectTexts(body) {

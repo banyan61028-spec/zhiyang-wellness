@@ -1,6 +1,7 @@
 import { calculateItems, fetchCatalog, recognizeMeal, requestRecommendation, requestReport } from './diet-client.js';
 import { createId } from '../shared/id.js';
 import { localDateString, validateMeal } from '../shared/meals.js';
+import { DEFAULT_ENERGY_RATIOS, GRAM_MAX, KCAL_MAX, KCAL_PER_GRAM, previewMacroTargets } from '../shared/nutrition/targets.js';
 
 const mealNames = { breakfast: '早餐', lunch: '午餐', dinner: '晚餐', snack: '加餐' };
 const mealOrder = ['breakfast', 'lunch', 'dinner', 'snack'];
@@ -26,8 +27,11 @@ export function createDietPages(ctx) {
 
   document.addEventListener('input', event => {
     const el = event.target;
-    if (!(el instanceof HTMLTextAreaElement)) return;
-    if (el.name === 'text' && el.closest('#meal-form')) composeText = el.value;
+    if (el instanceof HTMLTextAreaElement && el.name === 'text' && el.closest('#meal-form')) composeText = el.value;
+    if (el instanceof HTMLInputElement) onTargetInput(el);
+  });
+  document.addEventListener('focusout', event => {
+    if (event.target instanceof HTMLInputElement) onTargetBlur(event.target);
   });
 
   document.addEventListener('change', event => {
@@ -107,7 +111,7 @@ export function createDietPages(ctx) {
     const settingsState = ctx.getState().dietSettings;
     const targets = settingsState.targets;
     const flags = settingsState.flags;
-    return `${heading('我的', '目标和记录都在这台手机上。')}<div class="diet-page diet-settings"><section class="diet-card"><h2>每日目标</h2><p class="small muted">按自己的习惯填。留空的项目不参与对比。</p><form id="target-form"><div class="target-grid"><label class="form-label">热量（千卡）<input name="kcal" inputmode="numeric" min="0" max="10000" value="${targets.kcal ?? ''}"></label><label class="form-label">蛋白质（克）<input name="protein" inputmode="numeric" min="0" max="500" value="${targets.protein ?? ''}"></label><label class="form-label">脂肪（克）<input name="fat" inputmode="numeric" min="0" max="500" value="${targets.fat ?? ''}"></label><label class="form-label">碳水（克）<input name="carb" inputmode="numeric" min="0" max="500" value="${targets.carb ?? ''}"></label></div><label class="check-line"><input type="checkbox" name="confirm" ${targets.confirmed ? 'checked' : ''}> 把这些数字当作我的每日目标</label><button class="primary-button" type="submit">保存目标</button></form></section><section class="diet-card"><h2>这些情况下，建议会更谨慎</h2><p class="small muted">勾选后，不会按吃得少来催你，也不会因为蛋白质不够就推荐高蛋白的菜。</p><form id="flags-form">${flagBox('pregnancy', '孕期或备孕', flags.pregnancy)}${flagBox('lactation', '哺乳', flags.lactation)}${flagBox('minor', '未成年', flags.minor)}${flagBox('kidney', '肾病', flags.kidney)}${flagBox('diabetes', '糖尿病', flags.diabetes)}${flagBox('hypertension', '高血压', flags.hypertension)}${flagBox('eatingDisorder', '吃饭让我很痛苦，或出现催吐、绝食', flags.eatingDisorder)}<label class="check-line"><input type="checkbox" name="confirm" ${settingsState.flagsConfirmed ? 'checked' : ''}> 按这些情况调整文字建议</label><button class="primary-button" type="submit">保存</button></form></section><section class="settings-list" aria-label="更多"><button class="settings-row" type="button" data-action="privacy"><span><strong>隐私与说明</strong><small>记录只留在这台手机上。热量是估算。</small></span>${ctx.icon('arrow')}</button><button class="settings-row" type="button" data-action="reset"><span><strong>清除这台手机上的记录</strong><small>饮食记录和每日目标会一起清掉。</small></span>${ctx.icon('arrow')}</button></section></div>`;
+    return `${heading('我的', '目标和记录都在这台手机上。')}<div class="diet-page diet-settings">${dailyGoalsCard(targets)}<section class="diet-card"><h2>这些情况下，建议会更谨慎</h2><p class="small muted">勾选后，不会按吃得少来催你，也不会因为蛋白质不够就推荐高蛋白的菜。</p><form id="flags-form">${flagBox('pregnancy', '孕期或备孕', flags.pregnancy)}${flagBox('lactation', '哺乳', flags.lactation)}${flagBox('minor', '未成年', flags.minor)}${flagBox('kidney', '肾病', flags.kidney)}${flagBox('diabetes', '糖尿病', flags.diabetes)}${flagBox('hypertension', '高血压', flags.hypertension)}${flagBox('eatingDisorder', '吃饭让我很痛苦，或出现催吐、绝食', flags.eatingDisorder)}<label class="check-line"><input type="checkbox" name="confirm" ${settingsState.flagsConfirmed ? 'checked' : ''}> 按这些情况调整文字建议</label><button class="primary-button" type="submit">保存</button></form></section><section class="settings-list" aria-label="更多"><button class="settings-row" type="button" data-action="privacy"><span><strong>隐私与说明</strong><small>记录只留在这台手机上。热量是估算。</small></span>${ctx.icon('arrow')}</button><button class="settings-row" type="button" data-action="reset"><span><strong>清除这台手机上的记录</strong><small>饮食记录和每日目标会一起清掉。</small></span>${ctx.icon('arrow')}</button></section></div>`;
   }
 
   async function onClick(button) {
@@ -410,8 +414,25 @@ export function createDietPages(ctx) {
   async function saveTargets(form) {
     const data = new FormData(form);
     if (!data.get('confirm')) { ctx.toast('请先勾选确认，再保存目标'); return; }
+    if (blank(data.get('kcal')) == null) { ctx.toast('先填写每天的热量'); return; }
     const current = ctx.getState().dietSettings;
-    await ctx.writeStore(storage => storage.dietSettings({ ...current, targets: { kcal: blank(data.get('kcal')), protein: blank(data.get('protein')), fat: blank(data.get('fat')), carb: blank(data.get('carb')), source: 'user', confirmed: true }, flagsConfirmed: current.flagsConfirmed }));
+    await ctx.writeStore(storage => storage.dietSettings({
+      ...current,
+      targets: {
+        kcal: blank(data.get('kcal')),
+        protein: blank(data.get('protein')),
+        fat: blank(data.get('fat')),
+        carb: blank(data.get('carb')),
+        ratios: {
+          protein: blank(data.get('ratio-protein')),
+          fat: blank(data.get('ratio-fat')),
+          carb: blank(data.get('ratio-carb')),
+        },
+        source: 'user',
+        confirmed: true,
+      },
+      flagsConfirmed: current.flagsConfirmed,
+    }));
     invalidateToday();
     ctx.toast('每日目标已保存在本机');
   }
@@ -512,7 +533,7 @@ function macroTiles(totals, targets) {
   ];
   return `<div class="macro-tiles">${rows.map(([label, kind, value, target]) => {
     const amount = Number(value) || 0;
-    const hasTarget = target != null && Number(target) > 0;
+    const hasTarget = hasMacroTarget(target);
     const note = hasTarget ? `目标 ${target} 克` : '未设目标';
     return `<article class="macro-tile"><span class="macro-ico ${kind}" aria-hidden="true">${macroGlyph(kind)}</span><p>${label}</p><strong class="num">${amount}<small>克</small></strong><p class="small">${note}</p></article>`;
   }).join('')}</div>`;
@@ -532,11 +553,12 @@ function macroBars(totals, targets) {
   const gramSum = rows.reduce((sum, row) => sum + (Number(row[1]) || 0), 0) || 1;
   return `<div class="macro-bars">${rows.map(([label, value, target]) => {
     const amount = Number(value) || 0;
-    const hasTarget = target != null && Number(target) > 0;
-    const ratio = hasTarget ? amount / Number(target) : amount / gramSum;
+    const hasTarget = hasMacroTarget(target);
+    const goal = Number(target);
+    const ratio = !hasTarget ? amount / gramSum : goal > 0 ? amount / goal : (amount > 0 ? 1 : 0);
     const width = Math.max(0, Math.min(ratio, 1)) * 100;
-    const over = hasTarget && ratio > 1;
-    const note = hasTarget ? `目标 ${target} 克` : '占三项合计';
+    const over = hasTarget && (goal > 0 ? ratio > 1 : amount > 0);
+    const note = hasTarget ? `目标 ${goal} 克` : '占三项合计';
     return `<div class="macro-line"><div class="macro-line-top"><span>${label}</span><span class="num">${amount} 克</span></div><div class="bar${over ? ' over' : ''}"><span style="width:${width.toFixed(1)}%"></span></div><p class="small muted">${note}${over ? ' · 已超过' : ''}</p></div>`;
   }).join('')}</div>`;
 }
@@ -561,4 +583,82 @@ async function compressImage(file) {
   let binary = '';
   for (let index = 0; index < bytes.length; index += 0x8000) binary += String.fromCharCode(...bytes.subarray(index, index + 0x8000));
   return `data:image/jpeg;base64,${btoa(binary)}`;
+}
+
+const TARGET_FIELDS = new Set(['kcal', 'protein', 'fat', 'carb', 'ratio-protein', 'ratio-fat', 'ratio-carb']);
+
+export function dailyGoalsCard(targets = {}) {
+  const ratios = targets.ratios || {};
+  const ready = Number.isInteger(targets.kcal);
+  const row = (label, key, gramMax) => `<div class="macro-plan-row"><span class="macro-plan-name">${label}</span><label class="macro-plan-field"><span class="sr-only">${label}能量占比</span><span class="macro-plan-input"><input ${targetInputAttrs(`ratio-${key}`, ratios[key], 100)}><span>%</span></span></label><label class="macro-plan-field"><span class="sr-only">${label}克数</span><span class="macro-plan-input"><input ${targetInputAttrs(key, targets[key], gramMax)}><span>克</span></span></label></div>`;
+  return `<section class="diet-card"><h2>每日目标</h2><p class="small muted">先填每天想吃多少热量。蛋白质、脂肪和碳水会按这个热量算出来。</p><form id="target-form"><label class="form-label">每天热量（千卡）<input ${targetInputAttrs('kcal', targets.kcal, KCAL_MAX)}></label><div class="macro-plan" data-macro-plan ${ready ? '' : 'hidden'}><p class="small muted">${macroPlanNote()}</p><div class="macro-plan-head" aria-hidden="true"><span></span><span>能量占比</span><span>克数</span></div>${row('蛋白质', 'protein', GRAM_MAX.protein)}${row('脂肪', 'fat', GRAM_MAX.fat)}${row('碳水', 'carb', GRAM_MAX.carb)}</div><p class="small muted" data-macro-empty ${ready ? 'hidden' : ''}>填好热量后，会显示蛋白质、脂肪和碳水各多少克。</p><label class="check-line"><input type="checkbox" name="confirm" ${targets.confirmed ? 'checked' : ''}> 把这些数字当作我的每日目标</label><button class="primary-button" type="submit">保存目标</button></form></section>`;
+}
+
+function macroPlanNote() {
+  const ratios = DEFAULT_ENERGY_RATIOS;
+  return `默认是蛋白质 ${ratios.protein}%、脂肪 ${ratios.fat}%、碳水 ${ratios.carb}%。改占比，另外两项会按原来的高低一起缩放。改克数，这一项保持你填的数，剩下的热量分给另外两项。1 克蛋白质或碳水大约 ${KCAL_PER_GRAM.protein} 千卡，1 克脂肪大约 ${KCAL_PER_GRAM.fat} 千卡。`;
+}
+
+function targetInputAttrs(name, value, max) {
+  const shown = Number.isInteger(value) ? String(value) : '';
+  const last = shown === '' ? '' : ` data-last="${shown}"`;
+  return `name="${name}" inputmode="numeric" min="0" max="${max}" autocomplete="off" spellcheck="false" value="${shown}"${last}`;
+}
+
+function onTargetInput(el) {
+  if (!TARGET_FIELDS.has(el.name) || !el.closest('#target-form')) return;
+  if (!/^\d+$/.test(el.value)) {
+    if (el.name === 'kcal') setMacroPlanReady(el.form, false);
+    return;
+  }
+  applyMacroPreview(el.form, el.name, false);
+}
+
+function onTargetBlur(el) {
+  if (!TARGET_FIELDS.has(el.name) || !el.closest('#target-form')) return;
+  if (!/^\d+$/.test(el.value) && el.dataset.last != null) el.value = el.dataset.last;
+  if (!/^\d+$/.test(el.value)) {
+    if (el.name === 'kcal') applyMacroPreview(el.form, 'kcal', true);
+    return;
+  }
+  applyMacroPreview(el.form, el.name, true);
+}
+
+function applyMacroPreview(form, editedName, rewriteActive) {
+  if (!form) return;
+  const preview = previewMacroTargets(readTargetFields(form), editedName);
+  setMacroPlanReady(form, preview.ready);
+  if (!preview.inputs) return;
+  for (const [name, value] of Object.entries(preview.inputs)) {
+    const input = form.elements.namedItem(name);
+    if (!input) continue;
+    const active = input === document.activeElement;
+    if (active && !rewriteActive && !preview.clamp?.[name]) continue;
+    input.value = value;
+    input.dataset.last = value;
+  }
+}
+
+function readTargetFields(form) {
+  const value = name => form.elements.namedItem(name)?.value ?? '';
+  return {
+    kcal: value('kcal'),
+    protein: value('protein'),
+    fat: value('fat'),
+    carb: value('carb'),
+    'ratio-protein': value('ratio-protein'),
+    'ratio-fat': value('ratio-fat'),
+    'ratio-carb': value('ratio-carb'),
+  };
+}
+
+function setMacroPlanReady(form, ready) {
+  const plan = form?.querySelector('[data-macro-plan]');
+  const empty = form?.querySelector('[data-macro-empty]');
+  if (plan) plan.hidden = !ready;
+  if (empty) empty.hidden = ready;
+}
+
+function hasMacroTarget(target) {
+  return target != null && target !== '' && Number.isFinite(Number(target));
 }

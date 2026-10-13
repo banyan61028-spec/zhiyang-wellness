@@ -63,9 +63,274 @@ function createId(cryptoImpl = globalThis.crypto) {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
+// src/shared/nutrition/targets.js
+var KCAL_PER_GRAM = { protein: 4, carb: 4, fat: 9 };
+var DEFAULT_ENERGY_RATIOS = { protein: 20, fat: 25, carb: 55 };
+var KCAL_MAX = 1e4;
+var GRAM_MAX = { protein: 2500, fat: 1200, carb: 2500 };
+var ENERGY_TOLERANCE = 2;
+var MACRO_KEYS = ["protein", "fat", "carb"];
+function emptyTargets(confirmed = false) {
+  return {
+    kcal: null,
+    protein: null,
+    fat: null,
+    carb: null,
+    ratios: { protein: null, fat: null, carb: null },
+    source: "user",
+    confirmed: confirmed === true
+  };
+}
+function macroEnergy(grams = {}) {
+  return MACRO_KEYS.reduce((sum, key) => sum + (Number(grams[key]) || 0) * KCAL_PER_GRAM[key], 0);
+}
+function settleDailyTargets(targets = {}) {
+  const confirmed = targets?.confirmed === true;
+  const kcal = readCleanTarget(targets?.kcal, KCAL_MAX);
+  const gramsInput = {
+    protein: readCleanTarget(targets?.protein, GRAM_MAX.protein),
+    fat: readCleanTarget(targets?.fat, GRAM_MAX.fat),
+    carb: readCleanTarget(targets?.carb, GRAM_MAX.carb)
+  };
+  if (kcal == null) return emptyTargets(confirmed);
+  const ratioInput = readRatioInput(targets?.ratios);
+  const anyGram = MACRO_KEYS.some((key) => gramsInput[key] != null);
+  if (!anyGram) return pack(kcal, gramsFromRatios(kcal, ratioInput || DEFAULT_ENERGY_RATIOS), confirmed);
+  if (ratioInput && MACRO_KEYS.every((key) => gramsInput[key] != null)) {
+    const allocated = gramsFromRatios(kcal, ratioInput);
+    if (MACRO_KEYS.every((key) => gramsInput[key] === allocated.grams[key])) return pack(kcal, allocated, confirmed);
+  }
+  const partial = MACRO_KEYS.some((key) => gramsInput[key] == null);
+  const settled = partial ? settlePartial(kcal, gramsInput) : settleComplete(kcal, gramsInput);
+  return pack(kcal, settled, confirmed);
+}
+function gramsFromRatios(kcal, ratios) {
+  const normalized = normalizeRatios(ratios);
+  const proteinEnergy = kcal * normalized.protein / 100;
+  const fatEnergy = kcal * normalized.fat / 100;
+  let protein = clamp(Math.round(proteinEnergy / KCAL_PER_GRAM.protein), 0, GRAM_MAX.protein);
+  let fat = clamp(Math.round(fatEnergy / KCAL_PER_GRAM.fat), 0, GRAM_MAX.fat);
+  while (protein * KCAL_PER_GRAM.protein + fat * KCAL_PER_GRAM.fat > kcal && (protein > 0 || fat > 0)) {
+    const proteinOver = protein * KCAL_PER_GRAM.protein - proteinEnergy;
+    const fatOver = fat * KCAL_PER_GRAM.fat - fatEnergy;
+    if (fat > 0 && (protein === 0 || fatOver >= proteinOver)) fat -= 1;
+    else protein -= 1;
+  }
+  const left = kcal - protein * KCAL_PER_GRAM.protein - fat * KCAL_PER_GRAM.fat;
+  const carb = absorb(left, KCAL_PER_GRAM.carb, GRAM_MAX.carb);
+  return { grams: { protein, fat, carb }, ratios: normalized };
+}
+function ratiosFromGrams(grams = {}) {
+  const parts = MACRO_KEYS.map((key) => ({
+    key,
+    exact: Math.max(0, Number(grams[key]) || 0) * KCAL_PER_GRAM[key]
+  }));
+  const total = parts.reduce((sum, part) => sum + part.exact, 0);
+  if (total <= 0) return { protein: 0, fat: 0, carb: 0 };
+  return largestRemainderSum(parts.map((part) => ({ key: part.key, exact: part.exact / total * 100 })), 100);
+}
+function normalizeRatios(input) {
+  if (!input) return { ...DEFAULT_ENERGY_RATIOS };
+  const raw = {};
+  for (const key of MACRO_KEYS) {
+    const value = Number(input[key]);
+    if (!Number.isFinite(value) || value < 0) return { ...DEFAULT_ENERGY_RATIOS };
+    raw[key] = value;
+  }
+  const sum = MACRO_KEYS.reduce((total, key) => total + raw[key], 0);
+  if (sum <= 0) return { ...DEFAULT_ENERGY_RATIOS };
+  if (sum === 100 && MACRO_KEYS.every((key) => Number.isInteger(raw[key]))) {
+    return { protein: raw.protein, fat: raw.fat, carb: raw.carb };
+  }
+  return largestRemainderSum(MACRO_KEYS.map((key) => ({ key, exact: raw[key] / sum * 100 })), 100);
+}
+function allocateAfterRatioEdit(kcal, ratios, key, percent) {
+  const nextValue = clamp(Math.round(Number(percent)), 0, 100);
+  const others = MACRO_KEYS.filter((name) => name !== key);
+  const weights = otherWeights(ratios, others);
+  const remain = 100 - nextValue;
+  const rest = largestRemainderSum(others.map((name) => ({ key: name, exact: remain * weights[name] })), remain);
+  return gramsFromRatios(kcal, { ...rest, [key]: nextValue });
+}
+function allocateAfterGramEdit(kcal, ratios, key, grams) {
+  const per = KCAL_PER_GRAM[key];
+  const locked = clamp(Math.round(Number(grams)), 0, Math.min(GRAM_MAX[key], Math.floor(kcal / per)));
+  const remain = kcal - locked * per;
+  const others = MACRO_KEYS.filter((name) => name !== key);
+  const weights = otherWeights(ratios, others);
+  const ordered = ["fat", "protein", "carb"].filter((name) => name !== key);
+  const out = { protein: 0, fat: 0, carb: 0, [key]: locked };
+  let left = remain;
+  for (let index = 0; index < ordered.length; index += 1) {
+    const name = ordered[index];
+    const step = KCAL_PER_GRAM[name];
+    if (index === ordered.length - 1) out[name] = absorb(left, step, GRAM_MAX[name]);
+    else {
+      let value = clamp(Math.round(remain * weights[name] / step), 0, GRAM_MAX[name]);
+      while (value * step > left && value > 0) value -= 1;
+      out[name] = value;
+      left -= value * step;
+    }
+  }
+  return { grams: out, ratios: ratiosFromGrams(out) };
+}
+function previewMacroTargets(fields = {}, editedName) {
+  const kcal = parseIntField(fields.kcal);
+  if (kcal == null || kcal > KCAL_MAX) return { ready: false };
+  if (editedName === "protein" || editedName === "fat" || editedName === "carb") {
+    const typed = parseIntField(fields[editedName]);
+    if (typed == null) return { ready: true, skip: true };
+    return present(allocateAfterGramEdit(kcal, fieldRatios(fields), editedName, typed), editedName, typed);
+  }
+  if (typeof editedName === "string" && editedName.startsWith("ratio-")) {
+    const key = editedName.slice("ratio-".length);
+    if (!MACRO_KEYS.includes(key)) return { ready: true, skip: true };
+    const typed = parseIntField(fields[editedName]);
+    if (typed == null) return { ready: true, skip: true };
+    return present(allocateAfterRatioEdit(kcal, fieldRatios(fields), key, typed), editedName, typed);
+  }
+  return present(gramsFromRatios(kcal, fieldRatios(fields)), null, null);
+}
+function present(allocated, editedName, typed) {
+  const inputs = {
+    protein: String(allocated.grams.protein),
+    fat: String(allocated.grams.fat),
+    carb: String(allocated.grams.carb),
+    "ratio-protein": String(allocated.ratios.protein),
+    "ratio-fat": String(allocated.ratios.fat),
+    "ratio-carb": String(allocated.ratios.carb)
+  };
+  const clamp2 = {};
+  if (editedName && typed != null && inputs[editedName] !== String(typed)) clamp2[editedName] = true;
+  return { ready: true, inputs, clamp: clamp2 };
+}
+function fieldRatios(fields) {
+  const ratios = {};
+  for (const key of MACRO_KEYS) {
+    const parsed = parseIntField(fields[`ratio-${key}`]);
+    if (parsed == null) return { ...DEFAULT_ENERGY_RATIOS };
+    ratios[key] = parsed;
+  }
+  return ratios;
+}
+function settlePartial(kcal, gramsInput) {
+  const provided = MACRO_KEYS.filter((key) => gramsInput[key] != null);
+  const missing = MACRO_KEYS.filter((key) => gramsInput[key] == null);
+  const grams = { protein: 0, fat: 0, carb: 0 };
+  for (const key of provided) grams[key] = gramsInput[key];
+  if (macroEnergy(grams) > kcal) return gramsFromRatios(kcal, ratiosFromGrams(grams));
+  const remain = kcal - macroEnergy(grams);
+  if (missing.length === 1) {
+    const key = missing[0];
+    grams[key] = absorb(remain, KCAL_PER_GRAM[key], GRAM_MAX[key]);
+    return { grams, ratios: ratiosFromGrams(grams) };
+  }
+  const weights = otherWeights(DEFAULT_ENERGY_RATIOS, missing);
+  const ordered = ["fat", "protein", "carb"].filter((key) => missing.includes(key));
+  let left = remain;
+  for (let index = 0; index < ordered.length; index += 1) {
+    const key = ordered[index];
+    const step = KCAL_PER_GRAM[key];
+    if (index === ordered.length - 1) grams[key] = absorb(left, step, GRAM_MAX[key]);
+    else {
+      let value = clamp(Math.round(remain * weights[key] / step), 0, GRAM_MAX[key]);
+      while (value * step > left && value > 0) value -= 1;
+      grams[key] = value;
+      left -= value * step;
+    }
+  }
+  return { grams, ratios: ratiosFromGrams(grams) };
+}
+function settleComplete(kcal, gramsInput) {
+  const grams = { protein: gramsInput.protein, fat: gramsInput.fat, carb: gramsInput.carb };
+  if (Math.abs(macroEnergy(grams) - kcal) <= ENERGY_TOLERANCE) return { grams, ratios: ratiosFromGrams(grams) };
+  const ratios = ratiosFromGrams(grams);
+  if (ratios.protein + ratios.fat + ratios.carb <= 0) return gramsFromRatios(kcal, DEFAULT_ENERGY_RATIOS);
+  return gramsFromRatios(kcal, ratios);
+}
+function otherWeights(ratios, others) {
+  const raw = {};
+  let sum = 0;
+  for (const name of others) {
+    const value = Number(ratios?.[name]);
+    raw[name] = Number.isFinite(value) && value > 0 ? value : 0;
+    sum += raw[name];
+  }
+  if (sum <= 0) {
+    const fallback = others.reduce((total, name) => total + DEFAULT_ENERGY_RATIOS[name], 0);
+    return Object.fromEntries(others.map((name) => [name, DEFAULT_ENERGY_RATIOS[name] / fallback]));
+  }
+  return Object.fromEntries(others.map((name) => [name, raw[name] / sum]));
+}
+function largestRemainderSum(items, target) {
+  const rows = items.map((item) => {
+    const base = Math.floor(item.exact + 1e-9);
+    return { key: item.key, base, frac: item.exact - base };
+  });
+  let leftover = target - rows.reduce((sum, row) => sum + row.base, 0);
+  const ranked = [...rows].sort((a, b) => b.frac - a.frac || MACRO_KEYS.indexOf(a.key) - MACRO_KEYS.indexOf(b.key));
+  const bonus = /* @__PURE__ */ new Set();
+  for (const row of ranked) {
+    if (leftover <= 0) break;
+    bonus.add(row.key);
+    leftover -= 1;
+  }
+  const out = {};
+  for (const row of rows) out[row.key] = row.base + (bonus.has(row.key) ? 1 : 0);
+  return out;
+}
+function absorb(energyLeft, perGram, max) {
+  if (energyLeft <= 0 || perGram <= 0) return 0;
+  const low = clamp(Math.floor(energyLeft / perGram), 0, max);
+  const high = clamp(low + 1, 0, max);
+  const lowErr = Math.abs(low * perGram - energyLeft);
+  const highErr = Math.abs(high * perGram - energyLeft);
+  return highErr < lowErr ? high : low;
+}
+function readCleanTarget(value, max) {
+  if (value == null || value === "") return null;
+  const number = Number(value);
+  if (!Number.isInteger(number) || number < 0 || number > max) throw new Error("\u6BCF\u65E5\u76EE\u6807\u6570\u5B57\u65E0\u6548");
+  return number;
+}
+function readRatioInput(ratios) {
+  if (!ratios || typeof ratios !== "object") return null;
+  const out = {};
+  for (const key of MACRO_KEYS) {
+    const value = ratios[key];
+    if (value == null || value === "") return null;
+    const number = Number(value);
+    if (!Number.isFinite(number) || number < 0 || number > 100) return null;
+    out[key] = Math.round(number);
+  }
+  if (out.protein + out.fat + out.carb <= 0) return null;
+  return out;
+}
+function pack(kcal, allocated, confirmed) {
+  return {
+    kcal,
+    protein: allocated.grams.protein,
+    fat: allocated.grams.fat,
+    carb: allocated.grams.carb,
+    ratios: { ...allocated.ratios },
+    source: "user",
+    confirmed
+  };
+}
+function parseIntField(value) {
+  const text = String(value ?? "").trim();
+  if (!/^\d+$/.test(text)) return null;
+  const number = Number(text);
+  if (!Number.isSafeInteger(number)) return null;
+  return number;
+}
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
 // src/shared/meals.js
 var defaultDietSettings = () => ({
-  targets: { kcal: null, protein: null, fat: null, carb: null, source: "user", confirmed: false },
+  targets: emptyTargets(),
   flags: { pregnancy: false, lactation: false, minor: false, kidney: false, diabetes: false, hypertension: false, eatingDisorder: false },
   flagsConfirmed: false
 });
@@ -73,23 +338,14 @@ var MEALS = /* @__PURE__ */ new Set(["breakfast", "lunch", "dinner", "snack"]);
 var STATUSES = /* @__PURE__ */ new Set(["matched", "unestimated", "ambiguous"]);
 function cleanDietSettings(input = {}) {
   const base = defaultDietSettings();
-  const targets = input.targets || {};
   const flags = input.flags || {};
-  base.targets.confirmed = targets.confirmed === true;
-  base.targets.source = "user";
-  for (const key of ["kcal", "protein", "fat", "carb"]) base.targets[key] = cleanTarget(targets[key], key === "kcal" ? 1e4 : 500);
+  base.targets = settleDailyTargets(input.targets || {});
   base.flagsConfirmed = input.flagsConfirmed === true;
   for (const key of Object.keys(base.flags)) base.flags[key] = flags[key] === true;
   if (!base.flagsConfirmed) {
     for (const key of Object.keys(base.flags)) base.flags[key] = false;
   }
   return base;
-}
-function cleanTarget(value, max) {
-  if (value == null || value === "") return null;
-  const number = Number(value);
-  if (!Number.isInteger(number) || number < 0 || number > max) throw new Error("\u6BCF\u65E5\u76EE\u6807\u6570\u5B57\u65E0\u6548");
-  return number;
 }
 function validateMeal(meal) {
   if (!meal || typeof meal.id !== "string" || !/^[\w-]{1,100}$/.test(meal.id)) throw new Error("\u8FD9\u4E00\u9910\u7684\u7F16\u53F7\u65E0\u6548");
@@ -839,8 +1095,11 @@ function createDietPages(ctx) {
   let libraryFilter = "all";
   document.addEventListener("input", (event) => {
     const el = event.target;
-    if (!(el instanceof HTMLTextAreaElement)) return;
-    if (el.name === "text" && el.closest("#meal-form")) composeText = el.value;
+    if (el instanceof HTMLTextAreaElement && el.name === "text" && el.closest("#meal-form")) composeText = el.value;
+    if (el instanceof HTMLInputElement) onTargetInput(el);
+  });
+  document.addEventListener("focusout", (event) => {
+    if (event.target instanceof HTMLInputElement) onTargetBlur(event.target);
   });
   document.addEventListener("change", (event) => {
     const el = event.target;
@@ -918,7 +1177,7 @@ function createDietPages(ctx) {
     const settingsState = ctx.getState().dietSettings;
     const targets = settingsState.targets;
     const flags = settingsState.flags;
-    return `${heading("\u6211\u7684", "\u76EE\u6807\u548C\u8BB0\u5F55\u90FD\u5728\u8FD9\u53F0\u624B\u673A\u4E0A\u3002")}<div class="diet-page diet-settings"><section class="diet-card"><h2>\u6BCF\u65E5\u76EE\u6807</h2><p class="small muted">\u6309\u81EA\u5DF1\u7684\u4E60\u60EF\u586B\u3002\u7559\u7A7A\u7684\u9879\u76EE\u4E0D\u53C2\u4E0E\u5BF9\u6BD4\u3002</p><form id="target-form"><div class="target-grid"><label class="form-label">\u70ED\u91CF\uFF08\u5343\u5361\uFF09<input name="kcal" inputmode="numeric" min="0" max="10000" value="${targets.kcal ?? ""}"></label><label class="form-label">\u86CB\u767D\u8D28\uFF08\u514B\uFF09<input name="protein" inputmode="numeric" min="0" max="500" value="${targets.protein ?? ""}"></label><label class="form-label">\u8102\u80AA\uFF08\u514B\uFF09<input name="fat" inputmode="numeric" min="0" max="500" value="${targets.fat ?? ""}"></label><label class="form-label">\u78B3\u6C34\uFF08\u514B\uFF09<input name="carb" inputmode="numeric" min="0" max="500" value="${targets.carb ?? ""}"></label></div><label class="check-line"><input type="checkbox" name="confirm" ${targets.confirmed ? "checked" : ""}> \u628A\u8FD9\u4E9B\u6570\u5B57\u5F53\u4F5C\u6211\u7684\u6BCF\u65E5\u76EE\u6807</label><button class="primary-button" type="submit">\u4FDD\u5B58\u76EE\u6807</button></form></section><section class="diet-card"><h2>\u8FD9\u4E9B\u60C5\u51B5\u4E0B\uFF0C\u5EFA\u8BAE\u4F1A\u66F4\u8C28\u614E</h2><p class="small muted">\u52FE\u9009\u540E\uFF0C\u4E0D\u4F1A\u6309\u5403\u5F97\u5C11\u6765\u50AC\u4F60\uFF0C\u4E5F\u4E0D\u4F1A\u56E0\u4E3A\u86CB\u767D\u8D28\u4E0D\u591F\u5C31\u63A8\u8350\u9AD8\u86CB\u767D\u7684\u83DC\u3002</p><form id="flags-form">${flagBox("pregnancy", "\u5B55\u671F\u6216\u5907\u5B55", flags.pregnancy)}${flagBox("lactation", "\u54FA\u4E73", flags.lactation)}${flagBox("minor", "\u672A\u6210\u5E74", flags.minor)}${flagBox("kidney", "\u80BE\u75C5", flags.kidney)}${flagBox("diabetes", "\u7CD6\u5C3F\u75C5", flags.diabetes)}${flagBox("hypertension", "\u9AD8\u8840\u538B", flags.hypertension)}${flagBox("eatingDisorder", "\u5403\u996D\u8BA9\u6211\u5F88\u75DB\u82E6\uFF0C\u6216\u51FA\u73B0\u50AC\u5410\u3001\u7EDD\u98DF", flags.eatingDisorder)}<label class="check-line"><input type="checkbox" name="confirm" ${settingsState.flagsConfirmed ? "checked" : ""}> \u6309\u8FD9\u4E9B\u60C5\u51B5\u8C03\u6574\u6587\u5B57\u5EFA\u8BAE</label><button class="primary-button" type="submit">\u4FDD\u5B58</button></form></section><section class="settings-list" aria-label="\u66F4\u591A"><button class="settings-row" type="button" data-action="privacy"><span><strong>\u9690\u79C1\u4E0E\u8BF4\u660E</strong><small>\u8BB0\u5F55\u53EA\u7559\u5728\u8FD9\u53F0\u624B\u673A\u4E0A\u3002\u70ED\u91CF\u662F\u4F30\u7B97\u3002</small></span>${ctx.icon("arrow")}</button><button class="settings-row" type="button" data-action="reset"><span><strong>\u6E05\u9664\u8FD9\u53F0\u624B\u673A\u4E0A\u7684\u8BB0\u5F55</strong><small>\u996E\u98DF\u8BB0\u5F55\u548C\u6BCF\u65E5\u76EE\u6807\u4F1A\u4E00\u8D77\u6E05\u6389\u3002</small></span>${ctx.icon("arrow")}</button></section></div>`;
+    return `${heading("\u6211\u7684", "\u76EE\u6807\u548C\u8BB0\u5F55\u90FD\u5728\u8FD9\u53F0\u624B\u673A\u4E0A\u3002")}<div class="diet-page diet-settings">${dailyGoalsCard(targets)}<section class="diet-card"><h2>\u8FD9\u4E9B\u60C5\u51B5\u4E0B\uFF0C\u5EFA\u8BAE\u4F1A\u66F4\u8C28\u614E</h2><p class="small muted">\u52FE\u9009\u540E\uFF0C\u4E0D\u4F1A\u6309\u5403\u5F97\u5C11\u6765\u50AC\u4F60\uFF0C\u4E5F\u4E0D\u4F1A\u56E0\u4E3A\u86CB\u767D\u8D28\u4E0D\u591F\u5C31\u63A8\u8350\u9AD8\u86CB\u767D\u7684\u83DC\u3002</p><form id="flags-form">${flagBox("pregnancy", "\u5B55\u671F\u6216\u5907\u5B55", flags.pregnancy)}${flagBox("lactation", "\u54FA\u4E73", flags.lactation)}${flagBox("minor", "\u672A\u6210\u5E74", flags.minor)}${flagBox("kidney", "\u80BE\u75C5", flags.kidney)}${flagBox("diabetes", "\u7CD6\u5C3F\u75C5", flags.diabetes)}${flagBox("hypertension", "\u9AD8\u8840\u538B", flags.hypertension)}${flagBox("eatingDisorder", "\u5403\u996D\u8BA9\u6211\u5F88\u75DB\u82E6\uFF0C\u6216\u51FA\u73B0\u50AC\u5410\u3001\u7EDD\u98DF", flags.eatingDisorder)}<label class="check-line"><input type="checkbox" name="confirm" ${settingsState.flagsConfirmed ? "checked" : ""}> \u6309\u8FD9\u4E9B\u60C5\u51B5\u8C03\u6574\u6587\u5B57\u5EFA\u8BAE</label><button class="primary-button" type="submit">\u4FDD\u5B58</button></form></section><section class="settings-list" aria-label="\u66F4\u591A"><button class="settings-row" type="button" data-action="privacy"><span><strong>\u9690\u79C1\u4E0E\u8BF4\u660E</strong><small>\u8BB0\u5F55\u53EA\u7559\u5728\u8FD9\u53F0\u624B\u673A\u4E0A\u3002\u70ED\u91CF\u662F\u4F30\u7B97\u3002</small></span>${ctx.icon("arrow")}</button><button class="settings-row" type="button" data-action="reset"><span><strong>\u6E05\u9664\u8FD9\u53F0\u624B\u673A\u4E0A\u7684\u8BB0\u5F55</strong><small>\u996E\u98DF\u8BB0\u5F55\u548C\u6BCF\u65E5\u76EE\u6807\u4F1A\u4E00\u8D77\u6E05\u6389\u3002</small></span>${ctx.icon("arrow")}</button></section></div>`;
   }
   async function onClick(button) {
     const action = button.dataset.dietAction;
@@ -1242,8 +1501,28 @@ function createDietPages(ctx) {
       ctx.toast("\u8BF7\u5148\u52FE\u9009\u786E\u8BA4\uFF0C\u518D\u4FDD\u5B58\u76EE\u6807");
       return;
     }
+    if (blank(data.get("kcal")) == null) {
+      ctx.toast("\u5148\u586B\u5199\u6BCF\u5929\u7684\u70ED\u91CF");
+      return;
+    }
     const current = ctx.getState().dietSettings;
-    await ctx.writeStore((storage2) => storage2.dietSettings({ ...current, targets: { kcal: blank(data.get("kcal")), protein: blank(data.get("protein")), fat: blank(data.get("fat")), carb: blank(data.get("carb")), source: "user", confirmed: true }, flagsConfirmed: current.flagsConfirmed }));
+    await ctx.writeStore((storage2) => storage2.dietSettings({
+      ...current,
+      targets: {
+        kcal: blank(data.get("kcal")),
+        protein: blank(data.get("protein")),
+        fat: blank(data.get("fat")),
+        carb: blank(data.get("carb")),
+        ratios: {
+          protein: blank(data.get("ratio-protein")),
+          fat: blank(data.get("ratio-fat")),
+          carb: blank(data.get("ratio-carb"))
+        },
+        source: "user",
+        confirmed: true
+      },
+      flagsConfirmed: current.flagsConfirmed
+    }));
     invalidateToday();
     ctx.toast("\u6BCF\u65E5\u76EE\u6807\u5DF2\u4FDD\u5B58\u5728\u672C\u673A");
   }
@@ -1348,7 +1627,7 @@ function macroTiles(totals, targets) {
   ];
   return `<div class="macro-tiles">${rows.map(([label, kind, value, target]) => {
     const amount = Number(value) || 0;
-    const hasTarget = target != null && Number(target) > 0;
+    const hasTarget = hasMacroTarget(target);
     const note = hasTarget ? `\u76EE\u6807 ${target} \u514B` : "\u672A\u8BBE\u76EE\u6807";
     return `<article class="macro-tile"><span class="macro-ico ${kind}" aria-hidden="true">${macroGlyph(kind)}</span><p>${label}</p><strong class="num">${amount}<small>\u514B</small></strong><p class="small">${note}</p></article>`;
   }).join("")}</div>`;
@@ -1380,6 +1659,74 @@ async function compressImage(file) {
   let binary = "";
   for (let index = 0; index < bytes.length; index += 32768) binary += String.fromCharCode(...bytes.subarray(index, index + 32768));
   return `data:image/jpeg;base64,${btoa(binary)}`;
+}
+var TARGET_FIELDS = /* @__PURE__ */ new Set(["kcal", "protein", "fat", "carb", "ratio-protein", "ratio-fat", "ratio-carb"]);
+function dailyGoalsCard(targets = {}) {
+  const ratios = targets.ratios || {};
+  const ready = Number.isInteger(targets.kcal);
+  const row = (label, key, gramMax) => `<div class="macro-plan-row"><span class="macro-plan-name">${label}</span><label class="macro-plan-field"><span class="sr-only">${label}\u80FD\u91CF\u5360\u6BD4</span><span class="macro-plan-input"><input ${targetInputAttrs(`ratio-${key}`, ratios[key], 100)}><span>%</span></span></label><label class="macro-plan-field"><span class="sr-only">${label}\u514B\u6570</span><span class="macro-plan-input"><input ${targetInputAttrs(key, targets[key], gramMax)}><span>\u514B</span></span></label></div>`;
+  return `<section class="diet-card"><h2>\u6BCF\u65E5\u76EE\u6807</h2><p class="small muted">\u5148\u586B\u6BCF\u5929\u60F3\u5403\u591A\u5C11\u70ED\u91CF\u3002\u86CB\u767D\u8D28\u3001\u8102\u80AA\u548C\u78B3\u6C34\u4F1A\u6309\u8FD9\u4E2A\u70ED\u91CF\u7B97\u51FA\u6765\u3002</p><form id="target-form"><label class="form-label">\u6BCF\u5929\u70ED\u91CF\uFF08\u5343\u5361\uFF09<input ${targetInputAttrs("kcal", targets.kcal, KCAL_MAX)}></label><div class="macro-plan" data-macro-plan ${ready ? "" : "hidden"}><p class="small muted">${macroPlanNote()}</p><div class="macro-plan-head" aria-hidden="true"><span></span><span>\u80FD\u91CF\u5360\u6BD4</span><span>\u514B\u6570</span></div>${row("\u86CB\u767D\u8D28", "protein", GRAM_MAX.protein)}${row("\u8102\u80AA", "fat", GRAM_MAX.fat)}${row("\u78B3\u6C34", "carb", GRAM_MAX.carb)}</div><p class="small muted" data-macro-empty ${ready ? "hidden" : ""}>\u586B\u597D\u70ED\u91CF\u540E\uFF0C\u4F1A\u663E\u793A\u86CB\u767D\u8D28\u3001\u8102\u80AA\u548C\u78B3\u6C34\u5404\u591A\u5C11\u514B\u3002</p><label class="check-line"><input type="checkbox" name="confirm" ${targets.confirmed ? "checked" : ""}> \u628A\u8FD9\u4E9B\u6570\u5B57\u5F53\u4F5C\u6211\u7684\u6BCF\u65E5\u76EE\u6807</label><button class="primary-button" type="submit">\u4FDD\u5B58\u76EE\u6807</button></form></section>`;
+}
+function macroPlanNote() {
+  const ratios = DEFAULT_ENERGY_RATIOS;
+  return `\u9ED8\u8BA4\u662F\u86CB\u767D\u8D28 ${ratios.protein}%\u3001\u8102\u80AA ${ratios.fat}%\u3001\u78B3\u6C34 ${ratios.carb}%\u3002\u6539\u5360\u6BD4\uFF0C\u53E6\u5916\u4E24\u9879\u4F1A\u6309\u539F\u6765\u7684\u9AD8\u4F4E\u4E00\u8D77\u7F29\u653E\u3002\u6539\u514B\u6570\uFF0C\u8FD9\u4E00\u9879\u4FDD\u6301\u4F60\u586B\u7684\u6570\uFF0C\u5269\u4E0B\u7684\u70ED\u91CF\u5206\u7ED9\u53E6\u5916\u4E24\u9879\u30021 \u514B\u86CB\u767D\u8D28\u6216\u78B3\u6C34\u5927\u7EA6 ${KCAL_PER_GRAM.protein} \u5343\u5361\uFF0C1 \u514B\u8102\u80AA\u5927\u7EA6 ${KCAL_PER_GRAM.fat} \u5343\u5361\u3002`;
+}
+function targetInputAttrs(name, value, max) {
+  const shown = Number.isInteger(value) ? String(value) : "";
+  const last = shown === "" ? "" : ` data-last="${shown}"`;
+  return `name="${name}" inputmode="numeric" min="0" max="${max}" autocomplete="off" spellcheck="false" value="${shown}"${last}`;
+}
+function onTargetInput(el) {
+  if (!TARGET_FIELDS.has(el.name) || !el.closest("#target-form")) return;
+  if (!/^\d+$/.test(el.value)) {
+    if (el.name === "kcal") setMacroPlanReady(el.form, false);
+    return;
+  }
+  applyMacroPreview(el.form, el.name, false);
+}
+function onTargetBlur(el) {
+  if (!TARGET_FIELDS.has(el.name) || !el.closest("#target-form")) return;
+  if (!/^\d+$/.test(el.value) && el.dataset.last != null) el.value = el.dataset.last;
+  if (!/^\d+$/.test(el.value)) {
+    if (el.name === "kcal") applyMacroPreview(el.form, "kcal", true);
+    return;
+  }
+  applyMacroPreview(el.form, el.name, true);
+}
+function applyMacroPreview(form, editedName, rewriteActive) {
+  if (!form) return;
+  const preview = previewMacroTargets(readTargetFields(form), editedName);
+  setMacroPlanReady(form, preview.ready);
+  if (!preview.inputs) return;
+  for (const [name, value] of Object.entries(preview.inputs)) {
+    const input = form.elements.namedItem(name);
+    if (!input) continue;
+    const active = input === document.activeElement;
+    if (active && !rewriteActive && !preview.clamp?.[name]) continue;
+    input.value = value;
+    input.dataset.last = value;
+  }
+}
+function readTargetFields(form) {
+  const value = (name) => form.elements.namedItem(name)?.value ?? "";
+  return {
+    kcal: value("kcal"),
+    protein: value("protein"),
+    fat: value("fat"),
+    carb: value("carb"),
+    "ratio-protein": value("ratio-protein"),
+    "ratio-fat": value("ratio-fat"),
+    "ratio-carb": value("ratio-carb")
+  };
+}
+function setMacroPlanReady(form, ready) {
+  const plan = form?.querySelector("[data-macro-plan]");
+  const empty = form?.querySelector("[data-macro-empty]");
+  if (plan) plan.hidden = !ready;
+  if (empty) empty.hidden = ready;
+}
+function hasMacroTarget(target) {
+  return target != null && target !== "" && Number.isFinite(Number(target));
 }
 
 // src/client/app.js

@@ -52,7 +52,12 @@ test('meal records stay on this device and reject invented calories for unmatche
   assert.equal((await s.load()).meals[0].items[0].nutrition.kcal, 195);
   await assert.rejects(s.saveMeal({ ...meal, id: crypto.randomUUID(), items: [{ name: '牛肉面', status: 'unestimated', grams: 400, nutrition: { kcal: 1, protein: 0, fat: 0, carb: 0, source: 'x', sourceNote: 'x', version: 't', foodId: 'x' } }] }), /无法估算/);
   await s.dietSettings({ targets: { kcal: 1800, protein: null, fat: null, carb: null, confirmed: true }, flags: { kidney: true }, flagsConfirmed: true });
-  assert.equal((await s.load()).dietSettings.targets.kcal, 1800);
+  const savedTargets = (await s.load()).dietSettings.targets;
+  assert.equal(savedTargets.kcal, 1800);
+  assert.equal(savedTargets.protein, 90);
+  assert.equal(savedTargets.fat, 50);
+  assert.equal(savedTargets.carb, 247);
+  assert.deepEqual(savedTargets.ratios, { protein: 20, fat: 25, carb: 55 });
   assert.equal((await s.load()).dietSettings.flags.kidney, true);
   await s.clear();
   assert.equal((await s.load()).meals.length, 0);
