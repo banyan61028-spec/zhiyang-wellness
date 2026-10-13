@@ -24,31 +24,211 @@ for (const item of [...recipes, ...topics, ...articles]) {
   item.contentVersion = "0.1-draft";
 }
 
+// src/shared/nutrition/targets.js
+var KCAL_PER_GRAM = { protein: 4, carb: 4, fat: 9 };
+var DEFAULT_ENERGY_RATIOS = { protein: 20, fat: 25, carb: 55 };
+var KCAL_MAX = 1e4;
+var GRAM_MAX = { protein: 2500, fat: 1200, carb: 2500 };
+var ENERGY_TOLERANCE = 2;
+var MACRO_KEYS = ["protein", "fat", "carb"];
+function emptyTargets(confirmed = false) {
+  return {
+    kcal: null,
+    protein: null,
+    fat: null,
+    carb: null,
+    ratios: { protein: null, fat: null, carb: null },
+    source: "user",
+    confirmed: confirmed === true
+  };
+}
+function macroEnergy(grams = {}) {
+  return MACRO_KEYS.reduce((sum, key) => sum + (Number(grams[key]) || 0) * KCAL_PER_GRAM[key], 0);
+}
+function settleDailyTargets(targets = {}) {
+  const confirmed = targets?.confirmed === true;
+  const kcal = readCleanTarget(targets?.kcal, KCAL_MAX);
+  const gramsInput = {
+    protein: readCleanTarget(targets?.protein, GRAM_MAX.protein),
+    fat: readCleanTarget(targets?.fat, GRAM_MAX.fat),
+    carb: readCleanTarget(targets?.carb, GRAM_MAX.carb)
+  };
+  if (kcal == null) return emptyTargets(confirmed);
+  const ratioInput = readRatioInput(targets?.ratios);
+  const anyGram = MACRO_KEYS.some((key) => gramsInput[key] != null);
+  if (!anyGram) return pack(kcal, gramsFromRatios(kcal, ratioInput || DEFAULT_ENERGY_RATIOS), confirmed);
+  if (ratioInput && MACRO_KEYS.every((key) => gramsInput[key] != null)) {
+    const allocated = gramsFromRatios(kcal, ratioInput);
+    if (MACRO_KEYS.every((key) => gramsInput[key] === allocated.grams[key])) return pack(kcal, allocated, confirmed);
+  }
+  const partial = MACRO_KEYS.some((key) => gramsInput[key] == null);
+  const settled = partial ? settlePartial(kcal, gramsInput) : settleComplete(kcal, gramsInput);
+  return pack(kcal, settled, confirmed);
+}
+function gramsFromRatios(kcal, ratios) {
+  const normalized = normalizeRatios(ratios);
+  const proteinEnergy = kcal * normalized.protein / 100;
+  const fatEnergy = kcal * normalized.fat / 100;
+  let protein = clamp(Math.round(proteinEnergy / KCAL_PER_GRAM.protein), 0, GRAM_MAX.protein);
+  let fat = clamp(Math.round(fatEnergy / KCAL_PER_GRAM.fat), 0, GRAM_MAX.fat);
+  while (protein * KCAL_PER_GRAM.protein + fat * KCAL_PER_GRAM.fat > kcal && (protein > 0 || fat > 0)) {
+    const proteinOver = protein * KCAL_PER_GRAM.protein - proteinEnergy;
+    const fatOver = fat * KCAL_PER_GRAM.fat - fatEnergy;
+    if (fat > 0 && (protein === 0 || fatOver >= proteinOver)) fat -= 1;
+    else protein -= 1;
+  }
+  const left = kcal - protein * KCAL_PER_GRAM.protein - fat * KCAL_PER_GRAM.fat;
+  const carb = absorb(left, KCAL_PER_GRAM.carb, GRAM_MAX.carb);
+  return { grams: { protein, fat, carb }, ratios: normalized };
+}
+function ratiosFromGrams(grams = {}) {
+  const parts = MACRO_KEYS.map((key) => ({
+    key,
+    exact: Math.max(0, Number(grams[key]) || 0) * KCAL_PER_GRAM[key]
+  }));
+  const total = parts.reduce((sum, part) => sum + part.exact, 0);
+  if (total <= 0) return { protein: 0, fat: 0, carb: 0 };
+  return largestRemainderSum(parts.map((part) => ({ key: part.key, exact: part.exact / total * 100 })), 100);
+}
+function normalizeRatios(input) {
+  if (!input) return { ...DEFAULT_ENERGY_RATIOS };
+  const raw = {};
+  for (const key of MACRO_KEYS) {
+    const value = Number(input[key]);
+    if (!Number.isFinite(value) || value < 0) return { ...DEFAULT_ENERGY_RATIOS };
+    raw[key] = value;
+  }
+  const sum = MACRO_KEYS.reduce((total, key) => total + raw[key], 0);
+  if (sum <= 0) return { ...DEFAULT_ENERGY_RATIOS };
+  if (sum === 100 && MACRO_KEYS.every((key) => Number.isInteger(raw[key]))) {
+    return { protein: raw.protein, fat: raw.fat, carb: raw.carb };
+  }
+  return largestRemainderSum(MACRO_KEYS.map((key) => ({ key, exact: raw[key] / sum * 100 })), 100);
+}
+function settlePartial(kcal, gramsInput) {
+  const provided = MACRO_KEYS.filter((key) => gramsInput[key] != null);
+  const missing = MACRO_KEYS.filter((key) => gramsInput[key] == null);
+  const grams = { protein: 0, fat: 0, carb: 0 };
+  for (const key of provided) grams[key] = gramsInput[key];
+  if (macroEnergy(grams) > kcal) return gramsFromRatios(kcal, ratiosFromGrams(grams));
+  const remain = kcal - macroEnergy(grams);
+  if (missing.length === 1) {
+    const key = missing[0];
+    grams[key] = absorb(remain, KCAL_PER_GRAM[key], GRAM_MAX[key]);
+    return { grams, ratios: ratiosFromGrams(grams) };
+  }
+  const weights = otherWeights(DEFAULT_ENERGY_RATIOS, missing);
+  const ordered = ["fat", "protein", "carb"].filter((key) => missing.includes(key));
+  let left = remain;
+  for (let index = 0; index < ordered.length; index += 1) {
+    const key = ordered[index];
+    const step = KCAL_PER_GRAM[key];
+    if (index === ordered.length - 1) grams[key] = absorb(left, step, GRAM_MAX[key]);
+    else {
+      let value = clamp(Math.round(remain * weights[key] / step), 0, GRAM_MAX[key]);
+      while (value * step > left && value > 0) value -= 1;
+      grams[key] = value;
+      left -= value * step;
+    }
+  }
+  return { grams, ratios: ratiosFromGrams(grams) };
+}
+function settleComplete(kcal, gramsInput) {
+  const grams = { protein: gramsInput.protein, fat: gramsInput.fat, carb: gramsInput.carb };
+  if (Math.abs(macroEnergy(grams) - kcal) <= ENERGY_TOLERANCE) return { grams, ratios: ratiosFromGrams(grams) };
+  const ratios = ratiosFromGrams(grams);
+  if (ratios.protein + ratios.fat + ratios.carb <= 0) return gramsFromRatios(kcal, DEFAULT_ENERGY_RATIOS);
+  return gramsFromRatios(kcal, ratios);
+}
+function otherWeights(ratios, others) {
+  const raw = {};
+  let sum = 0;
+  for (const name of others) {
+    const value = Number(ratios?.[name]);
+    raw[name] = Number.isFinite(value) && value > 0 ? value : 0;
+    sum += raw[name];
+  }
+  if (sum <= 0) {
+    const fallback = others.reduce((total, name) => total + DEFAULT_ENERGY_RATIOS[name], 0);
+    return Object.fromEntries(others.map((name) => [name, DEFAULT_ENERGY_RATIOS[name] / fallback]));
+  }
+  return Object.fromEntries(others.map((name) => [name, raw[name] / sum]));
+}
+function largestRemainderSum(items, target) {
+  const rows = items.map((item) => {
+    const base = Math.floor(item.exact + 1e-9);
+    return { key: item.key, base, frac: item.exact - base };
+  });
+  let leftover = target - rows.reduce((sum, row) => sum + row.base, 0);
+  const ranked = [...rows].sort((a, b) => b.frac - a.frac || MACRO_KEYS.indexOf(a.key) - MACRO_KEYS.indexOf(b.key));
+  const bonus = /* @__PURE__ */ new Set();
+  for (const row of ranked) {
+    if (leftover <= 0) break;
+    bonus.add(row.key);
+    leftover -= 1;
+  }
+  const out = {};
+  for (const row of rows) out[row.key] = row.base + (bonus.has(row.key) ? 1 : 0);
+  return out;
+}
+function absorb(energyLeft, perGram, max) {
+  if (energyLeft <= 0 || perGram <= 0) return 0;
+  const low = clamp(Math.floor(energyLeft / perGram), 0, max);
+  const high = clamp(low + 1, 0, max);
+  const lowErr = Math.abs(low * perGram - energyLeft);
+  const highErr = Math.abs(high * perGram - energyLeft);
+  return highErr < lowErr ? high : low;
+}
+function readCleanTarget(value, max) {
+  if (value == null || value === "") return null;
+  const number = Number(value);
+  if (!Number.isInteger(number) || number < 0 || number > max) throw new Error("\u6BCF\u65E5\u76EE\u6807\u6570\u5B57\u65E0\u6548");
+  return number;
+}
+function readRatioInput(ratios) {
+  if (!ratios || typeof ratios !== "object") return null;
+  const out = {};
+  for (const key of MACRO_KEYS) {
+    const value = ratios[key];
+    if (value == null || value === "") return null;
+    const number = Number(value);
+    if (!Number.isFinite(number) || number < 0 || number > 100) return null;
+    out[key] = Math.round(number);
+  }
+  if (out.protein + out.fat + out.carb <= 0) return null;
+  return out;
+}
+function pack(kcal, allocated, confirmed) {
+  return {
+    kcal,
+    protein: allocated.grams.protein,
+    fat: allocated.grams.fat,
+    carb: allocated.grams.carb,
+    ratios: { ...allocated.ratios },
+    source: "user",
+    confirmed
+  };
+}
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
 // src/shared/meals.js
 var defaultDietSettings = () => ({
-  targets: { kcal: null, protein: null, fat: null, carb: null, source: "user", confirmed: false },
+  targets: emptyTargets(),
   flags: { pregnancy: false, lactation: false, minor: false, kidney: false, diabetes: false, hypertension: false, eatingDisorder: false },
   flagsConfirmed: false
 });
 function cleanDietSettings(input = {}) {
   const base = defaultDietSettings();
-  const targets = input.targets || {};
   const flags = input.flags || {};
-  base.targets.confirmed = targets.confirmed === true;
-  base.targets.source = "user";
-  for (const key of ["kcal", "protein", "fat", "carb"]) base.targets[key] = cleanTarget(targets[key], key === "kcal" ? 1e4 : 500);
+  base.targets = settleDailyTargets(input.targets || {});
   base.flagsConfirmed = input.flagsConfirmed === true;
   for (const key of Object.keys(base.flags)) base.flags[key] = flags[key] === true;
   if (!base.flagsConfirmed) {
     for (const key of Object.keys(base.flags)) base.flags[key] = false;
   }
   return base;
-}
-function cleanTarget(value, max) {
-  if (value == null || value === "") return null;
-  const number = Number(value);
-  if (!Number.isInteger(number) || number < 0 || number > max) throw new Error("\u6BCF\u65E5\u76EE\u6807\u6570\u5B57\u65E0\u6548");
-  return number;
 }
 
 // src/shared/records.js
@@ -2598,10 +2778,9 @@ function programAdvice({ totals, targets, caution }) {
   const short = gaps.map(([label, target, actual]) => ({ label, gap: Math.round(Number(target) - actual) })).filter((item) => item.gap > 5).sort((a, b) => b.gap - a.gap)[0];
   const kcalGap = Math.round(targets.kcal - totals.kcal);
   let sentence = `\u4ECA\u5929\u5927\u7EA6\u5403\u4E86 ${totals.kcal} \u5343\u5361\u3002`;
-  if (kcalGap > 0) sentence += `\u8DDD\u79BB\u4F60\u586B\u7684\u76EE\u6807\u8FD8\u5C11 ${kcalGap} \u5343\u5361\u3002`;
-  else if (kcalGap < 0) sentence += `\u5DF2\u7ECF\u6BD4\u4F60\u586B\u7684\u76EE\u6807\u591A ${Math.abs(kcalGap)} \u5343\u5361\u3002`;
-  else sentence += "\u548C\u4F60\u586B\u7684\u70ED\u91CF\u76EE\u6807\u4E00\u6837\u3002";
-  if (short && allowed.includes(short.gap)) sentence += `${short.label}\u5927\u7EA6\u8FD8\u5C11 ${short.gap} \u514B\u3002`;
+  let comparison = kcalGap > 0 ? `\u8DDD\u79BB\u4F60\u586B\u7684\u76EE\u6807\u8FD8\u5C11 ${kcalGap} \u5343\u5361` : kcalGap < 0 ? `\u5DF2\u7ECF\u6BD4\u4F60\u586B\u7684\u76EE\u6807\u591A ${Math.abs(kcalGap)} \u5343\u5361` : "\u548C\u4F60\u586B\u7684\u70ED\u91CF\u76EE\u6807\u4E00\u6837";
+  if (short && allowed.includes(short.gap)) comparison += `\uFF0C${short.label}\u5927\u7EA6\u8FD8\u5C11 ${short.gap} \u514B`;
+  sentence += `${comparison}\u3002`;
   const checked = sanitizeAdvice(sentence, allowed);
   return checked.kept ? checked.text : "\u4ECA\u5929\u7684\u5408\u8BA1\u5DF2\u7ECF\u7B97\u597D\u3002";
 }
@@ -2880,7 +3059,7 @@ async function buildReport(body, env, source, requestId) {
       const content = await qwenChat({
         config,
         model: config.textModel,
-        messages: [{ role: "system", content: '\u4F60\u53EA\u6839\u636E\u7ED9\u5B9A\u7684\u5408\u8BA1\u5199\u4E00\u4E24\u53E5\u4E2D\u6587\u5EFA\u8BAE\u3002\u4E0D\u8981\u65B0\u589E\u6570\u5B57\u3001\u98DF\u7269\u6216\u83DC\u8C31\u3002\u4E0D\u8981\u9F13\u52B1\u6781\u7AEF\u5C11\u5403\uFF0C\u4E0D\u8981\u63D0\u4F9B\u6CBB\u7597\u65B9\u6848\u3002\u53EA\u8FD4\u56DE JSON\uFF1A{"advice":"..."}' }, { role: "user", content: JSON.stringify({ totals, targets: targets.confirmed ? targets : null, caution }) }],
+        messages: [{ role: "system", content: '\u4F60\u53EA\u6839\u636E\u7ED9\u5B9A\u7684\u5408\u8BA1\u5199\u4E00\u4E24\u53E5\u4E2D\u6587\u5EFA\u8BAE\u3002\u4E0D\u8981\u65B0\u589E\u6570\u5B57\u3001\u98DF\u7269\u6216\u83DC\u8C31\u3002\u4E0D\u8981\u9F13\u52B1\u6781\u7AEF\u5C11\u5403\uFF0C\u4E0D\u8981\u63D0\u4F9B\u6CBB\u7597\u65B9\u6848\u3002\u53EA\u8FD4\u56DE JSON\uFF1A{"advice":"..."}' }, { role: "user", content: JSON.stringify({ totals, targets: modelTargets(targets), caution }) }],
         fetchImpl: env.qwenFetch
       });
       const checked = sanitizeAdvice(extractJson(content).advice, allowed);
@@ -2932,7 +3111,7 @@ async function buildRecommendation(body, env, source, requestId) {
       const content = await qwenChat({
         config,
         model: config.textModel,
-        messages: [{ role: "system", content: '\u98DF\u8C31\u5DF2\u7ECF\u9009\u5B9A\u3002\u53EA\u7528\u4E00\u4E24\u53E5\u8BDD\u89E3\u91CA\u4E3A\u4EC0\u4E48\u662F\u8FD9\u9053\u3002\u4E0D\u8981\u63D0\u5230\u5176\u4ED6\u83DC\u540D\uFF0C\u4E0D\u8981\u7F16\u9020\u505A\u6CD5\u6216\u8425\u517B\u6570\u5B57\u3002\u53EA\u8FD4\u56DE JSON\uFF1A{"reason":"..."}' }, { role: "user", content: JSON.stringify({ recipe: { id: recipe.id, name: recipe.name, nutrition: recipe.nutrition }, totals, targets: targets.confirmed ? targets : null, caution }) }],
+        messages: [{ role: "system", content: '\u98DF\u8C31\u5DF2\u7ECF\u9009\u5B9A\u3002\u53EA\u7528\u4E00\u4E24\u53E5\u8BDD\u89E3\u91CA\u4E3A\u4EC0\u4E48\u662F\u8FD9\u9053\u3002\u4E0D\u8981\u63D0\u5230\u5176\u4ED6\u83DC\u540D\uFF0C\u4E0D\u8981\u7F16\u9020\u505A\u6CD5\u6216\u8425\u517B\u6570\u5B57\u3002\u53EA\u8FD4\u56DE JSON\uFF1A{"reason":"..."}' }, { role: "user", content: JSON.stringify({ recipe: { id: recipe.id, name: recipe.name, nutrition: recipe.nutrition }, totals, targets: modelTargets(targets), caution }) }],
         fetchImpl: env.qwenFetch
       });
       const checked = sanitizeReason(extractJson(content).reason, recipe, source.recipes, allowed);
@@ -3030,6 +3209,17 @@ function cleanTargets(input) {
   } catch {
     throw new Error("\u76EE\u6807\u65E0\u6548");
   }
+}
+function modelTargets(targets) {
+  if (!targets?.confirmed) return null;
+  return {
+    kcal: targets.kcal,
+    protein: targets.protein,
+    fat: targets.fat,
+    carb: targets.carb,
+    source: targets.source,
+    confirmed: true
+  };
 }
 function collectTexts(body) {
   const texts = [];

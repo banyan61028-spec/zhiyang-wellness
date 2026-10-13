@@ -1,5 +1,7 @@
+import { emptyTargets, settleDailyTargets } from './nutrition/targets.js';
+
 export const defaultDietSettings = () => ({
-  targets: { kcal: null, protein: null, fat: null, carb: null, source: 'user', confirmed: false },
+  targets: emptyTargets(),
   flags: { pregnancy: false, lactation: false, minor: false, kidney: false, diabetes: false, hypertension: false, eatingDisorder: false },
   flagsConfirmed: false,
 });
@@ -9,24 +11,14 @@ const STATUSES = new Set(['matched', 'unestimated', 'ambiguous']);
 
 export function cleanDietSettings(input = {}) {
   const base = defaultDietSettings();
-  const targets = input.targets || {};
   const flags = input.flags || {};
-  base.targets.confirmed = targets.confirmed === true;
-  base.targets.source = 'user';
-  for (const key of ['kcal', 'protein', 'fat', 'carb']) base.targets[key] = cleanTarget(targets[key], key === 'kcal' ? 10000 : 500);
+  base.targets = settleDailyTargets(input.targets || {});
   base.flagsConfirmed = input.flagsConfirmed === true;
   for (const key of Object.keys(base.flags)) base.flags[key] = flags[key] === true;
   if (!base.flagsConfirmed) {
     for (const key of Object.keys(base.flags)) base.flags[key] = false;
   }
   return base;
-}
-
-function cleanTarget(value, max) {
-  if (value == null || value === '') return null;
-  const number = Number(value);
-  if (!Number.isInteger(number) || number < 0 || number > max) throw new Error('每日目标数字无效');
-  return number;
 }
 
 export function validateMeal(meal) {

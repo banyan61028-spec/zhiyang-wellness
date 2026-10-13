@@ -48,10 +48,13 @@ export function programAdvice({ totals, targets, caution }) {
     .sort((a, b) => b.gap - a.gap)[0];
   const kcalGap = Math.round(targets.kcal - totals.kcal);
   let sentence = `今天大约吃了 ${totals.kcal} 千卡。`;
-  if (kcalGap > 0) sentence += `距离你填的目标还少 ${kcalGap} 千卡。`;
-  else if (kcalGap < 0) sentence += `已经比你填的目标多 ${Math.abs(kcalGap)} 千卡。`;
-  else sentence += '和你填的热量目标一样。';
-  if (short && allowed.includes(short.gap)) sentence += `${short.label}大约还少 ${short.gap} 克。`;
+  let comparison = kcalGap > 0
+    ? `距离你填的目标还少 ${kcalGap} 千卡`
+    : kcalGap < 0
+      ? `已经比你填的目标多 ${Math.abs(kcalGap)} 千卡`
+      : '和你填的热量目标一样';
+  if (short && allowed.includes(short.gap)) comparison += `，${short.label}大约还少 ${short.gap} 克`;
+  sentence += `${comparison}。`;
   const checked = sanitizeAdvice(sentence, allowed);
   return checked.kept ? checked.text : '今天的合计已经算好。';
 }

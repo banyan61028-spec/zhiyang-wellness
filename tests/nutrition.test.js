@@ -179,6 +179,17 @@ test('diet API urgent path has no meal, and a normal sentence can be logged', as
   const empty = await buildReport({ requestId: requestId(), meals: [] }, {}, source, requestId());
   assert.equal(empty.mode, 'empty');
   assert.equal(empty.advice, '');
+  const compared = await buildReport({
+    requestId: requestId(),
+    meals: [{ rawText: '米饭', items: [{ name: '米饭', foodId: 'rice-cooked', grams: 150, status: 'matched' }] }],
+    targets: { kcal: 1800, protein: null, fat: null, carb: null, confirmed: true },
+  }, {}, source, requestId());
+  assert.equal(compared.targets.kcal, 1800);
+  assert.equal(compared.targets.protein, 90);
+  assert.equal(compared.targets.fat, 50);
+  assert.equal(compared.targets.carb, 247);
+  assert.equal(compared.targets.ratios.protein, 20);
+  assert.match(compared.advice, /碳水大约还少/);
 });
 
 function pick(nutrition) {
