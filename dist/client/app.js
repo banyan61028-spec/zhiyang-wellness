@@ -77,6 +77,7 @@ function emptyTargets(confirmed = false) {
     fat: null,
     carb: null,
     ratios: { protein: null, fat: null, carb: null },
+    fixed: [],
     source: "user",
     confirmed: confirmed === true
   };
@@ -94,15 +95,16 @@ function settleDailyTargets(targets = {}) {
   };
   if (kcal == null) return emptyTargets(confirmed);
   const ratioInput = readRatioInput(targets?.ratios);
+  const fixed = readFixedOrder(targets, gramsInput);
   const anyGram = MACRO_KEYS.some((key) => gramsInput[key] != null);
-  if (!anyGram) return pack(kcal, gramsFromRatios(kcal, ratioInput || DEFAULT_ENERGY_RATIOS), confirmed);
+  if (!anyGram) return pack(kcal, gramsFromRatios(kcal, ratioInput || DEFAULT_ENERGY_RATIOS), confirmed, fixed);
   if (ratioInput && MACRO_KEYS.every((key) => gramsInput[key] != null)) {
     const allocated = gramsFromRatios(kcal, ratioInput);
-    if (MACRO_KEYS.every((key) => gramsInput[key] === allocated.grams[key])) return pack(kcal, allocated, confirmed);
+    if (MACRO_KEYS.every((key) => gramsInput[key] === allocated.grams[key])) return pack(kcal, allocated, confirmed, fixed);
   }
   const partial = MACRO_KEYS.some((key) => gramsInput[key] == null);
   const settled = partial ? settlePartial(kcal, gramsInput) : settleComplete(kcal, gramsInput);
-  return pack(kcal, settled, confirmed);
+  return pack(kcal, settled, confirmed, fixed);
 }
 function gramsFromRatios(kcal, ratios) {
   const normalized = normalizeRatios(ratios);
@@ -174,28 +176,47 @@ function allocateAfterGramEdit(kcal, ratios, key, grams) {
   }
   return { grams: out, ratios: ratiosFromGrams(out) };
 }
+function allocateFixedMacros(kcal, ratios, locks = {}, order = [], preserveKey = null) {
+  const fixed = normalizeOrder(order).filter((key) => Number.isInteger(locks?.[key]));
+  if (fixed.length === 0) return gramsFromRatios(kcal, ratios);
+  if (fixed.length === 1) return allocateAfterGramEdit(kcal, ratios, fixed[0], locks[fixed[0]]);
+  return allocateTwo(kcal, fixed.slice(0, 2), locks, preserveKey);
+}
 function mergeTargetEdit(live = {}, snapshot, editedName) {
-  if (!snapshot || !editedName || editedName === "kcal") return live;
+  if (!snapshot || !editedName) return live;
+  if (editedName === "kcal" || editedName === "rebalance") return { ...snapshot, kcal: live.kcal };
   const fields = { ...snapshot, kcal: live.kcal };
   fields[editedName] = live[editedName];
   return fields;
 }
-function previewMacroTargets(fields = {}, editedName) {
+function previewMacroTargets(fields = {}, editedName, fixed = {}) {
   const kcal = parseIntField(fields.kcal);
   if (kcal == null || kcal > KCAL_MAX) return { ready: false };
-  if (editedName === "protein" || editedName === "fat" || editedName === "carb") {
+  const ratios = fieldRatios(fields);
+  const order = normalizeOrder(fixed.order);
+  const locks = {};
+  for (const key of order) {
+    const value = Number(fixed.locks?.[key]);
+    if (Number.isInteger(value) && value >= 0) locks[key] = value;
+  }
+  const macro = macroKeyFromField(editedName);
+  if (editedName === "rebalance") {
+    return present(allocateFixedMacros(kcal, DEFAULT_ENERGY_RATIOS, locks, order), null, null);
+  }
+  if (macro) {
     const typed = parseIntField(fields[editedName]);
     if (typed == null) return { ready: true, skip: true };
-    return present(allocateAfterGramEdit(kcal, fieldRatios(fields), editedName, typed), editedName, typed);
+    if (!order.includes(macro) && order.length >= 2) return { ready: true, skip: true };
+    const nextOrder = order.includes(macro) ? order : [...order, macro];
+    const ratioEdit = editedName.startsWith("ratio-");
+    if (ratioEdit && nextOrder.length === 1) {
+      return present(allocateAfterRatioEdit(kcal, ratios, macro, typed), editedName, typed);
+    }
+    const nextLocks = { ...locks };
+    nextLocks[macro] = ratioEdit ? gramsFromShare(kcal, macro, typed) : typed;
+    return present(allocateFixedMacros(kcal, ratios, nextLocks, nextOrder, macro), editedName, typed);
   }
-  if (typeof editedName === "string" && editedName.startsWith("ratio-")) {
-    const key = editedName.slice("ratio-".length);
-    if (!MACRO_KEYS.includes(key)) return { ready: true, skip: true };
-    const typed = parseIntField(fields[editedName]);
-    if (typed == null) return { ready: true, skip: true };
-    return present(allocateAfterRatioEdit(kcal, fieldRatios(fields), key, typed), editedName, typed);
-  }
-  return present(gramsFromRatios(kcal, fieldRatios(fields)), null, null);
+  return present(allocateFixedMacros(kcal, ratios, locks, order), null, null);
 }
 function present(allocated, editedName, typed) {
   const inputs = {
@@ -209,6 +230,93 @@ function present(allocated, editedName, typed) {
   const clamp2 = {};
   if (editedName && typed != null && inputs[editedName] !== String(typed)) clamp2[editedName] = true;
   return { ready: true, inputs, clamp: clamp2 };
+}
+function allocateTwo(kcal, fixedKeys, locks, preserveKey) {
+  const auto = MACRO_KEYS.find((key) => !fixedKeys.includes(key));
+  const grams = { protein: 0, fat: 0, carb: 0 };
+  for (const key of fixedKeys) {
+    const per = KCAL_PER_GRAM[key];
+    grams[key] = clamp(Math.round(locks[key]), 0, Math.min(GRAM_MAX[key], Math.floor(kcal / per)));
+  }
+  let used = fixedKeys.reduce((sum, key) => sum + grams[key] * KCAL_PER_GRAM[key], 0);
+  if (used > kcal) {
+    const scaled = scaleFixed(kcal, fixedKeys, grams);
+    for (const key of fixedKeys) grams[key] = scaled[key];
+    used = fixedKeys.reduce((sum, key) => sum + grams[key] * KCAL_PER_GRAM[key], 0);
+  }
+  grams[auto] = absorb(Math.max(0, kcal - used), KCAL_PER_GRAM[auto], GRAM_MAX[auto]);
+  tightenEnergy(kcal, grams, auto, fixedKeys, preserveKey);
+  return { grams, ratios: ratiosFromGrams(grams) };
+}
+function scaleFixed(kcal, keys, grams) {
+  const energy = keys.reduce((sum, key) => sum + grams[key] * KCAL_PER_GRAM[key], 0);
+  const scale = energy > 0 ? kcal / energy : 0;
+  const next = {};
+  for (const key of keys) next[key] = Math.floor(grams[key] * scale);
+  let left = kcal - keys.reduce((sum, key) => sum + next[key] * KCAL_PER_GRAM[key], 0);
+  const ranked = [...keys].sort((a, b) => {
+    const fracA = grams[a] * scale - next[a];
+    const fracB = grams[b] * scale - next[b];
+    return fracB - fracA || MACRO_KEYS.indexOf(a) - MACRO_KEYS.indexOf(b);
+  });
+  let progressed = true;
+  while (left > 0 && progressed) {
+    progressed = false;
+    for (const key of ranked) {
+      const step = KCAL_PER_GRAM[key];
+      if (left >= step && next[key] < grams[key]) {
+        next[key] += 1;
+        left -= step;
+        progressed = true;
+      }
+    }
+  }
+  return next;
+}
+function tightenEnergy(kcal, grams, auto, fixedKeys, preserveKey) {
+  if (Math.abs(macroEnergy(grams) - kcal) <= ENERGY_TOLERANCE) return;
+  const adjustable = [
+    ...fixedKeys.filter((key) => key !== preserveKey && KCAL_PER_GRAM[key] === 4),
+    ...fixedKeys.filter((key) => key === preserveKey && KCAL_PER_GRAM[key] === 4)
+  ];
+  for (const key of adjustable) {
+    for (const delta of [-1, 1]) {
+      const trial = { ...grams, [key]: grams[key] + delta };
+      if (trial[key] < 0 || trial[key] > GRAM_MAX[key]) continue;
+      const used = fixedKeys.reduce((sum, name) => sum + trial[name] * KCAL_PER_GRAM[name], 0);
+      if (used > kcal) continue;
+      trial[auto] = absorb(kcal - used, KCAL_PER_GRAM[auto], GRAM_MAX[auto]);
+      if (Math.abs(macroEnergy(trial) - kcal) <= ENERGY_TOLERANCE) {
+        Object.assign(grams, trial);
+        return;
+      }
+    }
+  }
+}
+function gramsFromShare(kcal, key, percent) {
+  const share = clamp(Math.round(Number(percent)), 0, 100);
+  const per = KCAL_PER_GRAM[key];
+  let grams = clamp(Math.round(kcal * share / 100 / per), 0, GRAM_MAX[key]);
+  const maxByKcal = Math.floor(kcal / per);
+  if (grams > maxByKcal) grams = maxByKcal;
+  return grams;
+}
+function macroKeyFromField(name) {
+  if (name === "protein" || name === "fat" || name === "carb") return name;
+  if (typeof name === "string" && name.startsWith("ratio-")) {
+    const key = name.slice("ratio-".length);
+    if (MACRO_KEYS.includes(key)) return key;
+  }
+  return null;
+}
+function normalizeOrder(order) {
+  const next = [];
+  for (const key of Array.isArray(order) ? order : []) {
+    if (!MACRO_KEYS.includes(key) || next.includes(key)) continue;
+    next.push(key);
+    if (next.length === 2) break;
+  }
+  return next;
 }
 function fieldRatios(fields) {
   const ratios = {};
@@ -299,6 +407,17 @@ function readCleanTarget(value, max) {
   if (!Number.isInteger(number) || number < 0 || number > max) throw new Error("\u6BCF\u65E5\u76EE\u6807\u6570\u5B57\u65E0\u6548");
   return number;
 }
+function readFixedOrder(targets, grams) {
+  if (!Array.isArray(targets?.fixed)) return [];
+  const order = [];
+  for (const key of targets.fixed) {
+    if (typeof key !== "string" || !MACRO_KEYS.includes(key) || order.includes(key)) continue;
+    if (grams[key] == null) continue;
+    order.push(key);
+    if (order.length === 2) break;
+  }
+  return order;
+}
 function readRatioInput(ratios) {
   if (!ratios || typeof ratios !== "object") return null;
   const out = {};
@@ -312,13 +431,14 @@ function readRatioInput(ratios) {
   if (out.protein + out.fat + out.carb <= 0) return null;
   return out;
 }
-function pack(kcal, allocated, confirmed) {
+function pack(kcal, allocated, confirmed, fixed = []) {
   return {
     kcal,
     protein: allocated.grams.protein,
     fat: allocated.grams.fat,
     carb: allocated.grams.carb,
     ratios: { ...allocated.ratios },
+    fixed: normalizeOrder(fixed),
     source: "user",
     confirmed
   };
@@ -1527,6 +1647,7 @@ function createDietPages(ctx) {
           fat: blank(data.get("ratio-fat")),
           carb: blank(data.get("ratio-carb"))
         },
+        fixed: readFixed(form).order,
         source: "user",
         confirmed: true
       },
@@ -1673,12 +1794,28 @@ var TARGET_FIELDS = /* @__PURE__ */ new Set(["kcal", "protein", "fat", "carb", "
 function dailyGoalsCard(targets = {}) {
   const ratios = targets.ratios || {};
   const ready = Number.isInteger(targets.kcal);
-  const row = (label, key, gramMax) => `<div class="macro-plan-row"><span class="macro-plan-name">${label}</span><label class="macro-plan-field"><span class="sr-only">${label}\u80FD\u91CF\u5360\u6BD4</span><span class="macro-plan-input"><input ${targetInputAttrs(`ratio-${key}`, ratios[key], 100)}><span>%</span></span></label><label class="macro-plan-field"><span class="sr-only">${label}\u514B\u6570</span><span class="macro-plan-input"><input ${targetInputAttrs(key, targets[key], gramMax)}><span>\u514B</span></span></label></div>`;
-  return `<section class="diet-card"><h2>\u6BCF\u65E5\u76EE\u6807</h2><p class="small muted">\u5148\u586B\u6BCF\u5929\u60F3\u5403\u591A\u5C11\u70ED\u91CF\u3002\u86CB\u767D\u8D28\u3001\u8102\u80AA\u548C\u78B3\u6C34\u4F1A\u6309\u8FD9\u4E2A\u70ED\u91CF\u7B97\u51FA\u6765\u3002</p><form id="target-form"><label class="form-label">\u6BCF\u5929\u70ED\u91CF\uFF08\u5343\u5361\uFF09<input ${targetInputAttrs("kcal", targets.kcal, KCAL_MAX)}></label><div class="macro-plan" data-macro-plan ${ready ? "" : "hidden"}><p class="small muted">${macroPlanNote()}</p><div class="macro-plan-head" aria-hidden="true"><span></span><span>\u80FD\u91CF\u5360\u6BD4</span><span>\u514B\u6570</span></div>${row("\u86CB\u767D\u8D28", "protein", GRAM_MAX.protein)}${row("\u8102\u80AA", "fat", GRAM_MAX.fat)}${row("\u78B3\u6C34", "carb", GRAM_MAX.carb)}</div><p class="small muted" data-macro-empty ${ready ? "hidden" : ""}>\u586B\u597D\u70ED\u91CF\u540E\uFF0C\u4F1A\u663E\u793A\u86CB\u767D\u8D28\u3001\u8102\u80AA\u548C\u78B3\u6C34\u5404\u591A\u5C11\u514B\u3002</p><label class="check-line"><input type="checkbox" name="confirm" ${targets.confirmed ? "checked" : ""}> \u628A\u8FD9\u4E9B\u6570\u5B57\u5F53\u4F5C\u6211\u7684\u6BCF\u65E5\u76EE\u6807</label><button class="primary-button" type="submit">\u4FDD\u5B58\u76EE\u6807</button></form></section>`;
+  const fixed = fixedFromTargets(targets);
+  const row = (label, key, gramMax) => `<div class="macro-plan-row"><span class="macro-plan-name">${label}<span class="macro-set" data-macro-set="${key}"${fixed.order.includes(key) ? "" : " hidden"}>\u5DF2\u8BBE\u5B9A</span></span><label class="macro-plan-field"><span class="sr-only">${label}\u80FD\u91CF\u5360\u6BD4</span><span class="macro-plan-input"><input ${targetInputAttrs(`ratio-${key}`, ratios[key], 100)}><span>%</span></span></label><label class="macro-plan-field"><span class="sr-only">${label}\u514B\u6570</span><span class="macro-plan-input"><input ${targetInputAttrs(key, targets[key], gramMax)}><span>\u514B</span></span></label></div>`;
+  return `<section class="diet-card"><h2>\u6BCF\u65E5\u76EE\u6807</h2><p class="small muted">\u5148\u586B\u6BCF\u5929\u60F3\u5403\u591A\u5C11\u70ED\u91CF\u3002\u86CB\u767D\u8D28\u3001\u8102\u80AA\u548C\u78B3\u6C34\u4F1A\u6309\u8FD9\u4E2A\u70ED\u91CF\u7B97\u51FA\u6765\u3002</p><form id="target-form"${fixedFormAttrs(fixed)}><label class="form-label">\u6BCF\u5929\u70ED\u91CF\uFF08\u5343\u5361\uFF09<input ${targetInputAttrs("kcal", targets.kcal, KCAL_MAX)}></label><div class="macro-plan" data-macro-plan ${ready ? "" : "hidden"}><p class="small muted">${macroPlanNote()}</p><div class="macro-plan-head" aria-hidden="true"><span></span><span>\u80FD\u91CF\u5360\u6BD4</span><span>\u514B\u6570</span></div>${row("\u86CB\u767D\u8D28", "protein", GRAM_MAX.protein)}${row("\u8102\u80AA", "fat", GRAM_MAX.fat)}${row("\u78B3\u6C34", "carb", GRAM_MAX.carb)}</div><p class="small muted" data-macro-empty ${ready ? "hidden" : ""}>\u586B\u597D\u70ED\u91CF\u540E\uFF0C\u4F1A\u663E\u793A\u86CB\u767D\u8D28\u3001\u8102\u80AA\u548C\u78B3\u6C34\u5404\u591A\u5C11\u514B\u3002</p><label class="check-line"><input type="checkbox" name="confirm" ${targets.confirmed ? "checked" : ""}> \u628A\u8FD9\u4E9B\u6570\u5B57\u5F53\u4F5C\u6211\u7684\u6BCF\u65E5\u76EE\u6807</label><button class="primary-button" type="submit">\u4FDD\u5B58\u76EE\u6807</button></form></section>`;
 }
 function macroPlanNote() {
   const ratios = DEFAULT_ENERGY_RATIOS;
-  return `\u9ED8\u8BA4\u662F\u86CB\u767D\u8D28 ${ratios.protein}%\u3001\u8102\u80AA ${ratios.fat}%\u3001\u78B3\u6C34 ${ratios.carb}%\u3002\u6539\u5360\u6BD4\uFF0C\u53E6\u5916\u4E24\u9879\u4F1A\u6309\u539F\u6765\u7684\u9AD8\u4F4E\u4E00\u8D77\u7F29\u653E\u3002\u6539\u514B\u6570\uFF0C\u8FD9\u4E00\u9879\u4FDD\u6301\u4F60\u586B\u7684\u6570\uFF0C\u5269\u4E0B\u7684\u70ED\u91CF\u5206\u7ED9\u53E6\u5916\u4E24\u9879\u30021 \u514B\u86CB\u767D\u8D28\u6216\u78B3\u6C34\u5927\u7EA6 ${KCAL_PER_GRAM.protein} \u5343\u5361\uFF0C1 \u514B\u8102\u80AA\u5927\u7EA6 ${KCAL_PER_GRAM.fat} \u5343\u5361\u3002`;
+  return `\u6539\u4E00\u9879\u65F6\uFF0C\u53E6\u5916\u4E24\u9879\u4F1A\u81EA\u52A8\u914D\u9F50\uFF1B\u6539\u4E24\u9879\u65F6\uFF0C\u7B2C\u4E09\u9879\u6309\u5269\u4F59\u70ED\u91CF\u81EA\u52A8\u7B97\u51FA\u3002\u6E05\u7A7A\u5DF2\u8BBE\u5B9A\u7684\u6570\u5B57\uFF0C\u53EF\u4EE5\u91CD\u65B0\u5206\u914D\u3002\u6CA1\u6539\u8FC7\u7684\u9879\u76EE\uFF0C\u4E00\u5F00\u59CB\u6309\u86CB\u767D\u8D28 ${ratios.protein}%\u3001\u8102\u80AA ${ratios.fat}%\u3001\u78B3\u6C34 ${ratios.carb}% \u6765\u914D\u3002`;
+}
+function fixedFromTargets(targets) {
+  const order = [];
+  const locks = {};
+  for (const key of Array.isArray(targets.fixed) ? targets.fixed : []) {
+    if (!["protein", "fat", "carb"].includes(key) || order.includes(key) || !Number.isInteger(targets[key])) continue;
+    order.push(key);
+    locks[key] = targets[key];
+    if (order.length === 2) break;
+  }
+  return { order, locks };
+}
+function fixedFormAttrs(fixed) {
+  const locks = fixed.order.map((key) => ` data-lock-${key}="${fixed.locks[key]}"`).join("");
+  return ` data-fixed="${fixed.order.join(",")}"${locks}`;
 }
 function targetInputAttrs(name, value, max) {
   const shown = Number.isInteger(value) ? String(value) : "";
@@ -1694,26 +1831,42 @@ function onTargetInput(el) {
   applyMacroPreview(el.form, el.name, false);
 }
 function rememberTargetEdit(el) {
-  if (!TARGET_FIELDS.has(el.name) || el.name === "kcal" || !el.closest("#target-form")) return;
+  if (!TARGET_FIELDS.has(el.name) || !el.closest("#target-form")) return;
   const form = el.form;
   if (!form || form.dataset.editField === el.name && form.dataset.ratioSnapshot) return;
   form.dataset.editField = el.name;
   form.dataset.ratioSnapshot = JSON.stringify(readTargetFields(form));
+  form.dataset.fixedSnapshot = JSON.stringify(readFixed(form));
 }
 function onTargetBlur(el) {
   if (!TARGET_FIELDS.has(el.name) || !el.closest("#target-form")) return;
-  if (!/^\d+$/.test(el.value) && el.dataset.last != null) el.value = el.dataset.last;
-  if (!/^\d+$/.test(el.value)) {
-    if (el.name === "kcal") applyMacroPreview(el.form, "kcal", true);
-  } else applyMacroPreview(el.form, el.name, true);
-  if (el.form) {
-    delete el.form.dataset.editField;
-    delete el.form.dataset.ratioSnapshot;
+  const form = el.form;
+  const macro = macroKeyFromField2(el.name);
+  const complete = /^\d+$/.test(el.value);
+  if (!complete && el.name === "kcal" && el.dataset.last != null) el.value = el.dataset.last;
+  const starting = readSnapshotFixed(form) || readFixed(form);
+  if (el.name === "kcal") {
+    applyMacroPreview(form, "kcal", true, starting);
+    if (/^\d+$/.test(form.elements.namedItem("kcal")?.value || "")) syncDisplayedLocks(form, starting);
+  } else if (macro && !complete) {
+    const next = removeMacro(starting, macro);
+    const released = Array.isArray(starting.order) && starting.order.includes(macro);
+    applyMacroPreview(form, released ? "rebalance" : "refill", true, next);
+    syncDisplayedLocks(form, next);
+  } else if (macro) {
+    const next = addMacro(starting, macro);
+    applyMacroPreview(form, next.order.includes(macro) ? el.name : "refill", true, next);
+    syncDisplayedLocks(form, next);
   }
+  updateSetBadges(form);
+  delete form.dataset.editField;
+  delete form.dataset.ratioSnapshot;
+  delete form.dataset.fixedSnapshot;
 }
-function applyMacroPreview(form, editedName, rewriteActive) {
+function applyMacroPreview(form, editedName, rewriteActive, fixedOverride) {
   if (!form) return;
-  const preview = previewMacroTargets(fieldsForPreview(form, editedName), editedName);
+  const packed = fieldsForPreview(form, editedName);
+  const preview = previewMacroTargets(packed.fields, editedName, fixedOverride || packed.fixed);
   setMacroPlanReady(form, preview.ready);
   if (!preview.inputs) return;
   for (const [name, value] of Object.entries(preview.inputs)) {
@@ -1727,11 +1880,91 @@ function applyMacroPreview(form, editedName, rewriteActive) {
 }
 function fieldsForPreview(form, editedName) {
   const live = readTargetFields(form);
-  if (!form.dataset.ratioSnapshot) return live;
+  const fixed = readFixed(form);
+  if (!form.dataset.ratioSnapshot) return { fields: live, fixed };
   try {
-    return mergeTargetEdit(live, JSON.parse(form.dataset.ratioSnapshot), editedName);
+    return {
+      fields: mergeTargetEdit(live, JSON.parse(form.dataset.ratioSnapshot), editedName),
+      fixed: form.dataset.fixedSnapshot ? JSON.parse(form.dataset.fixedSnapshot) : fixed
+    };
   } catch {
-    return live;
+    return { fields: live, fixed };
+  }
+}
+function readSnapshotFixed(form) {
+  if (!form?.dataset.fixedSnapshot) return null;
+  try {
+    const parsed = JSON.parse(form.dataset.fixedSnapshot);
+    return parsed && Array.isArray(parsed.order) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+function addMacro(fixed, macro) {
+  const order = Array.isArray(fixed?.order) ? fixed.order.filter((key) => key === "protein" || key === "fat" || key === "carb") : [];
+  const locks = { ...fixed?.locks || {} };
+  if (order.includes(macro) || order.length >= 2) return { order: order.slice(0, 2), locks };
+  return { order: [...order.slice(0, 2), macro], locks };
+}
+function removeMacro(fixed, macro) {
+  const order = (fixed?.order || []).filter((key) => key !== macro);
+  const locks = { ...fixed?.locks || {} };
+  delete locks[macro];
+  return { order, locks };
+}
+function syncDisplayedLocks(form, fixed) {
+  const locks = {};
+  for (const key of fixed.order || []) {
+    const value = form.elements.namedItem(key)?.value;
+    if (/^\d+$/.test(value || "")) locks[key] = Number(value);
+    else if (Number.isInteger(fixed.locks?.[key])) locks[key] = fixed.locks[key];
+  }
+  writeFixed(form, { order: fixed.order || [], locks });
+}
+function updateSetBadges(form) {
+  const order = new Set(readFixed(form).order);
+  for (const key of ["protein", "fat", "carb"]) {
+    const badge = form.querySelector(`[data-macro-set="${key}"]`);
+    if (badge) badge.hidden = !order.has(key);
+  }
+}
+var MACRO_FIELD_KEYS = ["protein", "fat", "carb"];
+function macroKeyFromField2(name) {
+  if (MACRO_FIELD_KEYS.includes(name)) return name;
+  if (typeof name === "string" && name.startsWith("ratio-")) {
+    const key = name.slice("ratio-".length);
+    if (MACRO_FIELD_KEYS.includes(key)) return key;
+  }
+  return null;
+}
+function lockDatasetName(key) {
+  return `lock${key[0].toUpperCase()}${key.slice(1)}`;
+}
+function readFixed(form) {
+  const order = [];
+  const locks = {};
+  for (const key of String(form?.dataset.fixed || "").split(",")) {
+    const name = key.trim();
+    if (!MACRO_FIELD_KEYS.includes(name) || order.includes(name) || order.length >= 2) continue;
+    const raw = form.dataset[lockDatasetName(name)];
+    if (!/^\d+$/.test(String(raw ?? ""))) continue;
+    order.push(name);
+    locks[name] = Number(raw);
+  }
+  return { order, locks };
+}
+function writeFixed(form, fixed) {
+  const order = [];
+  for (const key of fixed.order || []) {
+    if (!MACRO_FIELD_KEYS.includes(key) || order.includes(key)) continue;
+    order.push(key);
+    if (order.length === 2) break;
+  }
+  form.dataset.fixed = order.join(",");
+  for (const key of MACRO_FIELD_KEYS) {
+    const name = lockDatasetName(key);
+    if (order.includes(key) && Number.isInteger(fixed.locks?.[key])) form.dataset[name] = String(fixed.locks[key]);
+    else delete form.dataset[name];
   }
 }
 function readTargetFields(form) {
