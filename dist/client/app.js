@@ -1266,6 +1266,32 @@ function photoTrayHtml(photos, place, esc2) {
   return `<div class="composer-photos${single ? " is-free" : ""}" data-photo-tray>${items}</div>`;
 }
 
+// src/shared/nutrition/calculate.js
+var MAX_GRAMS = 5e3;
+function roundNutrient(value) {
+  return Math.round(value);
+}
+function calculateNutrition(food2, grams) {
+  if (!food2 || food2.calculable !== true || !food2.per100g) return null;
+  if (!food2.source || !food2.sourceNote || !food2.version) return null;
+  if (!Number.isFinite(grams) || grams <= 0 || grams > MAX_GRAMS) throw new Error("\u514B\u6570\u65E0\u6548");
+  const factor = grams / 100;
+  const per = food2.per100g;
+  return {
+    kcal: roundNutrient(per.kcal * factor),
+    protein: roundNutrient(per.protein * factor),
+    fat: roundNutrient(per.fat * factor),
+    carb: roundNutrient(per.carb * factor),
+    grams,
+    per100g: { kcal: per.kcal, protein: per.protein, fat: per.fat, carb: per.carb },
+    source: food2.source,
+    sourceNote: food2.sourceNote,
+    version: food2.version,
+    foodId: food2.id,
+    foodName: food2.name
+  };
+}
+
 // src/client/diet-page.js
 var mealNames = { breakfast: "\u65E9\u9910", lunch: "\u5348\u9910", dinner: "\u665A\u9910", snack: "\u52A0\u9910" };
 var mealOrder = ["breakfast", "lunch", "dinner", "snack"];
@@ -1288,6 +1314,7 @@ function createDietPages(ctx) {
   let photoPlace = { x: 8, y: 8 };
   let photoDrag = null;
   let libraryFilter = "all";
+  let draftRevision = 0;
   document.addEventListener("input", (event) => {
     const el = event.target;
     if (el instanceof HTMLTextAreaElement && el.name === "text" && el.closest("#meal-form")) composeText = el.value;
@@ -1708,10 +1735,10 @@ function createDietPages(ctx) {
   function itemCard(item) {
     const nutrition = item.nutrition;
     const shown = displaySource(nutrition);
-    const kcal = nutrition ? `<p class="food-kcal"><span class="num">${nutrition.kcal}</span><small>\u7EA6\u5343\u5361</small></p>` : '<p class="food-kcal food-kcal-soft"><span>\u6682\u65F6\u7B97\u4E0D\u51FA\u6765</span><small>\u53EF\u4EE5\u6539\u9009\uFF0C\u6216\u5148\u7559\u7740</small></p>';
-    return `<article class="food-card">
+    const kcal = nutrition ? `<p class="food-kcal" data-kcal><span class="num" data-kcal-value>${nutrition.kcal}</span><small>\u7EA6\u5343\u5361</small></p>` : '<p class="food-kcal food-kcal-soft" data-kcal><span>\u6682\u65F6\u7B97\u4E0D\u51FA\u6765</span><small>\u53EF\u4EE5\u6539\u9009\uFF0C\u6216\u5148\u7559\u7740</small></p>';
+    return `<article class="food-card" data-diet-card="${ctx.esc(item.clientId)}">
       <header class="food-card-head"><div><h3>${ctx.esc(item.name || item.inputName)}</h3>${item.inputName && item.inputName !== item.name ? `<p class="small muted">\u8BC6\u522B\u4E3A ${ctx.esc(item.inputName)}</p>` : ""}</div>${kcal}</header>
-      <div class="chip-row">${shown ? `<span class="chip">${shown.label}</span>` : '<span class="chip chip-soft">\u6682\u65F6\u7B97\u4E0D\u51FA\u6765</span>'}${item.portionLabel ? `<span class="chip chip-quiet">${ctx.esc(item.portionLabel)}</span>` : ""}</div>
+      <div class="chip-row">${shown ? `<span class="chip">${shown.label}</span>` : '<span class="chip chip-soft">\u6682\u65F6\u7B97\u4E0D\u51FA\u6765</span>'}${item.portionLabel ? `<span class="chip chip-quiet" data-portion-label>${ctx.esc(item.portionLabel)}</span>` : ""}</div>
       ${foodSelect(item)}
       <div class="portion-row" role="group" aria-label="\u4FEE\u6B63\u5206\u91CF">
         ${portionButton(item, "small", "\u5C0F")}${portionButton(item, "medium", "\u4E2D")}${portionButton(item, "large", "\u5927")}
@@ -1742,19 +1769,33 @@ function createDietPages(ctx) {
   async function changePortion(clientId, size) {
     const item = draft?.items.find((entry) => entry.clientId === clientId);
     if (!item) return;
-    const food2 = catalog?.foods.find((entry) => entry.id === item.foodId);
-    const portion = food2?.portion || { small: 100, medium: 150, large: 250 };
-    item.grams = portion[size];
-    item.portionLabel = size === "small" ? "\u5C0F" : size === "large" ? "\u5927" : "\u4E2D";
+    const food2 = catalog?.foods.find((entry) => entry.id === item.foodId) || null;
+    const next = previewPortion(item, size, food2);
+    if (!next || item.grams === next.grams && item.portionLabel === next.portionLabel) return;
+    draftRevision += 1;
+    item.grams = next.grams;
+    item.portionLabel = next.portionLabel;
     item.userAdjusted = true;
+    if (next.nutrition) item.nutrition = next.nutrition;
+    if (next.nutrition && paintFoodCard(item)) return;
+    if (next.nutrition && replaceFoodCard(item)) return;
+    paintFoodCard(item);
     await recalculate();
   }
   async function changeGrams(clientId, value) {
     const item = draft?.items.find((entry) => entry.clientId === clientId);
     if (!item) return;
-    item.grams = Number(value);
+    const grams = Number(value);
+    item.grams = grams;
     item.portionLabel = "\u81EA\u5B9A\u4E49";
     item.userAdjusted = true;
+    draftRevision += 1;
+    const food2 = catalog?.foods.find((entry) => entry.id === item.foodId) || null;
+    const nutrition = rescaleMatchedNutrition(item, grams, food2);
+    if (nutrition) {
+      item.nutrition = nutrition;
+      if (paintFoodCard(item) || replaceFoodCard(item)) return;
+    }
     await recalculate();
   }
   async function changeFood(clientId, foodId) {
@@ -1770,11 +1811,13 @@ function createDietPages(ctx) {
       item.forceUnestimated = false;
       item.name = catalog?.foods.find((food2) => food2.id === foodId)?.name || item.name;
     }
-    await recalculate();
+    await recalculate({ replace: true });
   }
-  async function recalculate() {
+  async function recalculate({ replace = false } = {}) {
     if (!draft) return;
+    const revision = ++draftRevision;
     const result = await calculateItems({ items: draft.items.map((item) => ({ name: item.inputName || item.name, inputName: item.inputName, foodId: item.forceUnestimated ? "" : item.foodId, grams: item.grams, portionLabel: item.portionLabel, forceUnestimated: item.forceUnestimated === true })) });
+    if (revision !== draftRevision || !draft) return;
     if (result.mode === "urgent_help") {
       urgent = result;
       draft = null;
@@ -1785,7 +1828,56 @@ function createDietPages(ctx) {
       const next = result.items[index];
       return { ...item, ...next, candidates: next.candidates?.length ? next.candidates : item.candidates, clientId: item.clientId, userAdjusted: item.userAdjusted, forceUnestimated: item.forceUnestimated === true && !next.nutrition };
     });
-    ctx.render();
+    if (draft.items.every((item) => syncFoodCard(item, replace))) return;
+    ctx.render({ quiet: true });
+  }
+  function syncFoodCard(item, replace) {
+    if (!replace && paintFoodCard(item)) return true;
+    return replaceFoodCard(item);
+  }
+  function foodCardElement(clientId) {
+    if (typeof clientId !== "string" || !clientId) return null;
+    const escaped = window.CSS?.escape ? CSS.escape(clientId) : clientId;
+    return document.querySelector(`[data-diet-card="${escaped}"]`);
+  }
+  function paintFoodCard(item) {
+    const card = foodCardElement(item.clientId);
+    if (!card) return false;
+    const activeSize = item.portionLabel === "\u5C0F" ? "small" : item.portionLabel === "\u5927" ? "large" : item.portionLabel === "\u4E2D" ? "medium" : "";
+    card.querySelectorAll('[data-diet-action="portion"]').forEach((button) => {
+      const on = button.dataset.dietSize === activeSize;
+      button.classList.toggle("active", on);
+      button.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+    const gramsInput = card.querySelector("[data-diet-grams]");
+    if (gramsInput && document.activeElement !== gramsInput) gramsInput.value = item.grams ?? "";
+    const portionChip = card.querySelector("[data-portion-label]");
+    if (item.portionLabel && !portionChip) return false;
+    if (portionChip) portionChip.textContent = item.portionLabel || "";
+    const kcalValue = card.querySelector("[data-kcal-value]");
+    if (Boolean(item.nutrition) !== Boolean(kcalValue)) return false;
+    if (!item.nutrition) return true;
+    kcalValue.textContent = String(item.nutrition.kcal);
+    card.querySelector("[data-kcal]")?.classList.remove("food-kcal-soft");
+    const share = macroShares(item.nutrition);
+    for (const key of ["protein", "fat", "carb"]) {
+      const num = card.querySelector(`[data-macro="${key}"]`);
+      const bar = card.querySelector(`[data-share="${key}"]`);
+      if (!num || !bar) return false;
+      num.textContent = String(item.nutrition[key]);
+      bar.style.width = `${share[key].toFixed(1)}%`;
+    }
+    return true;
+  }
+  function replaceFoodCard(item) {
+    const card = foodCardElement(item.clientId);
+    if (!card) return false;
+    const holder = document.createElement("template");
+    holder.innerHTML = itemCard(item).trim();
+    const next = holder.content.firstElementChild;
+    if (!next) return false;
+    card.replaceWith(next);
+    return true;
   }
   async function saveDraft() {
     if (!draft?.items.length) return;
@@ -2015,6 +2107,44 @@ function createDietPages(ctx) {
   }
   return { loadCatalog, record, today: today2, library: library2, settings, onClick, onSubmit };
 }
+var PORTION_LABELS = { small: "\u5C0F", medium: "\u4E2D", large: "\u5927" };
+var PORTION_DEFAULTS = { small: 100, medium: 150, large: 250 };
+function previewPortion(item, size, food2) {
+  if (!PORTION_LABELS[size]) return null;
+  const grams = portionGrams(size, food2);
+  return { grams, portionLabel: PORTION_LABELS[size], nutrition: rescaleMatchedNutrition(item, grams, food2) };
+}
+function rescaleMatchedNutrition(item, grams, food2) {
+  const basis = foodBasis(food2) || storedBasis(item);
+  if (!basis) return null;
+  try {
+    return calculateNutrition(basis, grams);
+  } catch {
+    return null;
+  }
+}
+function portionGrams(size, food2) {
+  const fromFood = Number(food2?.portion?.[size]);
+  if (Number.isFinite(fromFood) && fromFood > 0) return fromFood;
+  return PORTION_DEFAULTS[size];
+}
+function foodBasis(food2) {
+  if (!food2?.calculable || !food2.per100g || !food2.source || !food2.sourceNote || !food2.version || !food2.id) return null;
+  return food2;
+}
+function storedBasis(item) {
+  const current = item?.nutrition;
+  if (!current?.per100g || !current.source || !current.sourceNote || !current.version || !current.foodId) return null;
+  return {
+    calculable: true,
+    id: current.foodId,
+    name: current.foodName || item.name,
+    per100g: current.per100g,
+    source: current.source,
+    sourceNote: current.sourceNote,
+    version: current.version
+  };
+}
 function mealsOn(state2, date) {
   return (state2.meals || []).filter((meal) => meal.date === date).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 }
@@ -2089,7 +2219,8 @@ function macroShares(nutrition) {
 }
 function macroPills(nutrition) {
   const share = macroShares(nutrition);
-  return `<div class="macro-stack" aria-hidden="true"><i class="protein" style="width:${share.protein.toFixed(1)}%"></i><i class="fat" style="width:${share.fat.toFixed(1)}%"></i><i class="carb" style="width:${share.carb.toFixed(1)}%"></i></div><p class="macro-pills"><span>\u86CB\u767D\u8D28 <b class="num">${nutrition.protein}</b> \u514B</span><span>\u8102\u80AA <b class="num">${nutrition.fat}</b> \u514B</span><span>\u78B3\u6C34 <b class="num">${nutrition.carb}</b> \u514B</span></p>`;
+  const bit = (key, label) => `<span>${label} <b class="num" data-macro="${key}">${nutrition[key]}</b> \u514B</span>`;
+  return `<div class="macro-stack" aria-hidden="true"><i class="protein" data-share="protein" style="width:${share.protein.toFixed(1)}%"></i><i class="fat" data-share="fat" style="width:${share.fat.toFixed(1)}%"></i><i class="carb" data-share="carb" style="width:${share.carb.toFixed(1)}%"></i></div><p class="macro-pills">${bit("protein", "\u86CB\u767D\u8D28")}${bit("fat", "\u8102\u80AA")}${bit("carb", "\u78B3\u6C34")}</p>`;
 }
 function macroTiles(totals, targets) {
   const rows = [
@@ -2343,7 +2474,7 @@ window.addEventListener("keydown", markKeyboard, true);
 var icons = { home: '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21v-8h6v8"/>', note: '<path d="M7 3h8l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M15 3v5h5M9 13h6M9 17h4"/>', leaf: '<path d="M20 3c-9-1-16 3-16 10a7 7 0 0 0 7 7C18 20 21 12 20 3Z"/><path d="m4 21 11-12"/>', heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/>', user: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>', spark: '<path d="m12 3 2.6 6.4L21 12l-6.4 2.6L12 21l-2.6-6.4L3 12l6.4-2.6Z"/>', arrow: '<path d="M5 12h14m-5-5 5 5-5 5"/>', close: '<path d="m6 6 12 12M18 6 6 18"/>', bookmark: '<path d="M6 3h12v18l-6-4-6 4z"/>', sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/>', moon: '<path d="M21 13A9 9 0 0 1 11 3 9 9 0 1 0 21 13Z"/>', wind: '<path d="M3 8h12a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h5"/>', scale: '<path d="M4 5h16v16H4z"/><path d="M8 9a5 5 0 0 1 8 0M12 8v3"/>', bowl: '<path d="M3 12h18c0 6-5 8-9 8s-9-2-9-8Z"/><path d="M7 5v3m5-5v5m5-3v3"/>', check: '<path d="m5 12 4 4L19 6"/>', clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', back: '<path d="m14 5-7 7 7 7"/>', book: '<path d="M3 3h6a4 4 0 0 1 3 2 4 4 0 0 1 3-2h6v17h-6a4 4 0 0 0-3 2 4 4 0 0 0-3-2H3zM12 5v17"/>', cup: '<path d="M4 7h13v8a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM17 8h2a3 3 0 0 1 0 6h-2M7 3v1m4-1v1m4-1v1"/>', camera: '<path d="M4 8h3l2-3h6l2 3h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z"/><circle cx="12" cy="13" r="3.2"/>', send: '<path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/>' };
 var icon = (name) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name] || icons.leaf}</svg>`;
 var esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-var dietPages = createDietPages({ getState: () => state, writeStore, toast, navigate, openDetail, icon, esc, render: () => render() });
+var dietPages = createDietPages({ getState: () => state, writeStore, toast, navigate, openDetail, icon, esc, render: (options2) => render(options2) });
 var state = emptyState();
 var page = "home";
 var foodTab = "\u5168\u90E8";
@@ -2489,7 +2620,8 @@ function care() {
 function profile() {
   return dietPages.settings();
 }
-function render() {
+function render(options2) {
+  const quiet = options2?.quiet === true;
   document.querySelectorAll("[data-page]").forEach((b) => {
     b.classList.toggle("active", b.dataset.page === page && b.classList.contains("nav-item"));
     if (b.classList.contains("nav-item")) b.setAttribute("aria-current", b.dataset.page === page ? "page" : "false");
@@ -2500,8 +2632,10 @@ function render() {
   if (label) label.textContent = "\u77E5\u517B";
   const slot = document.getElementById("date-slot");
   if (slot) slot.textContent = chineseDate();
-  void main.offsetWidth;
-  main.classList.add("is-entering");
+  if (!quiet) {
+    void main.offsetWidth;
+    main.classList.add("is-entering");
+  }
   paintIcons();
 }
 function navigate(next, replace = false) {

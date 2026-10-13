@@ -2,6 +2,7 @@ import { calculateItems, fetchCatalog, recognizeMeal, requestRecommendation, req
 import { clampPhotoPlace, gapShift, photoRejectCopy, photoStatus, photoTrayHtml, takePhotos } from './composer-photos.js';
 import { createId } from '../shared/id.js';
 import { localDateString, validateMeal } from '../shared/meals.js';
+import { calculateNutrition } from '../shared/nutrition/calculate.js';
 import { DEFAULT_ENERGY_RATIOS, GRAM_MAX, KCAL_MAX, mergeTargetEdit, previewMacroTargets } from '../shared/nutrition/targets.js';
 
 const mealNames = { breakfast: '早餐', lunch: '午餐', dinner: '晚餐', snack: '加餐' };
@@ -26,6 +27,7 @@ export function createDietPages(ctx) {
   let photoPlace = { x: 8, y: 8 };
   let photoDrag = null;
   let libraryFilter = 'all';
+  let draftRevision = 0;
 
   document.addEventListener('input', event => {
     const el = event.target;
@@ -421,11 +423,11 @@ export function createDietPages(ctx) {
     const nutrition = item.nutrition;
     const shown = displaySource(nutrition);
     const kcal = nutrition
-      ? `<p class="food-kcal"><span class="num">${nutrition.kcal}</span><small>约千卡</small></p>`
-      : '<p class="food-kcal food-kcal-soft"><span>暂时算不出来</span><small>可以改选，或先留着</small></p>';
-    return `<article class="food-card">
+      ? `<p class="food-kcal" data-kcal><span class="num" data-kcal-value>${nutrition.kcal}</span><small>约千卡</small></p>`
+      : '<p class="food-kcal food-kcal-soft" data-kcal><span>暂时算不出来</span><small>可以改选，或先留着</small></p>';
+    return `<article class="food-card" data-diet-card="${ctx.esc(item.clientId)}">
       <header class="food-card-head"><div><h3>${ctx.esc(item.name || item.inputName)}</h3>${item.inputName && item.inputName !== item.name ? `<p class="small muted">识别为 ${ctx.esc(item.inputName)}</p>` : ''}</div>${kcal}</header>
-      <div class="chip-row">${shown ? `<span class="chip">${shown.label}</span>` : '<span class="chip chip-soft">暂时算不出来</span>'}${item.portionLabel ? `<span class="chip chip-quiet">${ctx.esc(item.portionLabel)}</span>` : ''}</div>
+      <div class="chip-row">${shown ? `<span class="chip">${shown.label}</span>` : '<span class="chip chip-soft">暂时算不出来</span>'}${item.portionLabel ? `<span class="chip chip-quiet" data-portion-label>${ctx.esc(item.portionLabel)}</span>` : ''}</div>
       ${foodSelect(item)}
       <div class="portion-row" role="group" aria-label="修正分量">
         ${portionButton(item, 'small', '小')}${portionButton(item, 'medium', '中')}${portionButton(item, 'large', '大')}
@@ -457,20 +459,34 @@ export function createDietPages(ctx) {
   async function changePortion(clientId, size) {
     const item = draft?.items.find(entry => entry.clientId === clientId);
     if (!item) return;
-    const food = catalog?.foods.find(entry => entry.id === item.foodId);
-    const portion = food?.portion || { small: 100, medium: 150, large: 250 };
-    item.grams = portion[size];
-    item.portionLabel = size === 'small' ? '小' : size === 'large' ? '大' : '中';
+    const food = catalog?.foods.find(entry => entry.id === item.foodId) || null;
+    const next = previewPortion(item, size, food);
+    if (!next || (item.grams === next.grams && item.portionLabel === next.portionLabel)) return;
+    draftRevision += 1;
+    item.grams = next.grams;
+    item.portionLabel = next.portionLabel;
     item.userAdjusted = true;
+    if (next.nutrition) item.nutrition = next.nutrition;
+    if (next.nutrition && paintFoodCard(item)) return;
+    if (next.nutrition && replaceFoodCard(item)) return;
+    paintFoodCard(item);
     await recalculate();
   }
 
   async function changeGrams(clientId, value) {
     const item = draft?.items.find(entry => entry.clientId === clientId);
     if (!item) return;
-    item.grams = Number(value);
+    const grams = Number(value);
+    item.grams = grams;
     item.portionLabel = '自定义';
     item.userAdjusted = true;
+    draftRevision += 1;
+    const food = catalog?.foods.find(entry => entry.id === item.foodId) || null;
+    const nutrition = rescaleMatchedNutrition(item, grams, food);
+    if (nutrition) {
+      item.nutrition = nutrition;
+      if (paintFoodCard(item) || replaceFoodCard(item)) return;
+    }
     await recalculate();
   }
 
@@ -480,18 +496,73 @@ export function createDietPages(ctx) {
     item.userAdjusted = true;
     if (!foodId) { item.foodId = null; item.forceUnestimated = true; item.status = 'unestimated'; }
     else { item.foodId = foodId; item.forceUnestimated = false; item.name = catalog?.foods.find(food => food.id === foodId)?.name || item.name; }
-    await recalculate();
+    await recalculate({ replace: true });
   }
 
-  async function recalculate() {
+  async function recalculate({ replace = false } = {}) {
     if (!draft) return;
+    const revision = ++draftRevision;
     const result = await calculateItems({ items: draft.items.map(item => ({ name: item.inputName || item.name, inputName: item.inputName, foodId: item.forceUnestimated ? '' : item.foodId, grams: item.grams, portionLabel: item.portionLabel, forceUnestimated: item.forceUnestimated === true })) });
+    if (revision !== draftRevision || !draft) return;
     if (result.mode === 'urgent_help') { urgent = result; draft = null; ctx.render(); return; }
     draft.items = draft.items.map((item, index) => {
       const next = result.items[index];
       return { ...item, ...next, candidates: next.candidates?.length ? next.candidates : item.candidates, clientId: item.clientId, userAdjusted: item.userAdjusted, forceUnestimated: item.forceUnestimated === true && !next.nutrition };
     });
-    ctx.render();
+    if (draft.items.every(item => syncFoodCard(item, replace))) return;
+    ctx.render({ quiet: true });
+  }
+
+  function syncFoodCard(item, replace) {
+    if (!replace && paintFoodCard(item)) return true;
+    return replaceFoodCard(item);
+  }
+
+  function foodCardElement(clientId) {
+    if (typeof clientId !== 'string' || !clientId) return null;
+    const escaped = window.CSS?.escape ? CSS.escape(clientId) : clientId;
+    return document.querySelector(`[data-diet-card="${escaped}"]`);
+  }
+
+  function paintFoodCard(item) {
+    const card = foodCardElement(item.clientId);
+    if (!card) return false;
+    const activeSize = item.portionLabel === '小' ? 'small' : item.portionLabel === '大' ? 'large' : item.portionLabel === '中' ? 'medium' : '';
+    card.querySelectorAll('[data-diet-action="portion"]').forEach(button => {
+      const on = button.dataset.dietSize === activeSize;
+      button.classList.toggle('active', on);
+      button.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    const gramsInput = card.querySelector('[data-diet-grams]');
+    if (gramsInput && document.activeElement !== gramsInput) gramsInput.value = item.grams ?? '';
+    const portionChip = card.querySelector('[data-portion-label]');
+    if (item.portionLabel && !portionChip) return false;
+    if (portionChip) portionChip.textContent = item.portionLabel || '';
+    const kcalValue = card.querySelector('[data-kcal-value]');
+    if (Boolean(item.nutrition) !== Boolean(kcalValue)) return false;
+    if (!item.nutrition) return true;
+    kcalValue.textContent = String(item.nutrition.kcal);
+    card.querySelector('[data-kcal]')?.classList.remove('food-kcal-soft');
+    const share = macroShares(item.nutrition);
+    for (const key of ['protein', 'fat', 'carb']) {
+      const num = card.querySelector(`[data-macro="${key}"]`);
+      const bar = card.querySelector(`[data-share="${key}"]`);
+      if (!num || !bar) return false;
+      num.textContent = String(item.nutrition[key]);
+      bar.style.width = `${share[key].toFixed(1)}%`;
+    }
+    return true;
+  }
+
+  function replaceFoodCard(item) {
+    const card = foodCardElement(item.clientId);
+    if (!card) return false;
+    const holder = document.createElement('template');
+    holder.innerHTML = itemCard(item).trim();
+    const next = holder.content.firstElementChild;
+    if (!next) return false;
+    card.replaceWith(next);
+    return true;
   }
 
   async function saveDraft() {
@@ -732,6 +803,47 @@ export function createDietPages(ctx) {
   return { loadCatalog, record, today, library, settings, onClick, onSubmit };
 }
 
+const PORTION_LABELS = { small: '小', medium: '中', large: '大' };
+const PORTION_DEFAULTS = { small: 100, medium: 150, large: 250 };
+
+export function previewPortion(item, size, food) {
+  if (!PORTION_LABELS[size]) return null;
+  const grams = portionGrams(size, food);
+  return { grams, portionLabel: PORTION_LABELS[size], nutrition: rescaleMatchedNutrition(item, grams, food) };
+}
+
+export function rescaleMatchedNutrition(item, grams, food) {
+  const basis = foodBasis(food) || storedBasis(item);
+  if (!basis) return null;
+  try { return calculateNutrition(basis, grams); }
+  catch { return null; }
+}
+
+function portionGrams(size, food) {
+  const fromFood = Number(food?.portion?.[size]);
+  if (Number.isFinite(fromFood) && fromFood > 0) return fromFood;
+  return PORTION_DEFAULTS[size];
+}
+
+function foodBasis(food) {
+  if (!food?.calculable || !food.per100g || !food.source || !food.sourceNote || !food.version || !food.id) return null;
+  return food;
+}
+
+function storedBasis(item) {
+  const current = item?.nutrition;
+  if (!current?.per100g || !current.source || !current.sourceNote || !current.version || !current.foodId) return null;
+  return {
+    calculable: true,
+    id: current.foodId,
+    name: current.foodName || item.name,
+    per100g: current.per100g,
+    source: current.source,
+    sourceNote: current.sourceNote,
+    version: current.version,
+  };
+}
+
 function mealsOn(state, date) {
   return (state.meals || []).filter(meal => meal.date === date).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 }
@@ -806,7 +918,8 @@ function macroShares(nutrition) {
 }
 function macroPills(nutrition) {
   const share = macroShares(nutrition);
-  return `<div class="macro-stack" aria-hidden="true"><i class="protein" style="width:${share.protein.toFixed(1)}%"></i><i class="fat" style="width:${share.fat.toFixed(1)}%"></i><i class="carb" style="width:${share.carb.toFixed(1)}%"></i></div><p class="macro-pills"><span>蛋白质 <b class="num">${nutrition.protein}</b> 克</span><span>脂肪 <b class="num">${nutrition.fat}</b> 克</span><span>碳水 <b class="num">${nutrition.carb}</b> 克</span></p>`;
+  const bit = (key, label) => `<span>${label} <b class="num" data-macro="${key}">${nutrition[key]}</b> 克</span>`;
+  return `<div class="macro-stack" aria-hidden="true"><i class="protein" data-share="protein" style="width:${share.protein.toFixed(1)}%"></i><i class="fat" data-share="fat" style="width:${share.fat.toFixed(1)}%"></i><i class="carb" data-share="carb" style="width:${share.carb.toFixed(1)}%"></i></div><p class="macro-pills">${bit('protein', '蛋白质')}${bit('fat', '脂肪')}${bit('carb', '碳水')}</p>`;
 }
 function macroTiles(totals, targets) {
   const rows = [
