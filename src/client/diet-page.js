@@ -1,4 +1,5 @@
 import { calculateItems, fetchCatalog, recognizeMeal, requestRecommendation, requestReport } from './diet-client.js';
+import { clampPhotoPlace, gapShift, photoRejectCopy, photoStatus, photoTrayHtml, takePhotos } from './composer-photos.js';
 import { createId } from '../shared/id.js';
 import { localDateString, validateMeal } from '../shared/meals.js';
 import { DEFAULT_ENERGY_RATIOS, GRAM_MAX, KCAL_MAX, mergeTargetEdit, previewMacroTargets } from '../shared/nutrition/targets.js';
@@ -21,8 +22,9 @@ export function createDietPages(ctx) {
   let composeText = '';
   let composeMeal = '';
   let composeError = '';
-  let photoName = '';
-  let pendingFile = null;
+  let pendingPhotos = [];
+  let photoPlace = { x: 8, y: 8 };
+  let photoDrag = null;
   let libraryFilter = 'all';
 
   document.addEventListener('input', event => {
@@ -41,16 +43,26 @@ export function createDietPages(ctx) {
     const el = event.target;
     if (!(el instanceof HTMLElement)) return;
     if (el.id === 'meal-photo') {
-      pendingFile = el.files?.[0] || null;
-      photoName = pendingFile ? pendingFile.name : '';
-      const hint = document.querySelector('[data-photo-name]');
-      if (hint) hint.textContent = photoName ? `已选 ${photoName}` : '';
+      const files = [...el.files || []];
+      el.value = '';
+      if (!files.length || busy) return;
+      const before = pendingPhotos.length;
+      const reason = rememberPhotos(files);
+      if (reason) ctx.toast(photoRejectCopy(reason));
+      if (pendingPhotos.length !== before) ctx.render();
       return;
     }
     if (el.name === 'meal' && el.closest('#meal-form')) { composeMeal = el.value; return; }
     if (el.dataset.dietFood != null) void changeFood(el.dataset.dietFood, el.value).catch(error => ctx.toast(friendlyMessage(error.message, '这次没有改成，请再试一次')));
     if (el.dataset.dietGrams != null) void changeGrams(el.dataset.dietGrams, el.value).catch(error => ctx.toast(friendlyMessage(error.message, '这次没有改成，请再试一次')));
   });
+
+  document.addEventListener('pointerdown', onPhotoPointerDown, { passive: false });
+  document.addEventListener('pointermove', onPhotoPointerMove, { passive: false });
+  document.addEventListener('pointerup', finishPhotoDrag);
+  document.addEventListener('pointercancel', finishPhotoDrag);
+  document.addEventListener('dragover', onPhotoFileOver);
+  document.addEventListener('drop', onPhotoFileDrop);
 
   async function loadCatalog() {
     try { catalog = await fetchCatalog(); catalogError = ''; }
@@ -61,7 +73,7 @@ export function createDietPages(ctx) {
     const state = ctx.getState();
     const todayMeals = mealsOn(state, localDateString());
     const meal = composeMeal || defaultMeal();
-    const status = busy ? '正在看这一餐' : (photoName ? `已选 ${photoName}` : '');
+    const status = photoStatus(pendingPhotos.length, busy);
     const side = todayMeals.length
       ? `<aside class="quiet-card today-side"><div class="quiet-copy"><h2>今天已经记下</h2><p>轻轻记一笔，养成更好的节奏。</p></div><div class="quiet-meals">${todayMeals.map(item => mealCard(item, true)).join('')}</div><button class="pill-link" data-page="today">看今天 ${ctx.icon('arrow')}</button></aside>`
       : `<aside class="quiet-card today-side is-empty"><div class="quiet-art" aria-hidden="true">${bowlArt()}</div><div class="quiet-copy"><h2>今天还没记</h2><p>轻轻记一笔，养成更好的节奏。</p></div><button class="pill-link" data-page="today">看今天 ${ctx.icon('arrow')}</button></aside>`;
@@ -69,11 +81,12 @@ export function createDietPages(ctx) {
       <section class="hero-card">
         <div class="hero-wash" aria-hidden="true"></div>
         <div class="hero-copy"><h1>记下这一餐</h1><p>拍一张，或写一句话</p></div>
-        <form id="meal-form" class="composer ${busy ? 'is-busy' : ''}">
+        <form id="meal-form" class="composer ${busy ? 'is-busy' : ''}" data-photo-count="${pendingPhotos.length}">
           <label class="meal-chip"><span class="sr-only">这一餐</span>
             <select name="meal" aria-label="这一餐">${mealOrder.map(key => `<option value="${key}" ${key === meal ? 'selected' : ''}>${mealNames[key]}</option>`).join('')}</select>
           </label>
-          <div class="composer-box">
+          <div class="composer-box${pendingPhotos.length ? ' has-photos' : ''}">
+            ${photoTrayHtml(pendingPhotos, photoPlace, ctx.esc)}
             <textarea name="text" maxlength="1500" rows="2" placeholder="记录食物、感受或拍照…" aria-label="写下吃了什么">${ctx.esc(composeText)}</textarea>
             <div class="composer-actions">
               <label class="icon-hit">
@@ -84,7 +97,7 @@ export function createDietPages(ctx) {
               <button class="icon-hit send" type="submit" aria-label="${busy ? '正在识别' : '识别这一餐'}" aria-busy="${busy ? 'true' : 'false'}" ${busy ? 'disabled' : ''}>${ctx.icon('send')}</button>
             </div>
           </div>
-          <p class="composer-status" role="status" data-photo-name>${ctx.esc(status)}</p>
+          <p class="composer-status" role="status" data-photo-status>${ctx.esc(status)}</p>
           ${composeError ? `<p class="composer-error" role="alert">${ctx.esc(composeError)}</p>` : ''}
         </form>
       </section>
@@ -125,6 +138,7 @@ export function createDietPages(ctx) {
     else if (action === 'discard') { draft = null; urgent = null; ctx.render(); }
     else if (action === 'delete-meal') { await ctx.writeStore(storage => storage.removeMeal(button.dataset.dietId)); invalidateToday(); ctx.toast('已删除这一餐'); }
     else if (action === 'edit-meal') beginEdit(button.dataset.dietId);
+    else if (action === 'remove-photo') removePhoto(button.dataset.photoId);
     else if (action === 'library-filter') { libraryFilter = button.dataset.dietFilter || 'all'; ctx.render(); }
     else if (action === 'recipe') openRecipe(button.dataset.dietId);
     else if (action === 'another') await anotherRecipe();
@@ -144,10 +158,9 @@ export function createDietPages(ctx) {
     const data = new FormData(form);
     const text = String(data.get('text') || '').trim();
     const meal = String(data.get('meal') || composeMeal || defaultMeal());
-    const file = form.querySelector('#meal-photo')?.files?.[0] || pendingFile;
+    const file = pendingPhotos[0]?.file || null;
     composeText = String(data.get('text') || '');
     composeMeal = meal;
-    if (file) { pendingFile = file; photoName = file.name; }
     if (!text && !file) { composeError = '写一句话，或拍一张这一餐的照片。'; ctx.render(); return; }
     busy = true;
     urgent = null;
@@ -160,8 +173,7 @@ export function createDietPages(ctx) {
         draft = null;
         urgent = result;
         composeText = '';
-        pendingFile = null;
-        photoName = '';
+        releasePhotos();
         return;
       }
       draft = {
@@ -170,13 +182,205 @@ export function createDietPages(ctx) {
         items: result.items.map(item => ({ ...item, clientId: createId() })),
       };
       composeText = '';
-      pendingFile = null;
-      photoName = '';
+      releasePhotos();
       composeError = '';
     } catch (error) {
       composeError = friendlyMessage(error.message, '暂时无法识别，请稍后再试或改为打字记录');
       ctx.toast(composeError);
     } finally { busy = false; ctx.render(); }
+  }
+
+  function rememberPhotos(files) {
+    const { accepted, rejected } = takePhotos(pendingPhotos.length, files);
+    for (const file of accepted) {
+      pendingPhotos.push({ id: createId(), file, url: URL.createObjectURL(file), name: file.name || '照片' });
+    }
+    if (pendingPhotos.length !== 1) photoPlace = { x: 8, y: 8 };
+    return rejected[0]?.reason || '';
+  }
+
+  function releasePhotos() {
+    photoDrag = null;
+    document.body.classList.remove('is-photo-drag');
+    for (const photo of pendingPhotos) URL.revokeObjectURL(photo.url);
+    pendingPhotos = [];
+    photoPlace = { x: 8, y: 8 };
+  }
+
+  function removePhoto(id) {
+    if (busy) return;
+    const photo = pendingPhotos.find(item => item.id === id);
+    if (!photo) return;
+    if (photoDrag?.id === id) {
+      photoDrag = null;
+      document.body.classList.remove('is-photo-drag');
+    }
+    URL.revokeObjectURL(photo.url);
+    pendingPhotos = pendingPhotos.filter(item => item.id !== id);
+    if (pendingPhotos.length !== 1) photoPlace = { x: 8, y: 8 };
+    ctx.render();
+  }
+
+  function photoById(id) {
+    return [...document.querySelectorAll('#meal-form .composer-photo')].find(card => card.dataset.photoId === id) || null;
+  }
+
+  function onPhotoPointerDown(event) {
+    if (photoDrag || busy) return;
+    const target = event.target instanceof Element ? event.target : event.target?.parentElement;
+    if (!target || target.closest('.composer-photo-remove')) return;
+    const card = target.closest('.composer-photo');
+    const tray = card?.closest('#meal-form [data-photo-tray]');
+    if (!card || !tray) return;
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    event.preventDefault();
+    photoDrag = {
+      id: card.dataset.photoId,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      single: tray.classList.contains('is-free'),
+      moved: false,
+      gap: null,
+    };
+    try { card.setPointerCapture(event.pointerId); } catch { /* pointer capture is optional */ }
+  }
+
+  function onPhotoPointerMove(event) {
+    if (!photoDrag || event.pointerId !== photoDrag.pointerId) return;
+    const drag = photoDrag;
+    const dx = event.clientX - drag.startX;
+    const dy = event.clientY - drag.startY;
+    if (!drag.moved) {
+      if (Math.hypot(dx, dy) < 6) return;
+      const card = photoById(drag.id);
+      const tray = document.querySelector('#meal-form [data-photo-tray]');
+      if (!card || !tray) { photoDrag = null; return; }
+      const rect = card.getBoundingClientRect();
+      drag.moved = true;
+      drag.originLeft = rect.left;
+      drag.originTop = rect.top;
+      drag.width = rect.width;
+      drag.height = rect.height;
+      if (!drag.single) {
+        const gap = document.createElement('div');
+        gap.className = 'composer-photo-gap';
+        gap.style.width = `${rect.width}px`;
+        gap.style.height = `${rect.height}px`;
+        card.before(gap);
+        drag.gap = gap;
+      }
+      card.classList.add('is-dragging');
+      card.style.position = 'fixed';
+      card.style.width = `${rect.width}px`;
+      card.style.height = `${rect.height}px`;
+      card.style.margin = '0';
+      card.style.zIndex = '20';
+      card.style.pointerEvents = 'none';
+      document.body.classList.add('is-photo-drag');
+    }
+    const card = photoById(drag.id);
+    if (!card) return;
+    event.preventDefault();
+    card.style.left = `${drag.originLeft + dx}px`;
+    card.style.top = `${drag.originTop + dy}px`;
+    if (drag.single || !drag.gap) return;
+    const tray = card.closest('#meal-form')?.querySelector('[data-photo-tray]');
+    if (tray) movePhotoGap(tray, card, drag.gap, drag.originLeft + dx + drag.width / 2);
+  }
+
+  function boxOf(el) {
+    const rect = el.getBoundingClientRect();
+    return { left: rect.left, width: rect.width };
+  }
+
+  function movePhotoGap(tray, card, gap, x) {
+    for (let guard = 0; guard < 8; guard += 1) {
+      const siblings = [...tray.children].filter(el => el !== card);
+      const gapIndex = siblings.indexOf(gap);
+      const beforeEl = siblings[gapIndex - 1];
+      const afterEl = siblings[gapIndex + 1];
+      const before = beforeEl?.classList.contains('composer-photo') ? boxOf(beforeEl) : null;
+      const after = afterEl?.classList.contains('composer-photo') ? boxOf(afterEl) : null;
+      const shift = gapShift(before, after, x);
+      if (shift === 'after') afterEl.after(gap);
+      else if (shift === 'before') beforeEl.before(gap);
+      else break;
+    }
+  }
+
+  function finishPhotoDrag(event) {
+    if (!photoDrag || event.pointerId !== photoDrag.pointerId) return;
+    const drag = photoDrag;
+    photoDrag = null;
+    document.body.classList.remove('is-photo-drag');
+    const card = photoById(drag.id);
+    const tray = document.querySelector('#meal-form [data-photo-tray]');
+    if (card?.hasPointerCapture?.(drag.pointerId)) card.releasePointerCapture(drag.pointerId);
+    if (!drag.moved) {
+      card?.classList.remove('is-dragging');
+      return;
+    }
+    const form = document.querySelector('#meal-form');
+    const field = form?.querySelector('textarea');
+    if (field) composeText = field.value;
+    const meal = form?.querySelector('select[name="meal"]');
+    if (meal) composeMeal = meal.value;
+    if (drag.single && card && tray) {
+      const trayRect = tray.getBoundingClientRect();
+      const left = Number.parseFloat(card.style.left);
+      const top = Number.parseFloat(card.style.top);
+      if (Number.isFinite(left) && Number.isFinite(top)) {
+        photoPlace = clampPhotoPlace(left - trayRect.left, top - trayRect.top, {
+          trayWidth: tray.clientWidth,
+          trayHeight: tray.clientHeight,
+          photoWidth: drag.width,
+          photoHeight: drag.height,
+        });
+      }
+    } else if (tray && drag.gap) {
+      const order = [];
+      for (const el of tray.children) {
+        if (el.classList.contains('composer-photo-gap')) order.push(drag.id);
+        else if (el.dataset.photoId && el.dataset.photoId !== drag.id) order.push(el.dataset.photoId);
+      }
+      const next = order.map(id => pendingPhotos.find(photo => photo.id === id)).filter(Boolean);
+      if (next.length === pendingPhotos.length) pendingPhotos = next;
+    }
+    const stopClick = click => {
+      click.preventDefault();
+      click.stopPropagation();
+      document.removeEventListener('click', stopClick, true);
+    };
+    document.addEventListener('click', stopClick, true);
+    setTimeout(() => document.removeEventListener('click', stopClick, true), 250);
+    ctx.render();
+  }
+
+  function onPhotoFileOver(event) {
+    const form = event.target instanceof Element ? event.target.closest('#meal-form') : null;
+    const types = [...event.dataTransfer?.types || []];
+    if (!form || busy || !types.includes('Files')) {
+      document.querySelector('#meal-form')?.classList.remove('is-file-drop');
+      return;
+    }
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+    form.classList.add('is-file-drop');
+  }
+
+  function onPhotoFileDrop(event) {
+    const form = event.target instanceof Element ? event.target.closest('#meal-form') : null;
+    document.querySelector('#meal-form')?.classList.remove('is-file-drop');
+    if (!form) return;
+    event.preventDefault();
+    if (busy) return;
+    const files = [...event.dataTransfer?.files || []];
+    if (!files.length) return;
+    const before = pendingPhotos.length;
+    const reason = rememberPhotos(files);
+    if (reason) ctx.toast(photoRejectCopy(reason));
+    if (pendingPhotos.length !== before) ctx.render();
   }
 
   function editor(current) {
